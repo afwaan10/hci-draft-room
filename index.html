@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Draft Room By HCI</title>
+  <meta name="description" content="Draft Room By HCI - pilih HOK atau MLBB draft simulator." />
+  <link rel="stylesheet" href="./css/draft-room.css" />
+</head>
+<body class="chooser-page">
+  <div class="app-loader" id="appLoader">
+    <div class="loader-card">
+      <img src="./assets/hci-logo.webp" alt="Logo HCI" class="loader-logo" />
+      <div class="loader-loop"><span></span></div>
+      <div class="loader-text">Loading Draft Room By HCI</div>
+    </div>
+  </div>
+
+  <main class="game-choice" id="gameChoice" hidden>
+    <section class="choice-card">
+      <div class="choice-top">
+        <img src="./assets/hci-logo.webp" alt="Logo HCI" />
+        <div>
+          <span class="eyebrow">Pilih Game</span>
+          <h1>Draft Room By HCI</h1>
+          <p>Pilih simulator draft yang ingin digunakan. Setiap game punya halaman draft sendiri, database hero sendiri, dan room ID masing-masing.</p>
+        </div>
+      </div>
+
+      <div class="choice-grid">
+        <a class="game-card" href="./hok.html">
+          <div>
+            <span class="eyebrow">Honor of Kings</span>
+            <h2>HOK Draft Room</h2>
+            <p>Simulasi ban-pick real-time untuk coach, analis, dan latihan draft HOK.</p>
+          </div>
+          <span class="game-badge hok">HOK</span>
+        </a>
+
+        <a class="game-card" href="./mlbb.html">
+          <div>
+            <span class="eyebrow">Mobile Legends</span>
+            <h2>MLBB Draft Room</h2>
+            <p>Simulasi draft MLBB dengan database hero awal berbasis nama dan role.</p>
+          </div>
+          <span class="game-badge mlbb">MLBB</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        document.getElementById('appLoader').hidden = true;
+        document.getElementById('gameChoice').hidden = false;
+      }, 3000);
+    });
+  </script>
+</body>
+</html>
