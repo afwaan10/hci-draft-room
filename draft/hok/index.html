@@ -60,12 +60,12 @@
       <div>
         <span class="eyebrow"><span data-game-short>HOK</span> Simulator</span>
         <h2>Start Draft</h2>
-        <p>Create a new room as host, or join with a Room ID from the host. The host can delete their own room.</p>
+        <p>Create a room as host, or join with a Room ID from the host. Creating a room will ask the host to sign in with Google.</p>
       </div>
       <div class="setup-grid">
         <div class="card soft-card">
           <h3>Create Room</h3>
-          <p>The host automatically enters Team A and gets room control access.</p>
+          <p>The host signs in with Google and receives stable room control access. Players can still join with Room ID only.</p>
           <label class="series-picker" for="seriesFormat">
             <span>Match Format</span>
             <select id="seriesFormat" aria-label="Match format">
@@ -73,11 +73,11 @@
               <option value="5">Best of 5</option>
             </select>
           </label>
-          <button class="primary-btn" id="createRoomBtn" disabled>Create Room</button>
+          <button class="primary-btn" id="createRoomBtn" disabled>Create Room as Host</button>
         </div>
         <div class="card soft-card" id="join-room">
           <h3>Enter Room ID</h3>
-          <p>Join a room from the host, then choose Team B or Spectator.</p>
+          <p>Join a room from the host, then choose Team B or Spectator. No Google login is required for players.</p>
           <div class="join-row">
             <input id="roomIdInput" type="text" placeholder="Example: HOK-4821" autocomplete="off" />
             <button class="secondary-btn" id="joinRoomBtn" disabled>Join</button>
