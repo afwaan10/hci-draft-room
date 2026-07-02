@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <base href="/">
-  <title>Draft Room By HCI - MLBB</title>
-  <meta name="description" content="Draft Room By HCI - simulasi ban-pick MLBB real-time untuk coach dan analis." />
+  <title>Draft Room By HCI - HOK</title>
+  <meta name="description" content="Draft Room By HCI - simulasi ban-pick HOK real-time untuk coach dan analis." />
   <link rel="stylesheet" href="css/draft-room.css" />
 </head>
-<body>
+<body class="draft-route-page">
   <main class="app-shell">
     <nav class="site-nav">
       <a class="nav-brand" href="/" aria-label="Kembali pilih game">
@@ -44,7 +44,7 @@
             <h1>Draft Room By HCI</h1>
           </div>
         </div>
-        <p>Website simulasi draft MLBB berbasis Room ID untuk latihan coach, analis, dan tim komunitas. Buat room, bagikan ID, lalu mulai simulasi ban-pick secara real-time.</p>
+        <p>Website simulasi draft HOK berbasis Room ID untuk latihan coach, analis, dan tim komunitas. Buat room, bagikan ID, lalu mulai simulasi ban-pick secara real-time.</p>
         <div class="hero-actions">
           <a class="primary-btn" href="#create-room">Create Room</a>
           <a class="secondary-btn" href="#join-room">Masukkan ID Room</a>
@@ -59,7 +59,7 @@
 
     <section class="panel setup-panel" id="create-room">
       <div>
-        <span class="eyebrow">MLBB Simulator</span>
+        <span class="eyebrow">HOK Simulator</span>
         <h2>Mulai Draft</h2>
         <p>Buat room baru sebagai host, atau masuk menggunakan Room ID dari host. Host yang membuat room bisa menghapus room miliknya.</p>
       </div>
@@ -73,7 +73,7 @@
           <h3>Masukkan ID Room</h3>
           <p>Masuk room dari host, lalu pilih Team B atau spectator.</p>
           <div class="join-row">
-            <input id="roomIdInput" type="text" placeholder="Contoh: MLBB-4821" autocomplete="off" />
+            <input id="roomIdInput" type="text" placeholder="Contoh: HOK-4821" autocomplete="off" />
             <button class="secondary-btn" id="joinRoomBtn" disabled>Join</button>
           </div>
         </div>
@@ -128,9 +128,22 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-  <script>window.HCI_GAME_CONFIG = { gameKey: "MLBB", gameName: "MLBB Draft Room", roomPrefix: "MLBB", roles: ['ALL','EXP Lane','Jungle','Mid Lane','Gold Lane','Roam'] };</script>
+  <script>
+    (function () {
+      const parts = location.pathname.split("/").filter(Boolean);
+      const draftIndex = parts.indexOf("draft");
+      const slug = ((draftIndex >= 0 ? parts[draftIndex + 1] : parts[0]) || "hok").toLowerCase();
+      const isMlbb = slug === "mlbb";
+      window.HCI_GAME_CONFIG = isMlbb
+        ? { gameKey: "MLBB", gameName: "MLBB Draft Room", roomPrefix: "MLBB", roles: ['ALL','EXP Lane','Jungle','Mid Lane','Gold Lane','Roam'] }
+        : { gameKey: "HOK", gameName: "HOK Draft Room", roomPrefix: "HOK", roles: ['ALL','Clash Lane','Jungle','Mid','Farm','Roam'] };
+      document.title = "Draft Room By HCI - " + window.HCI_GAME_CONFIG.gameKey;
+    })();
+  </script>
   <script src="./js/firebase-config.js"></script>
-  <script src="./js/heroes-mlbb.js"></script>
+  <script>
+    document.write('<script src="./js/heroes-' + (window.HCI_GAME_CONFIG.gameKey === "MLBB" ? "mlbb" : "hok") + '.js"><\/script>');
+  </script>
   <script src="./js/draft-room.js"></script>
 </body>
 </html>
