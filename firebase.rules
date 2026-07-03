@@ -1,12 +1,72 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    match /draftRooms/{roomId} {
-      allow read, create, update, delete: if signedIn();
+    function signedIn() {
+      return request.auth != null;
     }
+
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.admin == true ||
+        request.auth.token.email == "muhammaddeha03@gmail.com"
+      );
+    }
+
+    function isRoomHost() {
+      return signedIn() && resource.data.hostUid == request.auth.uid;
+    }
+
+    function isRoomTeamB() {
+      return signedIn() && resource.data.teamBUid == request.auth.uid;
+    }
+
+    function isClaimingEmptyHostSlot() {
+      return signedIn()
+        && resource.data.hostUid == ""
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.teamAUid == request.auth.uid;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function ownerOnlyDecreasesCredits(uid) {
+      return isOwner(uid)
+        && request.resource.data.trialCredits <= resource.data.trialCredits
+        && request.resource.data.paidCredits <= resource.data.paidCredits
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "uid", "email", "displayName", "trialCredits", "paidCredits", "lastUsedAt", "updatedAt"
+        ]);
+    }
+
+    match /draftRooms/{roomId} {
+      allow read: if signedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || isRoomHost() || isRoomTeamB() || isClaimingEmptyHostSlot();
+      allow delete: if false;
+
+      match /activityLogs/{logId} {
+        allow read: if signedIn();
+        allow create: if signedIn();
+        allow update, delete: if false;
+      }
+    }
+
+    match /userAccess/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isAdmin() || (
+        isOwner(uid)
+        && request.resource.data.trialCredits == 2
+        && request.resource.data.paidCredits == 0
+      );
+      allow update: if isAdmin() || ownerOnlyDecreasesCredits(uid);
+      allow delete: if false;
+    }
+
     match /heroes/{heroId} {
-      allow read, write: if signedIn();
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
     }
   }
 }
