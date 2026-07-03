@@ -48,8 +48,13 @@
   }
   function updateGameLocks(){
     document.querySelectorAll('[data-requires-login="true"]').forEach((card) => {
-      card.classList.toggle('needs-login', !currentUser);
+      const locked = !currentUser;
+      card.classList.toggle('needs-login', locked);
       card.setAttribute('aria-disabled', currentUser ? 'false' : 'true');
+      const action = card.querySelector('.game-card-action');
+      if(action){
+        action.textContent = locked ? (action.dataset.loginLabel || 'Login Required') : (action.dataset.startLabel || 'Join / Start');
+      }
     });
   }
   function renderAuth(user){
@@ -61,7 +66,7 @@
       if(els.userName) els.userName.textContent = currentUser.displayName || 'HCI User';
       if(els.userEmail) els.userEmail.textContent = 'Signed in';
       if(els.userPhoto){
-        els.userPhoto.src = currentUser.photoURL || '/assets/hci-logo.png';
+        els.userPhoto.src = currentUser.photoURL || '/assets/brand/hci-community.jpg';
         els.userPhoto.hidden = false;
       }
       loadHistory();

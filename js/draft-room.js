@@ -56,7 +56,22 @@
   function escapeHtml(value){ return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
   function setHidden(el, value){ if(el) el.hidden = Boolean(value); }
   function setText(el, value){ if(el) el.textContent = value; }
+  function setTimerValue(value){
+    setText(els.timerValue, value);
+    setText(document.getElementById('proTimerValue'), value);
+  }
   function showToast(message){ if(!els.toast) return; els.toast.textContent = message; els.toast.hidden = false; clearTimeout(showToast.timer); showToast.timer = setTimeout(() => { els.toast.hidden = true; }, 2800); }
+  function gameLogoPath(){ const key = String(CONFIG.gameKey || 'HOK').toUpperCase(); if(key === 'MLBB') return '/assets/ml.png'; if(key === 'HOK') return '/assets/hok.png'; return '/assets/brand/hci-community.jpg'; }
+  function safeHeroImage(hero){ return hero?.image || ''; }
+  function heroAvatarHtml(hero, className, fallbackText){
+    const name = hero?.name || fallbackText || '?'; const initials = heroInitials(name); const image = safeHeroImage(hero);
+    return image ? `<span class="${className}"><img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.parentElement.textContent='${initials}'"></span>` : `<span class="${className}">${initials}</span>`;
+  }
+  function updateGameVisuals(){
+    const logo = gameLogoPath();
+    document.querySelectorAll('[data-game-logo]').forEach((img) => { img.src = logo; img.alt = `${CONFIG.gameKey || 'HCI'} Logo`; });
+    const landingLogo = document.querySelector('.hero-title-row img'); if(landingLogo){ landingLogo.src = logo; landingLogo.alt = `${CONFIG.gameKey || 'HCI'} Logo`; landingLogo.setAttribute('data-game-logo',''); }
+  }
   function isConfigReady(){ const cfg = window.HCI_FIREBASE_CONFIG; return Boolean(cfg && cfg.apiKey && cfg.projectId && !String(cfg.apiKey).includes('PASTE')); }
   function roleIconHtml(role){ const gameKey = String(CONFIG.gameKey || 'HOK').toUpperCase(); const src = (ROLE_ICON_PATHS[gameKey] || ROLE_ICON_PATHS.HOK)[role] || (ROLE_ICON_PATHS[gameKey] || ROLE_ICON_PATHS.HOK).ALL; return src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(role)}" loading="lazy">` : FALLBACK_ROLE_ICON; }
   function heroById(id){ return heroes.find((hero) => hero.id === id) || null; }
@@ -265,7 +280,9 @@
       message: `${teamName(step.team)} · ${step.side === 'BLUE' ? 'Blue Side' : 'Red Side'} · ${gameTitle(currentRoom)}`,
       confirmText: action,
       cancelText: 'Cancel',
-      danger: step.type === 'ban'
+      danger: step.type === 'ban',
+      hero,
+      actionType: step.type
     });
     if(!ok) return;
     const ref = db.collection('draftRooms').doc(currentRoomId);
@@ -347,17 +364,56 @@
     setHidden(els.sidePicker, !isLobby); setHidden(els.startDraftBtn, !(isLobby && isHost())); if(els.startDraftBtn) els.startDraftBtn.disabled = !hasBothTeams();
     setHidden(els.copyResultBtn, !isFinished); setHidden(els.downloadResultTopBtn, !isFinished); setHidden(els.downloadResultTopBtn2, !isFinished); setHidden(els.deleteRoomBtn, !isHost()); setHidden(els.deleteRoomTopBtn, !isHost());
     const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); renderSlots(els.teamABans, valuesForTeam(leftTeam, 'ban'), banCount, 'Ban'); renderSlots(els.teamBBans, valuesForTeam(rightTeam, 'ban'), banCount, 'Ban'); renderSlots(els.teamAPicks, valuesForTeam(leftTeam, 'pick'), 5, 'Pick'); renderSlots(els.teamBPicks, valuesForTeam(rightTeam, 'pick'), 5, 'Pick');
-    renderDraftResult(); renderCurrentTurn(); renderDraftSequence(); renderHeroGrid(); ensurePrepareTransition(); startTimerRenderer(); handleMobileTurnAutoScroll(); maybeShowFinishedModal(); maybeSaveHistory();
+    renderDraftResult(); renderCurrentTurn(); renderProDraftTopbar(); renderDraftSequence(); renderHeroGrid(); ensurePrepareTransition(); startTimerRenderer(); handleMobileTurnAutoScroll(); maybeShowRotatePrompt(); maybeShowFinishedModal(); maybeSaveHistory();
   }
   function renderSlots(container, values, count, prefix){
     if(!container) return; container.innerHTML = '';
     for(let i=0;i<count;i++){
       const heroId = values[i]; const div = document.createElement('div'); div.className = `slot ${heroId ? 'filled' : ''}`;
       if(!heroId){ div.innerHTML = `<span class="slot-placeholder">${prefix} ${i+1}</span>`; container.appendChild(div); continue; }
-      const hero = heroById(heroId); const name = hero ? hero.name : heroId; const image = hero?.image || ''; const initials = heroInitials(name);
-      const avatar = image ? `<span class="slot-avatar"><img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" onerror="this.parentElement.textContent='${initials}'"></span>` : `<span class="slot-avatar">${initials}</span>`;
+      const hero = heroById(heroId); const name = hero ? hero.name : heroId;
+      const avatar = heroAvatarHtml(hero, 'slot-avatar', name);
       div.innerHTML = `<span class="slot-media">${avatar}<span class="slot-copy"><strong class="slot-name">${escapeHtml(name)}</strong><small>${prefix} ${i+1}</small></span></span>`; container.appendChild(div);
     }
+  }
+  function ensureProDraftTopbar(){
+    if(!els.draftStage || document.getElementById('proDraftTopbar')) return;
+    const topbar = document.createElement('section'); topbar.id = 'proDraftTopbar'; topbar.className = 'pro-draft-topbar';
+    topbar.innerHTML = `
+      <div class="pro-game-badge"><img data-game-logo src="${escapeHtml(gameLogoPath())}" alt="${escapeHtml(CONFIG.gameKey || 'HCI')} Logo"><span>${escapeHtml(CONFIG.gameKey || 'HCI')}</span></div>
+      <div class="pro-ban-row pro-blue" id="proBlueBans" aria-label="Blue ban slots"></div>
+      <div class="pro-turn-box"><span id="proTurnPhase">WAITING</span><strong id="proTimerValue">--</strong><small id="proTurnTeam">Draft Lobby</small><div class="pro-timer-line"><i id="proTimerFill"></i></div></div>
+      <div class="pro-ban-row pro-red" id="proRedBans" aria-label="Red ban slots"></div>
+      <div class="pro-pick-row pro-blue" id="proBluePicks" aria-label="Blue pick slots"></div>
+      <span class="pro-vs">VS</span>
+      <div class="pro-pick-row pro-red" id="proRedPicks" aria-label="Red pick slots"></div>`;
+    if(els.draftFocusHeader) els.draftFocusHeader.insertAdjacentElement('afterend', topbar); else els.draftStage.prepend(topbar);
+  }
+  function compactSlotHtml(heroId, index, type){
+    if(!heroId) return `<span class="pro-slot empty ${type}" title="${type === 'ban' ? 'Ban' : 'Pick'} ${index+1}">${index+1}</span>`;
+    const hero = heroById(heroId); const name = hero ? hero.name : heroId; const avatar = heroAvatarHtml(hero, 'pro-slot-avatar', name);
+    return `<span class="pro-slot filled ${type}" title="${escapeHtml(name)} · ${type === 'ban' ? 'Ban' : 'Pick'} ${index+1}">${avatar}<b>${index+1}</b></span>`;
+  }
+  function renderCompactSlots(containerId, values, count, type){
+    const container = document.getElementById(containerId); if(!container) return;
+    container.innerHTML = Array.from({length: count}, (_, i) => compactSlotHtml(values[i], i, type)).join('');
+  }
+  function renderProDraftTopbar(){
+    if(!currentRoom) return; ensureProDraftTopbar(); updateGameVisuals();
+    const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); const board = displayTeams(currentRoom);
+    renderCompactSlots('proBlueBans', valuesForTeam(board.blue, 'ban'), banCount, 'ban');
+    renderCompactSlots('proRedBans', valuesForTeam(board.red, 'ban'), banCount, 'ban');
+    renderCompactSlots('proBluePicks', valuesForTeam(board.blue, 'pick'), 5, 'pick');
+    renderCompactSlots('proRedPicks', valuesForTeam(board.red, 'pick'), 5, 'pick');
+    const phase = document.getElementById('proTurnPhase'); const team = document.getElementById('proTurnTeam'); const fill = document.getElementById('proTimerFill');
+    let phaseText = currentRoom.status === 'preparing' ? 'PREPARE' : currentRoom.status === 'finished' ? 'COMPLETE' : 'LOBBY'; let teamText = gameTitle(currentRoom); let pct = 0;
+    if(currentRoom.status === 'drafting'){
+      const step = draftSteps(currentRoom)[currentRoom.turnIndex];
+      if(step){ phaseText = `${step.side === 'BLUE' ? 'BLUE' : 'RED'} | ${step.type.toUpperCase()}`; teamText = teamName(step.team, currentRoom); const remaining = draftRemainingMs(currentRoom); setTimerValue(`${Math.max(0, Math.ceil(remaining / 1000))}s`); pct = Math.max(0, Math.min(100, (remaining / (Number(currentRoom.turnSeconds || getTurnSeconds()) * 1000)) * 100)); }
+    } else if(currentRoom.status === 'preparing'){
+      const remaining = prepareRemainingMs(); setTimerValue(`${Math.max(0, Math.ceil(remaining / 1000))}s`); pct = Math.max(0, Math.min(100, (remaining / (PREPARE_SECONDS * 1000)) * 100));
+    } else if(currentRoom.status === 'finished'){ setTimerValue('Done'); pct = 100; }
+    setText(phase, phaseText); setText(team, teamText); if(fill) fill.style.width = `${pct || 0}%`;
   }
   function renderDraftResult(){
     if(!els.draftResultPanel || !currentRoom) return; const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); const complete = currentRoom.status === 'finished' || ((currentRoom.bansA || []).length >= banCount && (currentRoom.bansB || []).length >= banCount && (currentRoom.picksA || []).length >= 5 && (currentRoom.picksB || []).length >= 5);
@@ -372,17 +428,17 @@
     for(let i=0;i<count;i++){
       const heroId = heroIds[i]; const box = document.createElement('div');
       if(!heroId){ box.className = `result-hero-box ${type} empty`; box.textContent = `${type === 'ban' ? 'Ban' : 'Pick'} ${i+1}`; container.appendChild(box); continue; }
-      const hero = heroById(heroId); const name = hero ? hero.name : heroId; const image = hero?.image || ''; box.className = `result-hero-box ${type} filled`; const avatar = image ? `<span class="result-avatar"><img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" onerror="this.parentElement.textContent='${heroInitials(name)}'"></span>` : `<span class="result-avatar">${heroInitials(name)}</span>`; box.innerHTML = `${avatar}<span class="result-hero-info"><span class="result-hero-name">${escapeHtml(name)}</span><span class="result-hero-order">${type === 'ban' ? 'Ban' : 'Pick'} ${i+1}</span></span>`; container.appendChild(box);
+      const hero = heroById(heroId); const name = hero ? hero.name : heroId; box.className = `result-hero-box ${type} filled`; const avatar = heroAvatarHtml(hero, 'result-avatar', name); box.innerHTML = `${avatar}<span class="result-hero-info"><span class="result-hero-name">${escapeHtml(name)}</span><span class="result-hero-order">${type === 'ban' ? 'Ban' : 'Pick'} ${i+1}</span></span>`; container.appendChild(box);
     }
   }
   function renderCurrentTurn(){
     if(!currentRoom) return;
     if(currentRoom.status === 'lobby'){
       const sideText = hasBothTeams() ? `${teamName('A')} is ${sideForTeam('A')} · ${teamName('B')} is ${sideForTeam('B')}.` : 'Share the Room Code and wait until both teams are filled.';
-      setText(els.currentTurnText, `${gameTitle()} Lobby`); setText(els.currentTurnHelp, sideText); setText(els.timerValue, '--'); return;
+      setText(els.currentTurnText, `${gameTitle()} Lobby`); setText(els.currentTurnHelp, sideText); setTimerValue( '--'); return;
     }
     if(currentRoom.status === 'preparing'){ setText(els.currentTurnText, 'Draft starting soon'); setText(els.currentTurnHelp, 'All devices are entering the draft stage before the first turn starts.'); return; }
-    if(currentRoom.status === 'finished'){ setText(els.currentTurnText, 'Draft complete'); setText(els.currentTurnHelp, isHost() ? 'Continue to the next game or download the result.' : 'Waiting for the host to continue.'); setText(els.timerValue, 'Done'); return; }
+    if(currentRoom.status === 'finished'){ setText(els.currentTurnText, 'Draft complete'); setText(els.currentTurnHelp, isHost() ? 'Continue to the next game or download the result.' : 'Waiting for the host to continue.'); setTimerValue( 'Done'); return; }
     const step = draftSteps(currentRoom)[currentRoom.turnIndex]; if(!step) return;
     setText(els.currentTurnText, `${teamName(step.team)} ${step.type.toUpperCase()}`);
     setText(els.currentTurnHelp, currentRole === step.team ? 'Your turn. Select a hero before the timer ends. If time runs out, the system will auto-random.' : `Waiting for ${teamName(step.team)}. If the timer ends, the system will auto-random.`);
@@ -401,7 +457,7 @@
     const filtered = heroes.filter((hero) => { const name = String(hero.name || '').toLowerCase(); const lanes = Array.isArray(hero.lanes) ? hero.lanes : []; const matchesSearch = !search || name.includes(search); const matchesLane = activeLane === 'ALL' || lanes.includes(activeLane); return matchesSearch && matchesLane; });
     els.heroGrid.innerHTML = '';
     filtered.forEach((hero) => {
-      const locked = selected.includes(hero.id); const gbpLocked = Boolean(step && isPreviousPickLockedForStep(currentRoom, step, hero.id)); const disabledHero = hero.active === false; const btn = document.createElement('button'); btn.className = `hero-card ${locked ? 'locked' : ''} ${gbpLocked ? 'gbp-locked' : ''} ${disabledHero ? 'disabled-hero' : ''}`; btn.disabled = locked || gbpLocked || disabledHero || !canClick; const initials = heroInitials(hero.name); const avatar = hero.image ? `<span class="hero-avatar"><img src="${escapeHtml(hero.image)}" alt="${escapeHtml(hero.name)}" onerror="this.parentElement.textContent='${initials}'"></span>` : `<span class="hero-avatar">${initials}</span>`; const lockNote = gbpLocked ? '<span class="hero-lock-note">Used by your team</span>' : locked ? '<span class="hero-lock-note">Selected / Banned</span>' : ''; btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span>${lockNote}<span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span></span>`; btn.addEventListener('click', () => selectHero(hero)); els.heroGrid.appendChild(btn);
+      const locked = selected.includes(hero.id); const gbpLocked = Boolean(step && isPreviousPickLockedForStep(currentRoom, step, hero.id)); const disabledHero = hero.active === false; const btn = document.createElement('button'); btn.className = `hero-card ${locked ? 'locked' : ''} ${gbpLocked ? 'gbp-locked' : ''} ${disabledHero ? 'disabled-hero' : ''}`; btn.disabled = locked || gbpLocked || disabledHero || !canClick; const avatar = heroAvatarHtml(hero, 'hero-avatar', hero.name); const lockNote = gbpLocked ? '<span class="hero-lock-note">Used by your team</span>' : locked ? '<span class="hero-lock-note">Selected / Banned</span>' : ''; btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span>${lockNote}<span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span></span>`; btn.addEventListener('click', () => selectHero(hero)); els.heroGrid.appendChild(btn);
     });
     if(!filtered.length) els.heroGrid.innerHTML = '<div class="notice compact">No heroes match this filter.</div>';
   }
@@ -419,14 +475,26 @@
   }
   function startTimerRenderer(){
     clearInterval(timerInterval); if(!currentRoom || (currentRoom.status !== 'drafting' && currentRoom.status !== 'preparing')) return;
-    timerInterval = setInterval(() => { if(!currentRoom) return; if(currentRoom.status === 'preparing'){ const remaining = Math.ceil(prepareRemainingMs()/1000); setText(els.timerValue, `${Math.max(0, remaining)}s`); return; } if(currentRoom.status !== 'drafting' || !currentRoom.currentTurnStartedAt) return; const remainingMs = draftRemainingMs(currentRoom); const remaining = Math.ceil(remainingMs / 1000); setText(els.timerValue, `${Math.max(0, remaining)}s`); if(remainingMs <= 0) tryAutoResolveTurn(); }, 250);
+    timerInterval = setInterval(() => { if(!currentRoom) return; if(currentRoom.status === 'preparing'){ const remaining = Math.ceil(prepareRemainingMs()/1000); setTimerValue(`${Math.max(0, remaining)}s`); renderProDraftTopbar(); return; } if(currentRoom.status !== 'drafting' || !currentRoom.currentTurnStartedAt) return; const remainingMs = draftRemainingMs(currentRoom); const remaining = Math.ceil(remainingMs / 1000); setTimerValue(`${Math.max(0, remaining)}s`); renderProDraftTopbar(); if(remainingMs <= 0) tryAutoResolveTurn(); }, 250);
   }
   function handleMobileTurnAutoScroll(){ if(!isMobileAutoScroll() || !currentRoom || currentRoom.status !== 'drafting') return; const step = draftSteps(currentRoom)[currentRoom.turnIndex]; if(!step || currentRole !== step.team) return; const key = `${currentRoom.id}-${currentRole}-${currentRoom.turnIndex}`; if(lastAutoScrollTurnKey === key) return; lastAutoScrollTurnKey = key; setTimeout(scrollToHeroPanel, 220); }
+  function isPortraitDraftScreen(){ return window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches; }
+  function maybeShowRotatePrompt(){
+    if(!currentRoom || !['preparing','drafting'].includes(currentRoom.status)) return;
+    const key = `hciPortraitDraftOk:${CONFIG.gameKey}`; let overlay = document.getElementById('rotateDeviceOverlay');
+    if(!isPortraitDraftScreen() || sessionStorage.getItem(key) === '1'){ if(overlay) overlay.remove(); return; }
+    if(overlay) return;
+    overlay = document.createElement('div'); overlay.id = 'rotateDeviceOverlay'; overlay.className = 'rotate-device-overlay';
+    overlay.innerHTML = `<div class="rotate-device-card" role="dialog" aria-modal="true"><div class="rotate-device-icon" aria-hidden="true"><span></span></div><h2>ROTATE YOUR DEVICE</h2><p>Draft simulator lebih nyaman di landscape mode, tapi kamu tetap bisa lanjut portrait.</p><button class="secondary-btn" data-continue>Continue in portrait anyway</button></div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('[data-continue]').addEventListener('click', () => { sessionStorage.setItem(key, '1'); overlay.remove(); });
+  }
   function maybeShowFinishedModal(){ if(!currentRoom || currentRoom.status !== 'finished') return; const key = `${currentRoom.id}-${gameNumber()}`; if(lastFinishedModalKey === key) return; lastFinishedModalKey = key; setTimeout(showSessionModal, 350); }
   function showSessionModal(){
     if(!els.sessionModal) return;
     setText(els.sessionModalTitle, `${gameTitle()} Complete Result`);
     const card = els.sessionModal.querySelector('.session-modal-card');
+    if(card){ let badge = card.querySelector('.session-game-logo'); if(!badge){ badge = document.createElement('div'); badge.className = 'session-game-logo'; card.prepend(badge); } badge.innerHTML = `<img src="${escapeHtml(gameLogoPath())}" alt="${escapeHtml(CONFIG.gameKey || 'HCI')} Logo"><span>${escapeHtml(CONFIG.gameKey || 'HCI')}</span>`; }
     const info = card?.querySelector('p'); if(info) info.textContent = 'Draft result, estimated win chance, and action controls are shown below.';
     let body = card?.querySelector('.session-result-body');
     if(card && !body){ body = document.createElement('div'); body.className = 'session-result-body'; const actions = card.querySelector('.modal-actions'); card.insertBefore(body, actions || null); }
@@ -518,11 +586,12 @@
   async function downloadResultPng(){
     if(!currentRoom) return showToast('Result is not available yet.');
     const canvas = document.createElement('canvas'); canvas.width = 1500; canvas.height = 1160; const ctx = canvas.getContext('2d');
-    const allIds = [...(currentRoom.bansA || []), ...(currentRoom.picksA || []), ...(currentRoom.bansB || []), ...(currentRoom.picksB || [])]; const imageCache = await buildHeroImageCache(allIds);
+    const allIds = [...(currentRoom.bansA || []), ...(currentRoom.picksA || []), ...(currentRoom.bansB || []), ...(currentRoom.picksB || [])]; const imageCache = await buildHeroImageCache(allIds); const gameLogo = await loadImageSafe(gameLogoPath());
     const gradient = ctx.createLinearGradient(0,0,1500,1160); gradient.addColorStop(0,'#071018'); gradient.addColorStop(0.55,'#0d2030'); gradient.addColorStop(1,'#0a111b'); ctx.fillStyle = gradient; ctx.fillRect(0,0,1500,1160);
     roundRect(ctx,42,42,1416,1076,34,true,false,'rgba(255,255,255,.055)'); ctx.strokeStyle = 'rgba(245,196,81,.44)'; ctx.lineWidth = 3; roundRect(ctx,42,42,1416,1076,34,false,true);
-    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 34px Arial'; ctx.fillText('HCI MOBA Draft Hub',82,108); ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 54px Arial'; ctx.fillText(`${CONFIG.gameKey} ${gameTitle()} Result`,82,172);
-    ctx.fillStyle = '#a8bacf'; ctx.font = '23px Arial'; ctx.fillText(`${currentRoom.roomName || 'Draft Room'} · Room ${currentRoom.id || currentRoomId}`,82,214);
+    let headerX = 82; if(gameLogo){ roundRect(ctx,82,72,82,82,18,true,false,'rgba(4,10,16,.72)'); ctx.save(); roundRect(ctx,92,82,62,62,14,false,false); ctx.clip(); ctx.drawImage(gameLogo,92,82,62,62); ctx.restore(); headerX = 184; }
+    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 34px Arial'; ctx.fillText('HCI MOBA Draft Hub',headerX,108); ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 54px Arial'; ctx.fillText(`${CONFIG.gameKey} ${gameTitle()} Result`,headerX,172);
+    ctx.fillStyle = '#a8bacf'; ctx.font = '23px Arial'; ctx.fillText(`${currentRoom.roomName || 'Draft Room'} · Room ${currentRoom.id || currentRoomId}`,headerX,214);
     const boardTeams = displayTeams(currentRoom);
     drawTeamResult(ctx, `${teamName(boardTeams.blue)} · Blue Side`, valuesForTeam(boardTeams.blue, 'ban'), valuesForTeam(boardTeams.blue, 'pick'), 82,250, '#4dabf7', imageCache);
     drawTeamResult(ctx, `${teamName(boardTeams.red)} · Red Side`, valuesForTeam(boardTeams.red, 'ban'), valuesForTeam(boardTeams.red, 'pick'), 770,250, '#ff6b6b', imageCache);
@@ -538,9 +607,16 @@
     ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 23px Arial'; ctx.fillText('PICK',x+28,y+270); for(let i=0;i<5;i++) drawHeroBox(ctx, picks[i], x+28, y+292+i*58, 590, 52, `Pick ${i+1}`, imageCache);
   }
   function drawHeroBox(ctx, heroId, x, y, w, h, label, imageCache){
-    const hero = heroId ? heroById(heroId) : null; const name = hero ? hero.name : (heroId ? heroLabel(heroId) : '-'); const img = heroId && imageCache ? imageCache.get(heroId) : null; roundRect(ctx,x,y,w,h,14,true,false,'rgba(0,0,0,.22)'); let textX = x + 12; const textTop = y + (h >= 90 ? 72 : 24);
-    if(img){ const size = h >= 90 ? 58 : 42; const imgX = h >= 90 ? x + (w - size) / 2 : x + 10; const imgY = h >= 90 ? y + 10 : y + (h - size) / 2; ctx.save(); roundRect(ctx,imgX,imgY,size,size,10,false,false); ctx.clip(); ctx.drawImage(img, imgX, imgY, size, size); ctx.restore(); textX = h >= 90 ? x + 8 : imgX + size + 10; }
-    ctx.fillStyle = '#eef6ff'; ctx.textAlign = h >= 90 ? 'center' : 'left'; ctx.font = h >= 90 ? 'bold 16px Arial' : 'bold 18px Arial'; wrapText(ctx, name || '-', h >= 90 ? x + w/2 : textX, textTop, h >= 90 ? w - 16 : w - (textX - x) - 10, h >= 90 ? 17 : 20, h >= 90 ? 'center' : 'left'); ctx.fillStyle = '#a8bacf'; ctx.font = '13px Arial'; ctx.fillText(label,h >= 90 ? x + w/2 : textX,y+h-10); ctx.textAlign = 'left';
+    const hero = heroId ? heroById(heroId) : null; const name = hero ? hero.name : (heroId ? heroLabel(heroId) : '-'); const img = heroId && imageCache ? imageCache.get(heroId) : null;
+    roundRect(ctx,x,y,w,h,14,true,false,'rgba(0,0,0,.22)');
+    if(h >= 90){
+      const size = 48; const imgX = x + (w - size) / 2; const imgY = y + 9;
+      if(img){ ctx.save(); roundRect(ctx,imgX,imgY,size,size,11,false,false); ctx.clip(); ctx.drawImage(img, imgX, imgY, size, size); ctx.restore(); }
+      ctx.fillStyle = '#eef6ff'; ctx.textAlign = 'center'; ctx.font = 'bold 14px Arial'; wrapText(ctx, name || '-', x + w/2, y + 73, w - 14, 15, 'center');
+      ctx.fillStyle = '#a8bacf'; ctx.font = '12px Arial'; ctx.fillText(label, x + w/2, y + h - 8); ctx.textAlign = 'left'; return;
+    }
+    let textX = x + 12; if(img){ const size = 42; const imgX = x + 10; const imgY = y + (h - size) / 2; ctx.save(); roundRect(ctx,imgX,imgY,size,size,10,false,false); ctx.clip(); ctx.drawImage(img, imgX, imgY, size, size); ctx.restore(); textX = imgX + size + 10; }
+    ctx.fillStyle = '#eef6ff'; ctx.textAlign = 'left'; ctx.font = 'bold 18px Arial'; wrapText(ctx, name || '-', textX, y + 24, w - (textX - x) - 10, 20, 'left'); ctx.fillStyle = '#a8bacf'; ctx.font = '13px Arial'; ctx.fillText(label,textX,y+h-10); ctx.textAlign = 'left';
   }
   function drawSimulationResult(ctx, sim, x, y, w, h){
     roundRect(ctx,x,y,w,h,24,true,false,'rgba(245,196,81,.09)'); ctx.strokeStyle = 'rgba(245,196,81,.28)'; ctx.lineWidth = 2; roundRect(ctx,x,y,w,h,24,false,true);
@@ -551,7 +627,15 @@
   }
   function roundRect(ctx,x,y,w,h,r,fill,stroke,fillStyle){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill){ ctx.fillStyle = fillStyle || ctx.fillStyle; ctx.fill(); } if(stroke) ctx.stroke(); }
   function wrapText(ctx,text,x,y,maxWidth,lineHeight,align){ const words = String(text).split(' '); let line = ''; const oldAlign = ctx.textAlign; if(align) ctx.textAlign = align; for(let n=0;n<words.length;n++){ const test = line + words[n] + ' '; if(ctx.measureText(test).width > maxWidth && n>0){ ctx.fillText(line.trim(),x,y); line = words[n] + ' '; y += lineHeight; } else line = test; } ctx.fillText(line.trim(),x,y); ctx.textAlign = oldAlign; }
-  function confirmDialog({ title, message, confirmText = 'OK', cancelText = 'Cancel', danger = false } = {}){ return new Promise((resolve) => { const overlay = document.createElement('div'); overlay.className = 'custom-confirm'; overlay.innerHTML = `<div class="custom-confirm-card" role="dialog" aria-modal="true"><div class="custom-confirm-icon ${danger ? 'danger' : ''}" aria-hidden="true">${danger ? '!' : '✓'}</div><div class="custom-confirm-copy"><h2>${escapeHtml(title || 'Confirm Action')}</h2><p>${escapeHtml(message || 'Are you sure?')}</p></div><div class="custom-confirm-actions"><button class="secondary-btn" data-cancel>${escapeHtml(cancelText)}</button><button class="${danger ? 'danger-btn' : 'primary-btn'}" data-confirm>${escapeHtml(confirmText)}</button></div></div>`; document.body.appendChild(overlay); const cleanup = (value) => { overlay.remove(); resolve(value); }; overlay.querySelector('[data-cancel]').addEventListener('click', () => cleanup(false)); overlay.querySelector('[data-confirm]').addEventListener('click', () => cleanup(true)); overlay.addEventListener('click', (e) => { if(e.target === overlay) cleanup(false); }); }); }
+  function confirmDialog({ title, message, confirmText = 'OK', cancelText = 'Cancel', danger = false, hero = null, actionType = '' } = {}){
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div'); overlay.className = 'custom-confirm';
+      const name = hero?.name || title || 'Confirm Action'; const heroVisual = hero ? heroAvatarHtml(hero, `custom-confirm-hero ${danger ? 'danger' : 'pick'}`, name) : `<div class="custom-confirm-icon ${danger ? 'danger' : ''}" aria-hidden="true">${danger ? '!' : '✓'}</div>`;
+      overlay.innerHTML = `<div class="custom-confirm-card ${hero ? 'hero-action-card' : ''} ${danger ? 'danger-action' : 'pick-action'}" role="dialog" aria-modal="true">${heroVisual}<div class="custom-confirm-copy"><span class="confirm-action-kicker">${escapeHtml(actionType ? actionType.toUpperCase() : 'CONFIRM')}</span><h2>${escapeHtml(title || 'Confirm Action')}</h2><p>${escapeHtml(message || 'Are you sure?')}</p></div><div class="custom-confirm-actions"><button class="secondary-btn" data-cancel>${escapeHtml(cancelText)}</button><button class="${danger ? 'danger-btn' : 'primary-btn'}" data-confirm>${escapeHtml(confirmText)}</button></div></div>`;
+      document.body.appendChild(overlay); const cleanup = (value) => { overlay.remove(); resolve(value); };
+      overlay.querySelector('[data-cancel]').addEventListener('click', () => cleanup(false)); overlay.querySelector('[data-confirm]').addEventListener('click', () => cleanup(true)); overlay.addEventListener('click', (e) => { if(e.target === overlay) cleanup(false); });
+    });
+  }
   function bindEvents(){
     if(els.createRoomBtn) els.createRoomBtn.addEventListener('click', createRoom); if(els.joinRoomBtn) els.joinRoomBtn.addEventListener('click', joinRoom); if(els.roomIdInput) els.roomIdInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') joinRoom(); });
     [els.copyRoomBtn, els.copyRoomTopBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', copyRoomId));
@@ -563,6 +647,8 @@
     document.querySelectorAll('[data-series]').forEach((btn) => btn.addEventListener('click', () => { if(els.seriesFormat) els.seriesFormat.value = btn.dataset.series === '5' ? '5' : '3'; updateSeriesButtons(); })); updateSeriesButtons();
     if(els.navToggle && els.siteNav){ els.navToggle.addEventListener('click', () => { const open = !els.siteNav.classList.contains('open'); els.siteNav.classList.toggle('open', open); els.navToggle.setAttribute('aria-expanded', open ? 'true' : 'false'); }); }
     window.addEventListener('popstate', () => { const roomId = getRouteRoomId() || new URLSearchParams(location.search).get('room'); if(roomId && roomId !== currentRoomId) listenRoom(String(roomId).toUpperCase()); });
+    window.addEventListener('resize', () => { maybeShowRotatePrompt(); renderProDraftTopbar(); });
+    updateGameVisuals();
   }
-  bindEvents(); renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); initFirebase();
+  bindEvents(); updateGameVisuals(); renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); initFirebase();
 })();
