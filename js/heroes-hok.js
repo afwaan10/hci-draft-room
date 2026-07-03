@@ -1,5 +1,6 @@
-// Starter hero database. Bisa di-seed ke Firestore lewat admin.html.
-// image boleh diisi nanti, contoh: assets/heroes/angela.png
+// Honor of Kings hero database for HCI MOBA Draft Hub.
+// Roster: international server 116 heroes.
+// Flowborn is intentionally split into three draft entries: Mage, Marksman, and Tank.
 window.HCI_HEROES = [
   {
     "id": "annette",
@@ -1083,3 +1084,13 @@ window.HCI_HEROES = [
     "active": true
   }
 ];
+
+(function(){
+  const basePath = "/assets/game/hok/";
+  const customMap = window.HCI_HOK_IMAGE_MAP || {};
+  window.HCI_HEROES = (window.HCI_HEROES || []).map(function(hero){
+    return Object.assign({}, hero, {
+      image: hero.image || customMap[hero.id] || (basePath + hero.id + ".png")
+    });
+  });
+})();
