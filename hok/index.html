@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
   <title>HCI MOBA Draft Hub</title>
   <meta name="description" content="HCI MOBA Draft Hub - real-time MOBA draft simulator." />
   <link rel="stylesheet" href="/css/draft-room.css" />
@@ -11,7 +13,7 @@
   <main class="app-shell">
     <nav class="site-nav" id="siteNav">
       <a class="nav-brand" href="/" aria-label="Back to HCI MOBA Draft Hub">
-        <img src="/assets/hci-logo.png" alt="HCI Logo" />
+        <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" />
         <span>HCI MOBA Draft Hub</span>
       </a>
       <button class="nav-toggle" id="navToggle" type="button" aria-expanded="false" aria-label="Open navigation">☰</button>
@@ -36,7 +38,7 @@
     <section class="landing">
       <div class="panel hero-card-main">
         <div class="hero-title-row">
-          <img data-game-logo src="/assets/game/cards/hok-pro.svg" alt="Game Logo" />
+          <img data-game-logo src="/assets/hok.png" alt="Game Logo" />
           <div>
             <span class="eyebrow">HCI MOBA Draft Hub</span>
             <h1><span data-game-full>Honor of Kings</span> Draft Simulator</h1>
@@ -131,8 +133,8 @@
       const path = location.pathname.toLowerCase();
       const isMlbb = path.includes('/mlbb') || path.endsWith('mlbb.html');
       const info = isMlbb
-        ? { key: 'MLBB', full: 'Mobile Legends: Bang Bang', prefix: 'MLBB', logo: '/assets/game/cards/mlbb-pro.svg', placeholder: 'Example: MLBB-4821', roles: ['ALL','EXP Lane','Jungle','Mid Lane','Gold Lane','Roam'], bansPerTeam: 5, turnSeconds: 45, description: 'A real-time Mobile Legends draft simulator for competitive pick-ban practice, team preparation, and coach or analyst review.' }
-        : { key: 'HOK', full: 'Honor of Kings', prefix: 'HOK', logo: '/assets/game/cards/hok-pro.svg', placeholder: 'Example: HOK-4821', roles: ['ALL','Clash Lane','Jungle','Mid','Farm','Roam'], bansPerTeam: 4, turnSeconds: 45, description: 'A real-time Honor of Kings draft simulator with Global Ban Pick flow for team preparation, coach review, and community practice.' };
+        ? { key: 'MLBB', full: 'Mobile Legends: Bang Bang', prefix: 'MLBB', logo: '/assets/ml.png', placeholder: 'Example: MLBB-4821', roles: ['ALL','EXP Lane','Jungle','Mid Lane','Gold Lane','Roam'], bansPerTeam: 5, turnSeconds: 45, description: 'A real-time Mobile Legends draft simulator for competitive pick-ban practice, team preparation, and coach or analyst review.' }
+        : { key: 'HOK', full: 'Honor of Kings', prefix: 'HOK', logo: '/assets/hok.png', placeholder: 'Example: HOK-4821', roles: ['ALL','Clash Lane','Jungle','Mid','Farm','Roam'], bansPerTeam: 4, turnSeconds: 45, description: 'A real-time Honor of Kings draft simulator with Global Ban Pick flow for team preparation, coach review, and community practice.' };
       window.HCI_GAME_CONFIG = { gameKey: info.key, gameName: info.full + ' Draft Simulator', roomPrefix: info.prefix, roles: info.roles, bansPerTeam: info.bansPerTeam, turnSeconds: info.turnSeconds };
       document.title = 'HCI MOBA Draft Hub - ' + info.key;
       window.addEventListener('DOMContentLoaded', function(){
