@@ -3,40 +3,40 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Draft Room by HCI</title>
-  <meta name="description" content="Draft Room by HCI - choose HOK or MLBB draft simulation room." />
-  <link rel="stylesheet" href="/css/draft-room.css" />
+  <title>Draft Room By HCI</title>
+  <meta name="description" content="Draft Room By HCI - choose HOK or MLBB draft simulator." />
+  <link rel="stylesheet" href="css/draft-room.css" />
 </head>
 <body class="chooser-page">
   <div class="app-loader" id="appLoader">
     <div class="loader-card">
-      <img src="/assets/hci-logo.png" alt="HCI Logo" class="loader-logo" />
+      <img src="assets/hci-logo.png" alt="HCI Logo" class="loader-logo" />
       <div class="loader-loop"><span></span></div>
-      <div class="loader-text">Loading Draft Room by HCI</div>
+      <div class="loader-text">Loading Draft Room By HCI</div>
     </div>
   </div>
 
   <main class="game-choice" id="gameChoice" hidden>
     <section class="choice-stage" aria-labelledby="choiceTitle">
       <article class="choice-info-card">
-        <img src="/assets/hci-logo.png" alt="HCI Logo" class="choice-hci-logo" />
-        <span class="eyebrow">Draft Simulation Platform</span>
-        <h1 id="choiceTitle">Draft Room <small>by HCI</small></h1>
+        <img src="assets/hci-logo.png" alt="HCI Logo" class="choice-hci-logo" />
+        <span class="eyebrow">Choose Game</span>
+        <h1 id="choiceTitle">Draft Room By HCI</h1>
         <p>Choose the draft simulator you want to use. HOK uses Global Ban Pick. MLBB uses normal draft without GBP.</p>
       </article>
 
-      <a class="choice-game-card hok-card" href="/hok/" aria-label="Open HOK Draft Room">
-        <img src="/assets/hok.png" alt="Honor of Kings Logo" class="choice-game-logo" />
+      <a class="choice-game-card hok-card" href="hok/index.html" aria-label="Open HOK Draft Room">
+        <img src="assets/hok.png" alt="Honor of Kings Logo" class="choice-game-logo" />
         <span class="eyebrow">Honor of Kings</span>
         <h2>HOK Draft Room</h2>
-        <p>Global Ban Pick enabled for structured HOK draft practice.</p>
+        <p>HOK draft simulation with Global Ban Pick.</p>
       </a>
 
-      <a class="choice-game-card mlbb-card" href="/mlbb/" aria-label="Open MLBB Draft Room">
-        <img src="/assets/ml.png" alt="Mobile Legends Logo" class="choice-game-logo" />
+      <a class="choice-game-card mlbb-card" href="mlbb/index.html" aria-label="Open MLBB Draft Room">
+        <img src="assets/ml.png" alt="Mobile Legends Logo" class="choice-game-logo" />
         <span class="eyebrow">Mobile Legends</span>
         <h2>MLBB Draft Room</h2>
-        <p>Normal MLBB draft simulation without Global Ban Pick.</p>
+        <p>MLBB draft simulation without Global Ban Pick.</p>
       </a>
     </section>
   </main>
@@ -46,7 +46,7 @@
       setTimeout(function () {
         document.getElementById('appLoader').hidden = true;
         document.getElementById('gameChoice').hidden = false;
-      }, 700);
+      }, 900);
     });
   </script>
 </body>
