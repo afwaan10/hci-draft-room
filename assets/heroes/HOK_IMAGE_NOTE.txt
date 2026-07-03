@@ -1,0 +1,1 @@
+HOK hero images were replaced with generated name-based avatars to eliminate wrong name/photo pairings.
