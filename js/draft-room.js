@@ -31,7 +31,7 @@
 
   let db = null, auth = null, currentUser = null, currentRoomId = null, currentRoom = null, currentRole = "SPECTATOR", unsubscribeRoom = null, timerInterval = null, prepareTransitionTimer = null;
   let heroes = Array.isArray(window.HCI_HEROES) ? [...window.HCI_HEROES] : [];
-  let activeLane = "ALL", lastAutoScrollTurnKey = "", lastFinishedModalKey = "";
+  let activeLane = "ALL", lastAutoScrollTurnKey = "", lastFinishedModalKey = "", autoResolveBusy = false;
 
   const ROLE_ICON_PATHS = {
     HOK: { "ALL": "/assets/role-icons/hok/all.png", "Clash Lane": "/assets/role-icons/hok/clash.png", "Farm": "/assets/role-icons/hok/farm.png", "Mid": "/assets/role-icons/hok/mid.png", "Jungle": "/assets/role-icons/hok/jungle.png", "Roam": "/assets/role-icons/hok/roam.png" },
@@ -370,7 +370,29 @@
     renderDraftResult(); renderCurrentTurn(); renderDraftSequence(); renderHeroGrid(); ensurePrepareTransition(); startTimerRenderer(); handleMobileTurnAutoScroll(); maybeShowFinishedModal();
   }
 
-  function renderSlots(container,values,count,prefix){ if(!container) return; container.innerHTML = ""; for(let i=0;i<count;i++){ const heroId = values[i]; const div = document.createElement("div"); div.className = `slot ${heroId ? "filled" : ""}`; div.innerHTML = heroId ? `<span>${escapeHtml(heroLabel(heroId))}<small>${prefix} ${i+1}</small></span>` : `<span>${prefix} ${i+1}</span>`; container.appendChild(div); } }
+  function renderSlots(container,values,count,prefix){
+    if(!container) return;
+    container.innerHTML = "";
+    for(let i=0;i<count;i++){
+      const heroId = values[i];
+      const div = document.createElement("div");
+      div.className = `slot ${heroId ? "filled" : ""}`;
+      if(!heroId){
+        div.innerHTML = `<span class="slot-placeholder">${prefix} ${i+1}</span>`;
+        container.appendChild(div);
+        continue;
+      }
+      const hero = heroById(heroId);
+      const name = hero ? hero.name : heroId;
+      const image = hero && hero.image ? hero.image : "";
+      const initials = heroInitials(name);
+      const avatar = image
+        ? `<span class="slot-avatar"><img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" onerror="this.parentElement.textContent='${initials}'"></span>`
+        : `<span class="slot-avatar">${initials}</span>`;
+      div.innerHTML = `<span class="slot-media">${avatar}<span class="slot-copy"><strong class="slot-name">${escapeHtml(name)}</strong><small>${prefix} ${i+1}</small></span></span>`;
+      container.appendChild(div);
+    }
+  }
   function renderDraftResult(){ if(!els.draftResultPanel || !currentRoom) return; const bansA = currentRoom.bansA || [], bansB = currentRoom.bansB || [], picksA = currentRoom.picksA || [], picksB = currentRoom.picksB || []; const complete = currentRoom.status === "finished" || (bansA.length >= 4 && bansB.length >= 4 && picksA.length >= 5 && picksB.length >= 5); setHidden(els.draftResultPanel, !complete); if(!complete) return; setText(els.resultGameTitle, `${gameTitle()} Draft Result`); renderResultBoxes(els.resultABans,bansA,4,"ban"); renderResultBoxes(els.resultBBans,bansB,4,"ban"); renderResultBoxes(els.resultAPicks,picksA,5,"pick"); renderResultBoxes(els.resultBPicks,picksB,5,"pick"); }
   function renderResultBoxes(container,heroIds,count,type){ if(!container) return; container.innerHTML = ""; for(let i=0;i<count;i++){ const heroId = heroIds[i]; const box = document.createElement("div"); if(!heroId){ box.className = `result-hero-box ${type} empty`; box.textContent = `${type === "ban" ? "Ban" : "Pick"} ${i+1}`; container.appendChild(box); continue; } const hero = heroById(heroId); const name = hero ? hero.name : heroId; const image = hero && hero.image ? hero.image : ""; box.className = `result-hero-box ${type} filled`; const avatar = image ? `<span class="result-avatar"><img src="${escapeHtml(image)}" alt="${escapeHtml(name)}"></span>` : `<span class="result-avatar">${heroInitials(name)}</span>`; box.innerHTML = `${avatar}<span class="result-hero-info"><span class="result-hero-name">${escapeHtml(name)}</span><span class="result-hero-order">${type === "ban" ? "Ban" : "Pick"} ${i+1}</span></span>`; container.appendChild(box); } }
   function renderCurrentTurn(){
@@ -387,7 +409,7 @@
     }
     const step = DRAFT_STEPS[currentRoom.turnIndex];
     setText(els.currentTurnText, `Team ${step.team} ${step.type.toUpperCase()}`);
-    setText(els.currentTurnHelp, currentRole === step.team ? "Your turn. Select a hero from the database." : `Waiting for Team ${step.team} to choose a hero.`);
+    setText(els.currentTurnHelp, currentRole === step.team ? "Your turn. Select a hero from the database before the timer ends. If time runs out, the system will auto-random a hero." : `Waiting for Team ${step.team} to choose a hero. If the timer ends, the system will auto-random a hero.`);
   }
   function renderDraftSequence(){ if(!els.draftSequence) return; els.draftSequence.innerHTML = ""; DRAFT_STEPS.forEach((step,i)=>{ const chip = document.createElement("span"); chip.className = "step-chip"; if(currentRoom){ if(i < currentRoom.turnIndex) chip.classList.add("done"); if(i === currentRoom.turnIndex && currentRoom.status === "drafting") chip.classList.add("active"); } chip.textContent = step.label; els.draftSequence.appendChild(chip); }); }
   function renderRoleFilters(){ if(!els.laneFilterButtons) return; els.laneFilterButtons.innerHTML = ""; (CONFIG.roles || ["ALL"]).forEach((role)=>{ const btn = document.createElement("button"); btn.type = "button"; btn.className = `role-filter ${activeLane === role ? "active" : ""}`; btn.title = role; btn.setAttribute("aria-label", role); btn.innerHTML = roleIconHtml(role); btn.addEventListener("click",()=>{ activeLane = role; renderRoleFilters(); renderHeroGrid(); }); els.laneFilterButtons.appendChild(btn); }); }
@@ -407,6 +429,51 @@
   }
   function prepareRemainingMs(){ if(!currentRoom || currentRoom.status !== "preparing") return 0; const endsAt = timestampToMillis(currentRoom.prepareEndsAt); if(!endsAt) return PREPARE_SECONDS * 1000; return Math.max(0, endsAt - Date.now()); }
   function ensurePrepareTransition(){ clearTimeout(prepareTransitionTimer); prepareTransitionTimer = null; if(!currentRoom || currentRoom.status !== "preparing") return; const remainingMs = prepareRemainingMs(); prepareTransitionTimer = setTimeout(beginDraftAfterPreparing, remainingMs + 200); }
+  function draftRemainingMs(room = currentRoom){
+    if(!room || room.status !== "drafting" || !room.currentTurnStartedAt) return 0;
+    const startedAt = timestampToMillis(room.currentTurnStartedAt) || 0;
+    const duration = Number(room.turnSeconds || TURN_SECONDS) * 1000;
+    return Math.max(0, (startedAt + duration) - Date.now());
+  }
+  async function tryAutoResolveTurn(){
+    if(autoResolveBusy || !db || !currentRoomId || !currentRoom || currentRoom.status !== "drafting") return;
+    if(draftRemainingMs(currentRoom) > 0) return;
+    autoResolveBusy = true;
+    try{
+      const ref = db.collection("draftRooms").doc(currentRoomId);
+      await db.runTransaction(async(tx)=>{
+        const snap = await tx.get(ref);
+        if(!snap.exists) return;
+        const room = snap.data();
+        if(room.status !== "drafting" || !room.currentTurnStartedAt) return;
+        const remainingMs = draftRemainingMs(room);
+        if(remainingMs > 0) return;
+        const liveStep = DRAFT_STEPS[room.turnIndex];
+        if(!liveStep) return;
+        const selected = new Set(room.selectedHeroIds || []);
+        const pool = heroes.filter((hero)=>hero.active !== false && !selected.has(hero.id));
+        if(!pool.length) return;
+        const randomHero = pool[Math.floor(Math.random() * pool.length)];
+        const field = liveStep.type === "ban"
+          ? (liveStep.team === "A" ? "bansA" : "bansB")
+          : (liveStep.team === "A" ? "picksA" : "picksB");
+        const nextTurnIndex = room.turnIndex + 1;
+        const nextStatus = nextTurnIndex >= DRAFT_STEPS.length ? "finished" : "drafting";
+        tx.update(ref,{
+          [field]: firebase.firestore.FieldValue.arrayUnion(randomHero.id),
+          selectedHeroIds: firebase.firestore.FieldValue.arrayUnion(randomHero.id),
+          turnIndex: nextTurnIndex,
+          status: nextStatus,
+          currentTurnStartedAt: nextStatus === "drafting" ? firebase.firestore.FieldValue.serverTimestamp() : null,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+    }catch(error){
+      console.warn("Auto random turn failed:", error.message);
+    }finally{
+      autoResolveBusy = false;
+    }
+  }
   function startTimerRenderer(){
     clearInterval(timerInterval);
     if(!currentRoom || (currentRoom.status !== "drafting" && currentRoom.status !== "preparing")) return;
@@ -414,13 +481,14 @@
       if(!currentRoom) return;
       if(currentRoom.status === "preparing"){
         const remaining = Math.ceil(prepareRemainingMs()/1000);
-        setText(els.timerValue, `${Math.max(0, remaining)}s`); return;
+        setText(els.timerValue, `${Math.max(0, remaining)}s`);
+        return;
       }
       if(currentRoom.status !== "drafting" || !currentRoom.currentTurnStartedAt) return;
-      const startedAt = timestampToMillis(currentRoom.currentTurnStartedAt) || Date.now();
-      const elapsed = Math.floor((Date.now() - startedAt)/1000);
-      const remaining = Math.max(0,(currentRoom.turnSeconds || TURN_SECONDS) - elapsed);
-      setText(els.timerValue, `${remaining}s`);
+      const remainingMs = draftRemainingMs(currentRoom);
+      const remaining = Math.ceil(remainingMs / 1000);
+      setText(els.timerValue, `${Math.max(0, remaining)}s`);
+      if(remainingMs <= 0) tryAutoResolveTurn();
     },250);
   }
   function handleMobileTurnAutoScroll(){ if(!isMobileAutoScroll() || !currentRoom || currentRoom.status !== "drafting") return; const step = DRAFT_STEPS[currentRoom.turnIndex]; if(!step || currentRole !== step.team) return; const key = `${currentRoom.id}-${currentRole}-${currentRoom.turnIndex}`; if(lastAutoScrollTurnKey === key) return; lastAutoScrollTurnKey = key; setTimeout(scrollToHeroPanel,220); }
@@ -430,9 +498,98 @@
 
   async function copyRoomId(){ if(!currentRoomId) return; await navigator.clipboard.writeText(currentRoomId); showToast("Room ID copied."); }
   async function copyResult(){ if(!currentRoom) return; const result = [`Draft Room By HCI - ${CONFIG.gameKey} - ${currentRoom.id}`, gameTitle(), "", `Team A Ban: ${(currentRoom.bansA || []).map(heroLabel).join(", ") || "-"}`, `Team A Pick: ${(currentRoom.picksA || []).map(heroLabel).join(", ") || "-"}`, "", `Team B Ban: ${(currentRoom.bansB || []).map(heroLabel).join(", ") || "-"}`, `Team B Pick: ${(currentRoom.picksB || []).map(heroLabel).join(", ") || "-"}`].join("\n"); await navigator.clipboard.writeText(result); showToast("Result copied."); }
-  function downloadResultPng(){ if(!currentRoom) return showToast("Result is not available yet."); const canvas = document.createElement("canvas"); canvas.width = 1300; canvas.height = 900; const ctx = canvas.getContext("2d"); const gradient = ctx.createLinearGradient(0,0,1300,900); gradient.addColorStop(0,"#071018"); gradient.addColorStop(0.55,"#0d2030"); gradient.addColorStop(1,"#0a111b"); ctx.fillStyle = gradient; ctx.fillRect(0,0,1300,900); ctx.strokeStyle = "rgba(245,196,81,.42)"; ctx.lineWidth = 3; roundRect(ctx,40,40,1220,820,34,true,false,"rgba(255,255,255,.055)"); ctx.fillStyle = "#ffe3a2"; ctx.font = "bold 34px Arial"; ctx.fillText("Draft Room By HCI",80,105); ctx.fillStyle = "#eef6ff"; ctx.font = "bold 56px Arial"; ctx.fillText(`${CONFIG.gameKey} ${gameTitle()} Result`,80,170); drawTeamResult(ctx,"TEAM A",currentRoom.bansA || [],currentRoom.picksA || [],80,230,"#4dabf7"); drawTeamResult(ctx,"TEAM B",currentRoom.bansB || [],currentRoom.picksB || [],690,230,"#ff6b6b"); ctx.fillStyle = "#a8bacf"; ctx.font = "24px Arial"; ctx.fillText(`Room: ${currentRoom.id || currentRoomId}`,80,835); const a = document.createElement("a"); a.download = `hci-draft-result-${Math.random().toString(36).slice(2,10)}.png`; a.href = canvas.toDataURL("image/png"); a.click(); showToast("Result PNG downloaded."); }
-  function drawTeamResult(ctx,title,bans,picks,x,y,color){ roundRect(ctx,x,y,530,550,28,true,false,"rgba(255,255,255,.055)"); ctx.fillStyle = color; ctx.font = "bold 32px Arial"; ctx.fillText(title,x+28,y+52); ctx.fillStyle = "#ffe3a2"; ctx.font = "bold 24px Arial"; ctx.fillText("BAN",x+28,y+105); for(let i=0;i<4;i++) drawHeroBox(ctx, heroLabel(bans[i]), x+28+i*122, y+125, 108, 78, `Ban ${i+1}`); ctx.fillStyle = "#ffe3a2"; ctx.font = "bold 24px Arial"; ctx.fillText("PICK",x+28,y+245); for(let i=0;i<5;i++) drawHeroBox(ctx, heroLabel(picks[i]), x+28, y+265+i*54, 474, 44, `Pick ${i+1}`); }
-  function drawHeroBox(ctx,name,x,y,w,h,label){ roundRect(ctx,x,y,w,h,14,true,false,"rgba(0,0,0,.22)"); ctx.fillStyle = "#eef6ff"; ctx.font = "bold 19px Arial"; wrapText(ctx, name || "-", x+12, y+28, w-24, 20); ctx.fillStyle = "#a8bacf"; ctx.font = "14px Arial"; ctx.fillText(label,x+12,y+h-12); }
+  async function downloadResultPng(){
+    if(!currentRoom) return showToast("Result is not available yet.");
+    const canvas = document.createElement("canvas");
+    canvas.width = 1300;
+    canvas.height = 900;
+    const ctx = canvas.getContext("2d");
+    const imageCache = await buildHeroImageCache([...(currentRoom.bansA || []), ...(currentRoom.picksA || []), ...(currentRoom.bansB || []), ...(currentRoom.picksB || [])]);
+    const gradient = ctx.createLinearGradient(0,0,1300,900);
+    gradient.addColorStop(0,"#071018");
+    gradient.addColorStop(0.55,"#0d2030");
+    gradient.addColorStop(1,"#0a111b");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0,0,1300,900);
+    ctx.strokeStyle = "rgba(245,196,81,.42)";
+    ctx.lineWidth = 3;
+    roundRect(ctx,40,40,1220,820,34,true,false,"rgba(255,255,255,.055)");
+    ctx.fillStyle = "#ffe3a2";
+    ctx.font = "bold 34px Arial";
+    ctx.fillText("Draft Room By HCI",80,105);
+    ctx.fillStyle = "#eef6ff";
+    ctx.font = "bold 56px Arial";
+    ctx.fillText(`${CONFIG.gameKey} ${gameTitle()} Result`,80,170);
+    drawTeamResult(ctx,"TEAM A",currentRoom.bansA || [],currentRoom.picksA || [],80,230,"#4dabf7",imageCache);
+    drawTeamResult(ctx,"TEAM B",currentRoom.bansB || [],currentRoom.picksB || [],690,230,"#ff6b6b",imageCache);
+    ctx.fillStyle = "#a8bacf";
+    ctx.font = "24px Arial";
+    ctx.fillText(`Room: ${currentRoom.id || currentRoomId}`,80,835);
+    const a = document.createElement("a");
+    a.download = `hci-draft-result-${Math.random().toString(36).slice(2,10)}.png`;
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+    showToast("Result PNG downloaded.");
+  }
+  async function buildHeroImageCache(heroIds){
+    const ids = [...new Set((heroIds || []).filter(Boolean))];
+    const entries = await Promise.all(ids.map(async(heroId)=>{
+      const hero = heroById(heroId);
+      if(!hero || !hero.image) return [heroId, null];
+      const img = await loadImageSafe(hero.image);
+      return [heroId, img];
+    }));
+    return new Map(entries);
+  }
+  function loadImageSafe(src){
+    return new Promise((resolve)=>{
+      if(!src) return resolve(null);
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = ()=>resolve(img);
+      img.onerror = ()=>resolve(null);
+      img.src = src;
+    });
+  }
+  function drawTeamResult(ctx,title,bans,picks,x,y,color,imageCache){
+    roundRect(ctx,x,y,530,550,28,true,false,"rgba(255,255,255,.055)");
+    ctx.fillStyle = color;
+    ctx.font = "bold 32px Arial";
+    ctx.fillText(title,x+28,y+52);
+    ctx.fillStyle = "#ffe3a2";
+    ctx.font = "bold 24px Arial";
+    ctx.fillText("BAN",x+28,y+105);
+    for(let i=0;i<4;i++) drawHeroBox(ctx, bans[i], x+28+i*122, y+125, 108, 88, `Ban ${i+1}`, imageCache);
+    ctx.fillStyle = "#ffe3a2";
+    ctx.font = "bold 24px Arial";
+    ctx.fillText("PICK",x+28,y+255);
+    for(let i=0;i<5;i++) drawHeroBox(ctx, picks[i], x+28, y+275+i*58, 474, 48, `Pick ${i+1}`, imageCache);
+  }
+  function drawHeroBox(ctx,heroId,x,y,w,h,label,imageCache){
+    const hero = heroId ? heroById(heroId) : null;
+    const name = hero ? hero.name : (heroId ? heroLabel(heroId) : "-");
+    const img = heroId && imageCache ? imageCache.get(heroId) : null;
+    roundRect(ctx,x,y,w,h,14,true,false,"rgba(0,0,0,.22)");
+    let textX = x + 12;
+    const textTop = y + 22;
+    if(img){
+      const size = Math.min(h - 16, 30);
+      const imgX = x + 10;
+      const imgY = y + (h - size) / 2;
+      ctx.save();
+      roundRect(ctx,imgX,imgY,size,size,10,false,false);
+      ctx.clip();
+      ctx.drawImage(img, imgX, imgY, size, size);
+      ctx.restore();
+      textX = imgX + size + 10;
+    }
+    ctx.fillStyle = "#eef6ff";
+    ctx.font = "bold 17px Arial";
+    wrapText(ctx, name || "-", textX, textTop, w - (textX - x) - 12, 18);
+    ctx.fillStyle = "#a8bacf";
+    ctx.font = "13px Arial";
+    ctx.fillText(label,textX,y+h-10);
+  }
   function roundRect(ctx,x,y,w,h,r,fill,stroke,fillStyle){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill){ ctx.fillStyle = fillStyle || ctx.fillStyle; ctx.fill(); } if(stroke) ctx.stroke(); }
   function wrapText(ctx,text,x,y,maxWidth,lineHeight){ const words = String(text).split(" "); let line=""; for(let n=0;n<words.length;n++){ const test = line + words[n] + " "; if(ctx.measureText(test).width > maxWidth && n>0){ ctx.fillText(line,x,y); line = words[n] + " "; y += lineHeight; } else line = test; } ctx.fillText(line,x,y); }
 

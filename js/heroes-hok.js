@@ -1083,3 +1083,14 @@ window.HCI_HEROES = [
     "active": true
   }
 ];
+
+
+(function(){
+  const basePath = "/assets/heroes/hok/";
+  const customMap = window.HCI_HOK_IMAGE_MAP || {};
+  window.HCI_HEROES = (window.HCI_HEROES || []).map(function(hero){
+    return Object.assign({}, hero, {
+      image: hero.image || customMap[hero.id] || (basePath + hero.id + ".png")
+    });
+  });
+})();
