@@ -1,0 +1,119 @@
+Expected clean HOK hero image filenames
+====================================
+
+annette.png    # Annette
+ata.png    # Ata
+butterfly.png    # Butterfly
+devara.png    # Devara
+fatih.png    # Fatih
+florentino.png    # Florentino
+flowborn-mage.png    # Flowborn (Mage)
+flowborn-tank.png    # Flowborn (Tank)
+garuda.png    # Garuda
+lapulapu.png    # Lapulapu
+lorion.png    # Lorion
+luara.png    # Luara
+agudo.png    # Agudo
+alessio.png    # Alessio
+allain.png    # Allain
+angela.png    # Angela
+aoyin.png    # Ao'yin
+arke.png    # Arke
+arli.png    # Arli
+arthur.png    # Arthur
+athena.png    # Athena
+augran.png    # Augran
+bai-qi.png    # Bai Qi
+biron.png    # Biron
+cai-yan.png    # Cai Yan
+chano.png    # Chano
+charlotte.png    # Charlotte
+chicha.png    # Chicha
+cirrus.png    # Cirrus
+consort-yu.png    # Consort Yu
+da-qiao.png    # Da Qiao
+daji.png    # Daji
+dharma.png    # Dharma
+di-renjie.png    # Di Renjie
+dian-wei.png    # Dian Wei
+diaochan.png    # Diaochan
+dolia.png    # Dolia
+donghuang.png    # Donghuang
+dr-bian.png    # Dr Bian
+dun.png    # Dun
+dyadia.png    # Dyadia
+erin.png    # Erin
+fang.png    # Fang
+feyd.png    # Feyd
+flowborn-marksman.png    # Flowborn (Marksman)
+fuzi.png    # Fuzi
+gan-mo.png    # Gan & Mo
+gao.png    # Gao
+gao-changgong.png    # Gao Changgong
+garo.png    # Garo
+guan-yu.png    # Guan Yu
+guiguzi.png    # Guiguzi
+han-xin.png    # Han Xin
+haya.png    # Haya
+heino.png    # Heino
+hou-yi.png    # Hou Yi
+huang-zhong.png    # Huang Zhong
+jing.png    # Jing
+kaizer.png    # Kaizer
+kongming.png    # Kongming
+kui.png    # Kui
+lady-sun.png    # Lady Sun
+lady-zhen.png    # Lady Zhen
+lam.png    # Lam
+li-bai.png    # Li Bai
+li-xin.png    # Li Xin
+lian-po.png    # Lian Po
+liang.png    # Liang
+liu-bang.png    # Liu Bang
+liu-bei.png    # Liu Bei
+liu-shan.png    # Liu Shan
+lu-bu.png    # Lu Bu
+luban-no7.png    # Luban No.7
+luna.png    # Luna
+mai-shiranui.png    # Mai Shiranui
+marco-polo.png    # Marco Polo
+mayene.png    # Mayene
+meng-ya.png    # Meng Ya
+menki.png    # Menki
+mi-yue.png    # Mi Yue
+milady.png    # Milady
+ming.png    # Ming
+mozi.png    # Mozi
+mulan.png    # Mulan
+musashi.png    # Musashi
+nakoruru.png    # Nakoruru
+nezha.png    # Nezha
+nuwa.png    # Nuwa
+pei.png    # Pei
+sakeer.png    # Sakeer
+shangguan.png    # Shangguan
+shi.png    # Shi
+shouyue.png    # Shouyue
+sima-yi.png    # Sima Yi
+sun-bin.png    # Sun Bin
+sun-ce.png    # Sun Ce
+ukyo-tachibana.png    # Ukyo Tachibana
+umbrosa.png    # Umbrosa
+wang-zhaojun.png    # Wang Zhaojun
+wukong.png    # Wukong
+wuyan.png    # Wuyan
+xiang-yu.png    # Xiang Yu
+xiao-qiao.png    # Xiao Qiao
+xuance.png    # Xuance
+yang-jian.png    # Yang Jian
+yango.png    # Yango
+yao.png    # Yao
+yaria.png    # Yaria
+ying.png    # Ying
+yixing.png    # Yixing
+yuhuan.png    # Yuhuan
+zhang-fei.png    # Zhang Fei
+zhou-yu.png    # Zhou Yu
+zhuangzi.png    # Zhuangzi
+zilong.png    # Zilong
+ziya.png    # Ziya
