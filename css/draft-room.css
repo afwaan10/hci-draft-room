@@ -158,7 +158,104 @@
 .room-preparing .timer-value{font-size:2.4rem}
 
 
-/* HCI feature additions - original theme preserved */
-.access-plans{display:grid;gap:14px;margin-bottom:14px}.access-intro{padding:20px}.access-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.access-card{padding:18px;background:var(--panel2)}.access-card h3{margin:0 0 8px}.access-contact{width:max-content;max-width:100%}.hero-confirm{position:fixed;inset:0;z-index:260;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.62);backdrop-filter:blur(10px)}.hero-confirm-card{width:min(460px,100%);border:1px solid var(--border);border-radius:26px;background:linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.04)),#0b1723;box-shadow:var(--shadow);padding:24px;text-align:center}.hero-confirm-card h2{font-size:clamp(1.8rem,4vw,2.4rem);margin:8px 0 8px}.hero-confirm-preview{width:112px;height:112px;margin:12px auto;border-radius:28px;display:grid;place-items:center;overflow:hidden;background:linear-gradient(135deg,rgba(245,196,81,.28),rgba(77,171,247,.14));border:1px solid rgba(245,196,81,.28);color:var(--gold2);font-weight:1000;font-size:1.6rem}.hero-confirm-preview img{width:100%;height:100%;object-fit:cover}.hero-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.hero-card.gbp-locked{opacity:.38;filter:grayscale(1);cursor:not-allowed;position:relative}.hero-card.gbp-locked::after{content:"GBP";position:absolute;top:8px;right:8px;border:1px solid rgba(245,196,81,.36);background:rgba(245,196,81,.14);color:var(--gold2);font-size:.68rem;font-weight:1000;border-radius:999px;padding:3px 7px}.session-modal .modal-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
-@media (max-width:980px){.access-grid{grid-template-columns:1fr}.access-contact{width:100%}}
-@media (max-width:620px){.hero-confirm-actions{grid-template-columns:1fr}.session-modal .modal-actions{grid-template-columns:1fr}}
+/* v11 desktop role filters, slot media, and easier hero selection */
+@media (min-width: 981px){
+  .heroes-toolbar{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(520px,720px);
+    align-items:start;
+  }
+  .toolbar-actions{
+    width:100%;
+    display:grid;
+    grid-template-columns:minmax(240px,320px) 1fr;
+    align-items:start;
+  }
+  .role-filters{
+    overflow:visible;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    row-gap:8px;
+  }
+  .role-filter{
+    width:50px;
+    height:50px;
+  }
+}
+.slot{
+  padding:10px;
+}
+.slot.filled{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  text-align:left;
+}
+.slot-placeholder{
+  display:block;
+  width:100%;
+  text-align:center;
+}
+.slot-media{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  min-width:0;
+}
+.slot-avatar{
+  width:36px;
+  height:36px;
+  border-radius:11px;
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  background:rgba(245,196,81,.14);
+  border:1px solid rgba(245,196,81,.24);
+  color:var(--gold2);
+  font-weight:1000;
+  font-size:.78rem;
+}
+.slot-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.slot-copy{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:0;
+}
+.slot-name{
+  display:block;
+  line-height:1.08;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.slot-copy small{
+  margin:0;
+}
+.result-hero-info{
+  min-width:0;
+}
+.result-hero-box.pick{
+  min-height:74px;
+}
+
+/* HCI MOBA Draft Hub remake */
+.hub-page{
+  min-height:100svh;
+  overflow-x:hidden;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(245,196,81,.22), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(77,171,247,.16), transparent 28%),
+    radial-gradient(circle at 48% 86%, rgba(255,107,107,.10), transparent 26%),
+    linear-gradient(135deg,#040910,#07131f 50%,#0b1018);
+}
+.hub-shell{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:18px 0 48px}.hub-topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;border:1px solid var(--border);border-radius:24px;padding:12px 14px;background:rgba(9,18,28,.72);backdrop-filter:blur(18px);box-shadow:var(--shadow)}.hub-brand{display:flex;align-items:center;gap:12px;font-weight:1000;letter-spacing:.02em}.hub-brand img{width:44px;height:44px;border-radius:14px;object-fit:cover}.hub-user-card{display:flex;align-items:center;gap:10px;min-width:0}.hub-user-card img{width:38px;height:38px;border-radius:50%;object-fit:cover}.hub-user-card div{display:grid;line-height:1.15}.hub-user-card small{color:var(--muted);font-size:.78rem}.hub-hero{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(280px,.7fr);gap:24px;align-items:center;min-height:430px;border:1px solid rgba(245,196,81,.22);border-radius:36px;padding:clamp(24px,4vw,48px);background:linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,.035)),radial-gradient(circle at 76% 18%,rgba(245,196,81,.18),transparent 34%),rgba(8,18,30,.78);box-shadow:0 26px 90px rgba(0,0,0,.42)}.hub-copy h1{font-size:clamp(2.7rem,8vw,6.4rem);line-height:.88;margin:0 0 18px;letter-spacing:-.06em}.hub-lead{font-size:clamp(1rem,2vw,1.18rem);max-width:690px}.hub-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:20px}.hub-note{color:var(--muted);font-weight:800}.hub-emblem{position:relative;min-height:300px;border-radius:34px;overflow:hidden;border:1px solid rgba(245,196,81,.22);background:rgba(0,0,0,.25)}.hub-emblem img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.98) contrast(1.04)}.hub-emblem:after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(6,16,25,.1),rgba(6,16,25,.58))}.hub-status-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0 34px}.hub-status-strip div{border:1px solid var(--border);border-radius:20px;padding:16px;background:rgba(255,255,255,.055)}.hub-status-strip strong{display:block;color:var(--gold2);font-size:1.03rem}.hub-status-strip span{display:block;color:var(--muted);margin-top:4px;font-size:.9rem}.section-heading{margin-bottom:18px}.section-heading.center{text-align:center;max-width:760px;margin-inline:auto}.section-heading h2{font-size:clamp(2rem,5vw,3.4rem);line-height:.95;margin:0 0 10px;letter-spacing:-.04em}.game-card-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:220px;gap:14px}.moba-card{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;grid-column:span 2;border:1px solid rgba(255,255,255,.16);border-radius:28px;padding:18px;background:rgba(255,255,255,.055);box-shadow:0 22px 70px rgba(0,0,0,.32);transition:.2s ease}.moba-card:nth-child(1),.moba-card:nth-child(2){grid-column:span 3;min-height:250px}.moba-card:hover{transform:translateY(-3px);border-color:rgba(245,196,81,.38)}.moba-card img{position:absolute;inset:18px 18px auto auto;max-width:54%;max-height:48%;object-fit:contain;filter:drop-shadow(0 18px 32px rgba(0,0,0,.55));z-index:1}.moba-card strong{position:relative;z-index:2;font-size:clamp(1.35rem,3vw,2.25rem);line-height:.95;max-width:75%}.moba-card small{position:relative;z-index:2;color:var(--muted);font-weight:700}.moba-card:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.68));z-index:0}.moba-card.hok-theme{background:radial-gradient(circle at 85% 5%,rgba(245,196,81,.24),transparent 38%),linear-gradient(135deg,#12100c,#101c28)}.moba-card.mlbb-theme{background:radial-gradient(circle at 85% 7%,rgba(255,153,0,.30),transparent 42%),linear-gradient(135deg,#120908,#1f1622)}.moba-card.aov-theme{background:radial-gradient(circle at 85% 7%,rgba(202,151,80,.26),transparent 42%),linear-gradient(135deg,#0b0a14,#202034)}.moba-card.dota-theme{background:radial-gradient(circle at 88% 4%,rgba(255,45,45,.24),transparent 38%),linear-gradient(135deg,#080808,#21110f)}.moba-card.lol-theme{background:radial-gradient(circle at 85% 7%,rgba(245,196,81,.24),transparent 44%),linear-gradient(135deg,#051017,#17211f)}.status-pill{position:absolute;top:14px;left:14px;z-index:3;border-radius:999px;padding:7px 11px;font-size:.76rem;font-weight:1000;text-transform:uppercase;letter-spacing:.08em}.status-pill.ready{background:rgba(81,207,102,.16);border:1px solid rgba(81,207,102,.38);color:#c9ffd5}.status-pill.soon{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:var(--muted)}.moba-card.locked{filter:saturate(.72);opacity:.76}.moba-card.needs-login:after{content:"Login Required";position:absolute;right:14px;bottom:14px;z-index:4;padding:7px 10px;border-radius:999px;background:rgba(0,0,0,.52);border:1px solid rgba(245,196,81,.28);color:var(--gold2);font-weight:1000;font-size:.74rem;text-transform:uppercase;letter-spacing:.08em}.hub-history{margin-top:34px;padding:24px}.history-list{display:grid;gap:10px}.history-item{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.055);padding:14px}.history-item div{display:grid;gap:3px;min-width:0}.history-item strong{color:var(--text)}.history-item span,.history-item small{color:var(--muted)}.history-item small{font-size:.78rem}.mini-auth{display:inline-flex;align-items:center;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gold2);font-weight:900}.team-name-seed{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.team-edit-box{display:grid;gap:8px}.team-edit-box label{display:grid;gap:6px}.team-edit-box span{color:var(--gold2);font-size:.75rem;font-weight:1000;letter-spacing:.12em;text-transform:uppercase}.team-edit-box input{padding:10px 12px;border-radius:12px}.room-meta strong#roomNameDisplay{display:block;margin-bottom:6px;font-size:1.05rem}.draft-game-page .hero-title-row img[data-game-logo]{object-fit:contain;background:rgba(0,0,0,.18);padding:10px}.draft-game-page .team-card.team-a .team-head,.draft-game-page .result-team-a .result-team-head{border-color:rgba(77,171,247,.14)}.draft-game-page .team-card.team-b .team-head,.draft-game-page .result-team-b .result-team-head{border-color:rgba(255,107,107,.14)}
+@media (min-width:981px){.draft-active .room-layout{grid-template-columns:320px minmax(0,1fr);align-items:start}.draft-active .room-sidebar{position:sticky;top:14px;display:grid;grid-template-columns:1fr}.draft-active .draft-stage{min-width:0}.draft-active .hero-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.draft-active .hero-card{min-height:106px}}
+@media (max-width:900px){.hub-hero{grid-template-columns:1fr}.hub-emblem{min-height:220px}.hub-status-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.game-card-grid{grid-template-columns:1fr;grid-auto-rows:200px}.moba-card,.moba-card:nth-child(1),.moba-card:nth-child(2){grid-column:span 1;min-height:200px}.moba-card img{max-width:48%;max-height:44%}}
+@media (max-width:620px){.hub-shell{width:min(100% - 20px,1180px);padding-top:10px}.hub-topbar{align-items:flex-start;flex-direction:column}.hub-user-card{width:100%;justify-content:space-between}.hub-copy h1{font-size:3.25rem}.hub-hero{border-radius:24px;padding:22px}.hub-status-strip{grid-template-columns:1fr}.game-card-grid{gap:12px;grid-auto-rows:180px}.moba-card{border-radius:22px}.moba-card strong{max-width:82%;font-size:1.55rem}.moba-card img{max-width:52%;max-height:42%;opacity:.9}.team-name-seed{grid-template-columns:1fr}.history-item{align-items:flex-start;flex-direction:column}.history-item .tiny-btn{width:100%}.draft-game-page .hero-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.draft-active .heroes-panel{scroll-margin-top:12px}.draft-active .hero-card{min-height:112px}.draft-active .room-sidebar{position:static}}
