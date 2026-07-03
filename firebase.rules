@@ -1,12 +1,53 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    match /draftRooms/{roomId} {
-      allow read, create, update, delete: if signedIn();
+    function signedIn() {
+      return request.auth != null;
     }
+
+    function isHost() {
+      return signedIn() && resource.data.hostUid == request.auth.uid;
+    }
+
+    function isTeamA() {
+      return signedIn() && resource.data.teamAUid == request.auth.uid;
+    }
+
+    function isTeamB() {
+      return signedIn() && resource.data.teamBUid == request.auth.uid;
+    }
+
+    function isRoomParticipant() {
+      return isHost() || isTeamA() || isTeamB();
+    }
+
+    match /draftRooms/{roomId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.teamAUid == request.auth.uid;
+
+      allow update: if signedIn()
+        && (
+          isRoomParticipant()
+          ||
+          (
+            resource.data.status == "lobby"
+            && (
+              resource.data.teamAUid == ""
+              || resource.data.teamBUid == ""
+            )
+          )
+        );
+
+      allow delete: if isHost();
+    }
+
     match /heroes/{heroId} {
-      allow read, write: if signedIn();
+      allow read: if signedIn();
+      allow write: if false;
     }
   }
 }
