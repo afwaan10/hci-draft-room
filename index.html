@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
   <title>HCI MOBA Draft Hub</title>
   <meta name="description" content="HCI MOBA Draft Hub - real-time MOBA draft simulator for teams, coaches, and analysts." />
   <link rel="stylesheet" href="/css/draft-room.css" />
@@ -10,7 +12,7 @@
 <body class="hub-page">
   <div class="app-loader" id="appLoader">
     <div class="loader-card">
-      <img src="/assets/hci-logo.png" alt="HCI Logo" class="loader-logo" />
+      <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" class="loader-logo" />
       <div class="loader-loop"><span></span></div>
       <div class="loader-text">Loading HCI MOBA Draft Hub</div>
     </div>
@@ -19,7 +21,7 @@
   <main class="hub-shell" id="hubApp" hidden>
     <header class="hub-topbar">
       <a class="hub-brand" href="/" aria-label="HCI MOBA Draft Hub">
-        <img src="/assets/hci-logo.png" alt="HCI Logo" />
+        <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" />
         <span>HCI MOBA Draft Hub</span>
       </a>
       <div class="hub-user-card profile-compact" id="userCard" hidden>
@@ -42,7 +44,6 @@
 
     <section class="hub-hero">
       <div class="hub-copy">
-        <span class="eyebrow">Honor of Kings Community Indonesia</span>
         <h1>HCI MOBA Draft Hub</h1>
         <p class="hub-lead">Real-time MOBA draft simulator for teams, coaches, and analysts. Practice pick-ban strategy across multiple MOBA titles with a clean, competitive, and community-ready room system.</p>
         <div class="hub-actions" id="signedOutActions">
@@ -74,34 +75,39 @@
       </div>
       <div class="game-card-grid">
         <a class="moba-card active hok-theme" href="/hok/" data-requires-login="true">
-          <img src="/assets/game/cards/hok-pro.svg" alt="Honor of Kings" />
+          <img src="/assets/hok.png" alt="Honor of Kings Logo" />
           <span class="status-pill ready">Active</span>
           <strong>Honor of Kings</strong>
           <small>Global Ban Pick draft simulator</small>
+          <span class="game-card-action" data-start-label="Join / Start" data-login-label="Login Required">Login Required</span>
         </a>
         <a class="moba-card active mlbb-theme" href="/mlbb/" data-requires-login="true">
-          <img src="/assets/game/cards/mlbb-pro.svg" alt="Mobile Legends: Bang Bang" />
+          <img src="/assets/ml.png" alt="Mobile Legends: Bang Bang Logo" />
           <span class="status-pill ready">Active</span>
           <strong>Mobile Legends</strong>
           <small>Competitive pick-ban simulator</small>
+          <span class="game-card-action" data-start-label="Join / Start" data-login-label="Login Required">Login Required</span>
         </a>
         <article class="moba-card locked aov-theme" aria-disabled="true">
           <img src="/assets/game/cards/aov-pro.svg" alt="Arena of Valor" />
           <span class="status-pill soon">Coming Soon</span>
           <strong>Arena of Valor</strong>
           <small>Draft module prepared for future launch</small>
+          <span class="game-card-action disabled">Coming Soon</span>
         </article>
         <article class="moba-card locked dota-theme" aria-disabled="true">
           <img src="/assets/game/cards/dota2-pro.svg" alt="Dota 2" />
           <span class="status-pill soon">Coming Soon</span>
           <strong>Dota 2</strong>
           <small>Draft module prepared for future launch</small>
+          <span class="game-card-action disabled">Coming Soon</span>
         </article>
         <article class="moba-card locked lol-theme" aria-disabled="true">
           <img src="/assets/game/cards/lol-pro.svg" alt="League of Legends" />
           <span class="status-pill soon">Coming Soon</span>
           <strong>League of Legends</strong>
           <small>Draft module prepared for future launch</small>
+          <span class="game-card-action disabled">Coming Soon</span>
         </article>
       </div>
     </section>
