@@ -2,17 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-
     match /draftRooms/{roomId} {
-      allow read: if signedIn();
-      allow create: if signedIn();
-      allow update: if signedIn();
-      allow delete: if false;
+      allow read, create, update, delete: if signedIn();
     }
-
     match /heroes/{heroId} {
-      allow read: if true;
-      allow write: if signedIn();
+      allow read, write: if signedIn();
     }
   }
 }
