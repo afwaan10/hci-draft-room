@@ -3,51 +3,115 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Draft Room By HCI</title>
-  <meta name="description" content="Draft Room By HCI - choose HOK or MLBB draft simulator." />
-  <link rel="stylesheet" href="css/draft-room.css" />
+  <title>HCI MOBA Draft Hub</title>
+  <meta name="description" content="HCI MOBA Draft Hub - real-time MOBA draft simulator for teams, coaches, and analysts." />
+  <link rel="stylesheet" href="/css/draft-room.css" />
 </head>
-<body class="chooser-page">
+<body class="hub-page">
   <div class="app-loader" id="appLoader">
     <div class="loader-card">
-      <img src="assets/hci-logo.png" alt="HCI Logo" class="loader-logo" />
+      <img src="/assets/hci-logo.png" alt="HCI Logo" class="loader-logo" />
       <div class="loader-loop"><span></span></div>
-      <div class="loader-text">Loading Draft Room By HCI</div>
+      <div class="loader-text">Loading HCI MOBA Draft Hub</div>
     </div>
   </div>
 
-  <main class="game-choice" id="gameChoice" hidden>
-    <section class="choice-stage" aria-labelledby="choiceTitle">
-      <article class="choice-info-card">
-        <img src="assets/hci-logo.png" alt="HCI Logo" class="choice-hci-logo" />
+  <main class="hub-shell" id="hubApp" hidden>
+    <header class="hub-topbar">
+      <a class="hub-brand" href="/" aria-label="HCI MOBA Draft Hub">
+        <img src="/assets/hci-logo.png" alt="HCI Logo" />
+        <span>HCI MOBA Draft Hub</span>
+      </a>
+      <div class="hub-user-card" id="userCard" hidden>
+        <img id="userPhoto" alt="User" />
+        <div><strong id="userName">User</strong><small id="userEmail">Signed in</small></div>
+        <button class="ghost-btn" id="logoutBtn" type="button">Logout</button>
+      </div>
+    </header>
+
+    <section class="hub-hero">
+      <div class="hub-copy">
+        <span class="eyebrow">Honor of Kings Community Indonesia</span>
+        <h1>HCI MOBA Draft Hub</h1>
+        <p class="hub-lead">Real-time MOBA draft simulator for teams, coaches, and analysts. Practice pick-ban strategy across multiple MOBA titles with a clean, competitive, and community-ready room system.</p>
+        <div class="hub-actions" id="signedOutActions">
+          <button class="primary-btn" id="googleLoginBtn" type="button">Login with Google</button>
+          <span class="hub-note">Login is required before entering any draft simulator.</span>
+        </div>
+        <div class="hub-actions" id="signedInActions" hidden>
+          <a class="primary-btn" href="#games">Choose Game</a>
+          <a class="secondary-btn" href="#history">Draft History</a>
+        </div>
+      </div>
+      <div class="hub-emblem" aria-hidden="true">
+        <img src="/assets/brand/hci-community.jpg" alt="" />
+      </div>
+    </section>
+
+    <section class="hub-status-strip">
+      <div><strong>Active</strong><span>Honor of Kings & Mobile Legends</span></div>
+      <div><strong>Series</strong><span>Best of 3 / Best of 5</span></div>
+      <div><strong>Access</strong><span>Free, Google login required</span></div>
+      <div><strong>Output</strong><span>Draft result PNG + history</span></div>
+    </section>
+
+    <section class="hub-games" id="games" aria-labelledby="gamesTitle">
+      <div class="section-heading center">
         <span class="eyebrow">Choose Game</span>
-        <h1 id="choiceTitle">Draft Room By HCI</h1>
-        <p>Choose the draft simulator you want to use. HOK uses Global Ban Pick. MLBB uses normal draft without GBP.</p>
-      </article>
+        <h2 id="gamesTitle">Select your draft simulator</h2>
+        <p>Each card follows the visual identity of its game. HOK and MLBB are ready for the first launch, while the other MOBA titles are prepared as coming soon modules.</p>
+      </div>
+      <div class="game-card-grid">
+        <a class="moba-card active hok-theme" href="/hok/" data-requires-login="true">
+          <img src="/assets/game/cards/hok.png" alt="Honor of Kings" />
+          <span class="status-pill ready">Active</span>
+          <strong>Honor of Kings</strong>
+          <small>Global Ban Pick draft simulator</small>
+        </a>
+        <a class="moba-card active mlbb-theme" href="/mlbb/" data-requires-login="true">
+          <img src="/assets/game/cards/mlbb.png" alt="Mobile Legends: Bang Bang" />
+          <span class="status-pill ready">Active</span>
+          <strong>Mobile Legends</strong>
+          <small>Competitive pick-ban simulator</small>
+        </a>
+        <article class="moba-card locked aov-theme" aria-disabled="true">
+          <img src="/assets/game/cards/aov.jpg" alt="Arena of Valor" />
+          <span class="status-pill soon">Coming Soon</span>
+          <strong>Arena of Valor</strong>
+          <small>Draft module prepared for future launch</small>
+        </article>
+        <article class="moba-card locked dota-theme" aria-disabled="true">
+          <img src="/assets/game/cards/dota2.png" alt="Dota 2" />
+          <span class="status-pill soon">Coming Soon</span>
+          <strong>Dota 2</strong>
+          <small>Draft module prepared for future launch</small>
+        </article>
+        <article class="moba-card locked lol-theme" aria-disabled="true">
+          <img src="/assets/game/cards/lol.jpg" alt="League of Legends" />
+          <span class="status-pill soon">Coming Soon</span>
+          <strong>League of Legends</strong>
+          <small>Draft module prepared for future launch</small>
+        </article>
+      </div>
+    </section>
 
-      <a class="choice-game-card hok-card" href="hok/index.html" aria-label="Open HOK Draft Room">
-        <img src="assets/hok.png" alt="Honor of Kings Logo" class="choice-game-logo" />
-        <span class="eyebrow">Honor of Kings</span>
-        <h2>HOK Draft Room</h2>
-        <p>HOK draft simulation with Global Ban Pick.</p>
-      </a>
-
-      <a class="choice-game-card mlbb-card" href="mlbb/index.html" aria-label="Open MLBB Draft Room">
-        <img src="assets/ml.png" alt="Mobile Legends Logo" class="choice-game-logo" />
-        <span class="eyebrow">Mobile Legends</span>
-        <h2>MLBB Draft Room</h2>
-        <p>MLBB draft simulation without Global Ban Pick.</p>
-      </a>
+    <section class="panel hub-history" id="history">
+      <div class="section-heading">
+        <span class="eyebrow">Draft History</span>
+        <h2>Your recent draft sessions</h2>
+        <p>History is saved per Google account, room code, and game after a draft is completed.</p>
+      </div>
+      <div class="history-list" id="historyList">
+        <div class="notice compact">Login with Google to view your draft history.</div>
+      </div>
     </section>
   </main>
 
-  <script>
-    window.addEventListener('load', function () {
-      setTimeout(function () {
-        document.getElementById('appLoader').hidden = true;
-        document.getElementById('gameChoice').hidden = false;
-      }, 900);
-    });
-  </script>
+  <div class="toast" id="toast" hidden></div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/hub-home.js"></script>
 </body>
 </html>

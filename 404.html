@@ -3,128 +3,100 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Draft Room By HCI</title>
-  <meta name="description" content="Draft Room By HCI - real-time HOK and MLBB draft simulator." />
-  <link rel="stylesheet" href="css/draft-room.css" />
+  <title>HCI MOBA Draft Hub</title>
+  <meta name="description" content="HCI MOBA Draft Hub - real-time MOBA draft simulator." />
+  <link rel="stylesheet" href="/css/draft-room.css" />
 </head>
-<body>
+<body class="draft-game-page">
   <main class="app-shell">
     <nav class="site-nav">
-      <a class="nav-brand" href="./" aria-label="Back to game selection">
-        <img src="assets/hci-logo.png" alt="HCI Logo" />
-        <span>Draft Room By HCI</span>
+      <a class="nav-brand" href="/" aria-label="Back to HCI MOBA Draft Hub">
+        <img src="/assets/hci-logo.png" alt="HCI Logo" />
+        <span>HCI MOBA Draft Hub</span>
       </a>
       <div class="nav-links">
-        <a href="#create-room">Room Access</a>
-        <a href="#about">About Us</a>
-        <a href="#ads">Ads Slot</a>
-        <a href="#follow">Follow HCI</a>
-        <a href="./">Change Game</a>
+        <a href="#create-room">Create Room</a>
+        <a href="#join-room">Join Room</a>
+        <a href="/">Change Game</a>
       </div>
-      <div class="nav-socials">
-        <a class="icon-link ig" href="https://www.instagram.com/hci.official" target="_blank" rel="noopener" aria-label="HCI Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4A5.8 5.8 0 0 1 16.2 22H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2Zm0 2A3.8 3.8 0 0 0 4 7.8v8.4A3.8 3.8 0 0 0 7.8 20h8.4a3.8 3.8 0 0 0 3.8-3.8V7.8A3.8 3.8 0 0 0 16.2 4H7.8Zm8.7 2.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg></a>
-      </div>
+      <div class="nav-socials"><span class="mini-auth" id="signedUserMini">Checking login...</span></div>
     </nav>
-
-    <section class="ads-area" id="ads" aria-label="Advertising slots">
-      <a class="ad-banner" href="#"><div><strong>Advertising Slot 01</strong><br><span>Place a sponsor banner in Draft Room.</span></div></a>
-      <a class="ad-banner" href="#"><div><strong>Advertising Slot 02</strong><br><span>Brand placement for community partners.</span></div></a>
-      <a class="ad-banner" href="#"><div><strong>Advertising Slot 03</strong><br><span>Promote events, teams, or sponsors.</span></div></a>
-      <a class="ad-banner" href="#"><div><strong>Advertising Slot 04</strong><br><span>Wide slot for partner campaigns.</span></div></a>
-    </section>
 
     <section class="landing">
       <div class="panel hero-card-main">
         <div class="hero-title-row">
-          <img src="assets/hci-logo.png" alt="HCI Logo" />
+          <img data-game-logo src="/assets/game/cards/hok.png" alt="Game Logo" />
           <div>
-            <span class="eyebrow">By HCI · Honor of Kings Community Indonesia</span>
-            <h1><span data-game-short>HOK</span> Draft Room</h1>
+            <span class="eyebrow">HCI MOBA Draft Hub</span>
+            <h1><span data-game-full>Honor of Kings</span> Draft Simulator</h1>
           </div>
         </div>
-        <p>A real-time draft simulation room for coaches, analysts, and community teams. Create a room, share the Room ID, then run a synchronized ban-pick session.</p>
+        <p data-game-description>A real-time draft simulator for coaches, analysts, and community teams. Create a room, share the Room ID, choose Team A / Team B / Spectator, then run a synchronized ban-pick session.</p>
         <div class="hero-actions">
           <a class="primary-btn" href="#create-room">Create Room</a>
-          <a class="secondary-btn" href="#join-room">Enter Room ID</a>
+          <a class="secondary-btn" href="#join-room">Enter Room Code</a>
         </div>
       </div>
       <div class="quick-info">
-        <div class="panel info-card"><span class="eyebrow">Real-Time</span><h3>Ban-pick syncs instantly</h3><p>Both teams see the same draft without manual refresh.</p></div>
-        <div class="panel info-card"><span class="eyebrow">Draft Result</span><h3>Download result as PNG</h3><p>After the draft is completed, save the result for review.</p></div>
-        <div class="panel info-card"><span class="eyebrow">Session Type</span><h3>3 Game or 5 Game</h3><p>Choose the number of draft simulation games before creating the room.</p></div>
+        <div class="panel info-card"><span class="eyebrow">Real-Time</span><h3>Live room sync</h3><p>All logged-in users see the same draft state without manual refresh.</p></div>
+        <div class="panel info-card"><span class="eyebrow">Auto Random</span><h3>Timer-safe drafting</h3><p>If a team runs out of time, the system randomly picks or bans an available hero.</p></div>
+        <div class="panel info-card"><span class="eyebrow">Series</span><h3>BO3 / BO5 with side switch</h3><p>Team side is calculated automatically for every game in the series.</p></div>
       </div>
     </section>
 
     <section class="panel setup-panel" id="create-room">
       <div>
         <span class="eyebrow"><span data-game-short>HOK</span> Simulator</span>
-        <h2>Start Draft Simulation</h2>
-        <p>Create a new room as host, or join with a Room ID from the host. The host can delete their own room.</p>
+        <h2>Start Draft</h2>
+        <p>Create a room as host, or join with a Room Code from the host. Google login is required for Team A, Team B, and Spectator.</p>
       </div>
       <div class="setup-grid">
         <div class="card soft-card">
           <h3>Create Room</h3>
-          <p>The host automatically enters Team A and gets room control access.</p>
-          <label class="series-picker" for="seriesFormat">
-            <span>Session Type</span>
-            <select id="seriesFormat" aria-label="Session type">
-              <option value="3" selected>3 Game Session</option>
-              <option value="5">5 Game Session</option>
-            </select>
-          </label>
+          <p>The creator becomes the host and Team A by default. Team names can be edited in the lobby.</p>
+          <label class="series-picker" for="roomNameInput"><span>Room Name</span><input id="roomNameInput" type="text" maxlength="36" placeholder="Example: HCI Scrim Draft" value="HCI Practice Room" /></label>
+          <label class="series-picker" for="seriesFormat"><span>Match Format</span><select id="seriesFormat" aria-label="Match format"><option value="3" selected>Best of 3</option><option value="5">Best of 5</option></select></label>
+          <div class="team-name-seed"><input id="teamANameSeed" type="text" maxlength="24" placeholder="Team A name" value="Team A" /><input id="teamBNameSeed" type="text" maxlength="24" placeholder="Team B name" value="Team B" /></div>
           <button class="primary-btn" id="createRoomBtn" disabled>Create Room</button>
         </div>
         <div class="card soft-card" id="join-room">
-          <h3>Enter Room ID</h3>
-          <p>Join a room from the host, then choose Team B or Spectator.</p>
-          <div class="join-row">
-            <input id="roomIdInput" type="text" placeholder="Example: HOK-4821" autocomplete="off" />
-            <button class="secondary-btn" id="joinRoomBtn" disabled>Join</button>
-          </div>
+          <h3>Enter Room Code</h3>
+          <p>Join as Team A, Team B, or Spectator after the room opens.</p>
+          <div class="join-row"><input id="roomIdInput" type="text" placeholder="Example: HOK-4821" autocomplete="off" /><button class="secondary-btn" id="joinRoomBtn" disabled>Join</button></div>
+          <div class="notice compact">All users must login through Google from the homepage before entering a simulator.</div>
         </div>
       </div>
       <div class="notice warning" id="firebaseNotice" hidden>Firebase is not configured. Edit <strong>js/firebase-config.js</strong> to enable real-time rooms.</div>
       <div class="notice compact">Status: <strong id="connectionStatus">Connecting to Firebase...</strong></div>
     </section>
 
-
-    <section class="access-plans" id="plans">
-      <div class="panel access-intro">
-        <span class="eyebrow">Access Plans</span>
-        <h2>Trial, single session, and package access</h2>
-        <p>Access is counted from website draft simulation usage only. Contact the personal WhatsApp number for plan details and credit top-up.</p>
-      </div>
-      <div class="access-grid">
-        <div class="card access-card"><span class="eyebrow">Trial</span><h3>2 Free Credits</h3><p>New host accounts receive trial credits for draft simulation rooms.</p></div>
-        <div class="card access-card"><span class="eyebrow">Single</span><h3>Pay Per Session</h3><p>Use one-time access for a 3 Game or 5 Game draft simulation session.</p></div>
-        <div class="card access-card"><span class="eyebrow">Package</span><h3>Credit Package</h3><p>Use package credits for regular coach, analyst, or team practice.</p></div>
-      </div>
-      <a class="primary-btn access-contact" href="https://wa.me/6285136864822" target="_blank" rel="noopener">Contact Personal WhatsApp for Access Plans</a>
-    </section>
-
     <section class="room-layout" id="roomPanel" hidden>
       <aside class="panel room-sidebar">
-        <div class="room-meta"><span class="eyebrow">Room ID</span><div class="room-code-row"><strong id="roomCodeDisplay">-</strong><button class="tiny-btn" id="copyRoomBtn">Copy</button></div></div>
+        <div class="room-meta"><span class="eyebrow">Room</span><strong id="roomNameDisplay">-</strong><div class="room-code-row"><strong id="roomCodeDisplay">-</strong><button class="tiny-btn" id="copyRoomBtn">Copy</button></div></div>
         <div class="room-meta"><span class="eyebrow">Status</span><strong id="roomStatusDisplay">Lobby</strong></div>
-        <div class="side-picker" id="sidePicker"><button class="side-btn" data-side="B">Join Team B</button><button class="side-btn ghost" data-side="SPECTATOR">Spectator</button></div>
-        <div class="current-turn-card"><span class="eyebrow">Current Turn</span><h2 id="currentTurnText">Waiting for draft to start</h2><p id="currentTurnHelp">The host can start the simulation when ready.</p><div class="timer-wrap"><div class="timer-value" id="timerValue">--</div><div class="timer-label">visual timer</div></div></div>
-        <div class="action-stack"><button class="primary-btn" id="startDraftBtn" hidden>Start Game</button><button class="secondary-btn" id="copyResultBtn" hidden>Download Result</button></div>
-        <div class="notice compact"><strong>Note:</strong> Room IDs can only be used in the selected game.</div>
+        <div class="team-edit-box">
+          <label><span>Team A</span><input id="teamANameInput" type="text" maxlength="24" value="Team A" /></label>
+          <label><span>Team B</span><input id="teamBNameInput" type="text" maxlength="24" value="Team B" /></label>
+        </div>
+        <div class="side-picker" id="sidePicker"><button class="side-btn" data-side="A">Join Team A</button><button class="side-btn" data-side="B">Join Team B</button><button class="side-btn ghost" data-side="SPECTATOR">Spectator</button></div>
+        <div class="current-turn-card"><span class="eyebrow">Current Turn</span><h2 id="currentTurnText">Waiting for draft to start</h2><p id="currentTurnHelp">The host can start after both teams are filled.</p><div class="timer-wrap"><div class="timer-value" id="timerValue">--</div><div class="timer-label">turn timer</div></div></div>
+        <div class="action-stack"><button class="primary-btn" id="startDraftBtn" hidden>Start Draft</button><button class="secondary-btn" id="copyResultBtn" hidden>Copy Result</button><button class="secondary-btn" id="downloadResultTopBtn" hidden>Download PNG</button><button class="danger-btn" id="deleteRoomBtn" hidden>Delete Room</button><button class="ghost-btn" id="leaveRoomBtn">Leave Match</button></div>
+        <div class="notice compact"><strong>Side switch:</strong> Team A starts Blue in Game 1, then sides switch automatically every next game.</div>
       </aside>
 
       <section class="draft-stage" id="draftStage" hidden>
         <div class="draft-focus-header" id="draftFocusHeader">
-          <div><span class="eyebrow" id="focusRoomText">-</span><h1 id="gameHeadline">Game 1 / 3 Game Session</h1></div>
-          <div class="focus-actions"><button class="tiny-btn" id="copyRoomTopBtn">Copy ID</button><button class="secondary-btn" id="downloadResultTopBtn" hidden>Download Result</button></div>
+          <div><span class="eyebrow" id="focusRoomText">-</span><h1 id="gameHeadline">Game 1 / Best of 3</h1></div>
+          <div class="focus-actions"><button class="tiny-btn" id="copyRoomTopBtn">Copy ID</button><button class="secondary-btn" id="downloadResultTopBtn2" hidden>Download Result</button><button class="danger-btn" id="deleteRoomTopBtn" hidden>Delete Room</button></div>
         </div>
         <div class="teams-grid" id="draftBoard">
-          <div class="team-card team-a"><div class="team-head"><div><span class="eyebrow">Blue Side</span><h2>Team A</h2></div><span class="team-state" id="teamAState">Empty</span></div><div class="slot-section"><h3>Ban</h3><div class="slot-grid ban-grid" id="teamABans"></div></div><div class="slot-section"><h3>Pick</h3><div class="slot-grid pick-grid" id="teamAPicks"></div></div></div>
-          <div class="team-card team-b"><div class="team-head"><div><span class="eyebrow">Red Side</span><h2>Team B</h2></div><span class="team-state" id="teamBState">Empty</span></div><div class="slot-section"><h3>Ban</h3><div class="slot-grid ban-grid" id="teamBBans"></div></div><div class="slot-section"><h3>Pick</h3><div class="slot-grid pick-grid" id="teamBPicks"></div></div></div>
+          <div class="team-card team-a"><div class="team-head"><div><span class="eyebrow" id="teamASideLabel">Blue Side</span><h2 id="teamATitle">Team A</h2></div><span class="team-state" id="teamAState">Empty</span></div><div class="slot-section"><h3>Ban</h3><div class="slot-grid ban-grid" id="teamABans"></div></div><div class="slot-section"><h3>Pick</h3><div class="slot-grid pick-grid" id="teamAPicks"></div></div></div>
+          <div class="team-card team-b"><div class="team-head"><div><span class="eyebrow" id="teamBSideLabel">Red Side</span><h2 id="teamBTitle">Team B</h2></div><span class="team-state" id="teamBState">Empty</span></div><div class="slot-section"><h3>Ban</h3><div class="slot-grid ban-grid" id="teamBBans"></div></div><div class="slot-section"><h3>Pick</h3><div class="slot-grid pick-grid" id="teamBPicks"></div></div></div>
         </div>
 
         <section class="panel draft-result-panel" id="draftResultPanel" hidden>
           <div class="result-header"><div><span class="eyebrow">Draft Result</span><h2 id="resultGameTitle">Game 1 Draft Result</h2></div><p>The draft result appears automatically after the ban-pick is complete.</p></div>
-          <div class="result-board"><div class="result-team result-team-a"><div class="result-team-head"><span class="eyebrow">Blue Side</span><h3>Team A</h3></div><div class="result-block"><h4>Ban</h4><div class="result-ban-row" id="resultABans"></div></div><div class="result-block"><h4>Pick</h4><div class="result-pick-column" id="resultAPicks"></div></div></div><div class="result-team result-team-b"><div class="result-team-head"><span class="eyebrow">Red Side</span><h3>Team B</h3></div><div class="result-block"><h4>Ban</h4><div class="result-ban-row" id="resultBBans"></div></div><div class="result-block"><h4>Pick</h4><div class="result-pick-column" id="resultBPicks"></div></div></div></div>
+          <div class="result-board"><div class="result-team result-team-a"><div class="result-team-head"><span class="eyebrow" id="resultASideLabel">Blue Side</span><h3 id="resultATitle">Team A</h3></div><div class="result-block"><h4>Ban</h4><div class="result-ban-row" id="resultABans"></div></div><div class="result-block"><h4>Pick</h4><div class="result-pick-column" id="resultAPicks"></div></div></div><div class="result-team result-team-b"><div class="result-team-head"><span class="eyebrow" id="resultBSideLabel">Red Side</span><h3 id="resultBTitle">Team B</h3></div><div class="result-block"><h4>Ban</h4><div class="result-ban-row" id="resultBBans"></div></div><div class="result-block"><h4>Pick</h4><div class="result-pick-column" id="resultBPicks"></div></div></div></div>
         </section>
 
         <div class="panel heroes-panel" id="heroPanel">
@@ -133,15 +105,10 @@
         </div>
       </section>
     </section>
-
-    <section class="about-social" id="about">
-      <div class="panel"><span class="eyebrow">About Us</span><h2>Why was Draft Room By HCI created?</h2><p>Draft Room By HCI was built as a practice tool for coaches, analysts, and community teams to improve draft reading, ban-pick priorities, and composition review before scrims or matches.</p></div>
-      <div class="panel" id="follow"><span class="eyebrow">Follow HCI</span><h2>HCI Social Media</h2><p>Follow HCI for tournament updates, community projects, and Draft Room information.</p><div class="social-button-row"><a class="social-chip ig" href="https://www.instagram.com/hci.official" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4A5.8 5.8 0 0 1 16.2 22H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2Zm0 2A3.8 3.8 0 0 0 4 7.8v8.4A3.8 3.8 0 0 0 7.8 20h8.4a3.8 3.8 0 0 0 3.8-3.8V7.8A3.8 3.8 0 0 0 16.2 4H7.8Zm8.7 2.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg> @hci.official</a></div></div>
-    </section>
   </main>
 
   <div class="session-modal" id="sessionModal" hidden>
-    <div class="session-modal-card"><span class="eyebrow">Draft Complete</span><h2 id="sessionModalTitle">Game 1 / 3 Game Session complete</h2><p>Choose the next action for this draft simulation session.</p><div class="modal-actions"><button class="primary-btn" id="nextGameBtn">Next Game</button><button class="secondary-btn" id="downloadResultBtn">Download Result</button></div></div>
+    <div class="session-modal-card"><span class="eyebrow">Draft Complete</span><h2 id="sessionModalTitle">Game complete</h2><p>Choose the next action for this draft session.</p><div class="modal-actions"><button class="primary-btn" id="nextGameBtn">Next Game</button><button class="secondary-btn" id="backLobbyBtn">Back to Lobby</button><button class="danger-btn" id="downloadResultBtn">Download Result</button></div></div>
   </div>
   <div class="toast" id="toast" hidden></div>
 
@@ -149,26 +116,25 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script>
-    window.HCI_ASSET_BASE = "";
     (function () {
       const path = location.pathname.toLowerCase();
       const isMlbb = path.includes('/mlbb') || path.endsWith('mlbb.html');
       const info = isMlbb
-        ? { key: 'MLBB', full: 'Mobile Legends', prefix: 'MLBB', placeholder: 'Example: MLBB-4821', roles: ['ALL','EXP Lane','Jungle','Mid Lane','Gold Lane','Roam'] }
-        : { key: 'HOK', full: 'Honor of Kings', prefix: 'HOK', placeholder: 'Example: HOK-4821', roles: ['ALL','Clash Lane','Jungle','Mid','Farm','Roam'] };
-      window.HCI_GAME_CONFIG = { gameKey: info.key, gameName: info.key + ' Draft Room', roomPrefix: info.prefix, roles: info.roles };
-      document.title = 'Draft Room By HCI - ' + info.key;
+        ? { key: 'MLBB', full: 'Mobile Legends: Bang Bang', prefix: 'MLBB', logo: '/assets/game/cards/mlbb.png', placeholder: 'Example: MLBB-4821', roles: ['ALL','EXP Lane','Jungle','Mid Lane','Gold Lane','Roam'], bansPerTeam: 5, turnSeconds: 45, description: 'A real-time Mobile Legends draft simulator for competitive pick-ban practice, team preparation, and coach or analyst review.' }
+        : { key: 'HOK', full: 'Honor of Kings', prefix: 'HOK', logo: '/assets/game/cards/hok.png', placeholder: 'Example: HOK-4821', roles: ['ALL','Clash Lane','Jungle','Mid','Farm','Roam'], bansPerTeam: 4, turnSeconds: 45, description: 'A real-time Honor of Kings draft simulator with Global Ban Pick flow for team preparation, coach review, and community practice.' };
+      window.HCI_GAME_CONFIG = { gameKey: info.key, gameName: info.full + ' Draft Simulator', roomPrefix: info.prefix, roles: info.roles, bansPerTeam: info.bansPerTeam, turnSeconds: info.turnSeconds };
+      document.title = 'HCI MOBA Draft Hub - ' + info.key;
       window.addEventListener('DOMContentLoaded', function(){
         document.querySelectorAll('[data-game-short]').forEach(function(el){ el.textContent = info.key; });
-        const input = document.getElementById('roomIdInput');
-        if(input) input.placeholder = info.placeholder;
+        document.querySelectorAll('[data-game-full]').forEach(function(el){ el.textContent = info.full; });
+        document.querySelectorAll('[data-game-logo]').forEach(function(el){ el.src = info.logo; el.alt = info.full + ' Logo'; });
+        document.querySelectorAll('[data-game-description]').forEach(function(el){ el.textContent = info.description; });
+        const input = document.getElementById('roomIdInput'); if(input) input.placeholder = info.placeholder;
       });
     })();
   </script>
-  <script src="js/firebase-config.js"></script>
-  <script>
-    document.write('<script src="js/heroes-' + (window.HCI_GAME_CONFIG.gameKey === 'MLBB' ? 'mlbb' : 'hok') + '.js"><\/script>');
-  </script>
-  <script src="js/draft-room.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script>document.write('<script src="/js/heroes-' + (window.HCI_GAME_CONFIG.gameKey === 'MLBB' ? 'mlbb' : 'hok') + '.js"><\/script>');</script>
+  <script src="/js/draft-room.js"></script>
 </body>
 </html>

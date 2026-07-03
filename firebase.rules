@@ -4,18 +4,11 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
 
     match /draftRooms/{roomId} {
-      allow read, create, update: if signedIn();
-      allow delete: if false;
-
-      match /activityLogs/{logId} {
-        allow read, create: if signedIn();
-        allow update, delete: if false;
-      }
+      allow read, create, update, delete: if signedIn();
     }
 
-    match /userAccess/{userId} {
-      allow read: if signedIn() && request.auth.uid == userId;
-      allow create, update: if signedIn() && request.auth.uid == userId;
+    match /draftHistory/{historyId} {
+      allow read, create, update: if signedIn();
       allow delete: if false;
     }
 
