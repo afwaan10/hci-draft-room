@@ -156,3 +156,91 @@
 .room-preparing .hero-card{pointer-events:none;opacity:.55}
 .room-preparing .step-chip{opacity:.75}
 .room-preparing .timer-value{font-size:2.4rem}
+
+
+/* v11 desktop role filters, slot media, and easier hero selection */
+@media (min-width: 981px){
+  .heroes-toolbar{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(520px,720px);
+    align-items:start;
+  }
+  .toolbar-actions{
+    width:100%;
+    display:grid;
+    grid-template-columns:minmax(240px,320px) 1fr;
+    align-items:start;
+  }
+  .role-filters{
+    overflow:visible;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    row-gap:8px;
+  }
+  .role-filter{
+    width:50px;
+    height:50px;
+  }
+}
+.slot{
+  padding:10px;
+}
+.slot.filled{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  text-align:left;
+}
+.slot-placeholder{
+  display:block;
+  width:100%;
+  text-align:center;
+}
+.slot-media{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  min-width:0;
+}
+.slot-avatar{
+  width:36px;
+  height:36px;
+  border-radius:11px;
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  background:rgba(245,196,81,.14);
+  border:1px solid rgba(245,196,81,.24);
+  color:var(--gold2);
+  font-weight:1000;
+  font-size:.78rem;
+}
+.slot-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.slot-copy{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:0;
+}
+.slot-name{
+  display:block;
+  line-height:1.08;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.slot-copy small{
+  margin:0;
+}
+.result-hero-info{
+  min-width:0;
+}
+.result-hero-box.pick{
+  min-height:74px;
+}
