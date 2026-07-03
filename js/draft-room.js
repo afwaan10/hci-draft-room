@@ -40,7 +40,7 @@
     heroSearch: $('heroSearch'), laneFilterButtons: $('laneFilterButtons'), draftSequence: $('draftSequence'), heroGrid: $('heroGrid'), draftBoard: $('draftBoard'), heroPanel: $('heroPanel'), draftStage: $('draftStage'), draftFocusHeader: $('draftFocusHeader'), focusRoomText: $('focusRoomText'), gameHeadline: $('gameHeadline'),
     draftResultPanel: $('draftResultPanel'), resultGameTitle: $('resultGameTitle'), resultABans: $('resultABans'), resultBBans: $('resultBBans'), resultAPicks: $('resultAPicks'), resultBPicks: $('resultBPicks'),
     sessionModal: $('sessionModal'), sessionModalTitle: $('sessionModalTitle'), nextGameBtn: $('nextGameBtn'), backLobbyBtn: $('backLobbyBtn'), downloadResultBtn: $('downloadResultBtn'), toast: $('toast'),
-    siteNav: $('siteNav'), navToggle: $('navToggle'), seriesOptions: document.querySelectorAll('[data-series]')
+    siteNav: $('siteNav'), navToggle: $('navToggle'), seriesOptions: document.querySelectorAll('[data-series]'), layoutModeSelect: $('layoutModeSelect')
   };
 
   let db = null, auth = null, currentUser = null, currentRoomId = null, currentRoom = null, currentRole = 'SPECTATOR';
@@ -69,8 +69,30 @@
   }
   function updateGameVisuals(){
     const logo = gameLogoPath();
+    const key = String(CONFIG.gameKey || 'HCI').toLowerCase();
+    document.body.classList.remove('game-hok', 'game-mlbb', 'game-hci');
+    document.body.classList.add(`game-${key === 'mlbb' ? 'mlbb' : key === 'hok' ? 'hok' : 'hci'}`);
     document.querySelectorAll('[data-game-logo]').forEach((img) => { img.src = logo; img.alt = `${CONFIG.gameKey || 'HCI'} Logo`; });
     const landingLogo = document.querySelector('.hero-title-row img'); if(landingLogo){ landingLogo.src = logo; landingLogo.alt = `${CONFIG.gameKey || 'HCI'} Logo`; landingLogo.setAttribute('data-game-logo',''); }
+  }
+  const LAYOUT_MODE_KEY = `hciDraftLayoutMode:${CONFIG.gameKey || 'HCI'}`;
+  const VALID_LAYOUT_MODES = new Set(['auto','compact','arena','minimal']);
+  function getSavedLayoutMode(){ const saved = localStorage.getItem(LAYOUT_MODE_KEY) || 'auto'; return VALID_LAYOUT_MODES.has(saved) ? saved : 'auto'; }
+  function applyLayoutMode(mode = getSavedLayoutMode()){
+    const safeMode = VALID_LAYOUT_MODES.has(mode) ? mode : 'auto';
+    document.body.dataset.layoutMode = safeMode;
+    document.body.classList.toggle('layout-mode-auto', safeMode === 'auto');
+    document.body.classList.toggle('layout-mode-compact', safeMode === 'compact');
+    document.body.classList.toggle('layout-mode-arena', safeMode === 'arena');
+    document.body.classList.toggle('layout-mode-minimal', safeMode === 'minimal');
+    if(els.layoutModeSelect && els.layoutModeSelect.value !== safeMode) els.layoutModeSelect.value = safeMode;
+  }
+  function setLayoutMode(mode){ const safeMode = VALID_LAYOUT_MODES.has(mode) ? mode : 'auto'; localStorage.setItem(LAYOUT_MODE_KEY, safeMode); applyLayoutMode(safeMode); showToast(`Layout mode: ${safeMode.charAt(0).toUpperCase() + safeMode.slice(1)}`); }
+  function normalizeRoomCodeInput(input){
+    if(!input) return;
+    const start = input.selectionStart, end = input.selectionEnd;
+    const upper = input.value.toUpperCase();
+    if(input.value !== upper){ input.value = upper; try{ input.setSelectionRange(start, end); }catch(e){} }
   }
   function isConfigReady(){ const cfg = window.HCI_FIREBASE_CONFIG; return Boolean(cfg && cfg.apiKey && cfg.projectId && !String(cfg.apiKey).includes('PASTE')); }
   function roleIconHtml(role){ const gameKey = String(CONFIG.gameKey || 'HOK').toUpperCase(); const src = (ROLE_ICON_PATHS[gameKey] || ROLE_ICON_PATHS.HOK)[role] || (ROLE_ICON_PATHS[gameKey] || ROLE_ICON_PATHS.HOK).ALL; return src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(role)}" loading="lazy">` : FALLBACK_ROLE_ICON; }
@@ -127,9 +149,9 @@
     return heroes.filter((hero) => hero.active !== false && !selected.has(hero.id) && !isPreviousPickLockedForStep(room, step, hero.id));
   }
   function teamName(team, room = currentRoom){ return team === 'A' ? (room?.teamAName || 'Team A') : (room?.teamBName || 'Team B'); }
-  function isMobileAutoScroll(){ return window.matchMedia('(max-width: 760px)').matches; }
-  function scrollToHeroPanel(){ if(isMobileAutoScroll() && els.heroPanel) els.heroPanel.scrollIntoView({behavior:'smooth', block:'start'}); }
-  function scrollToDraftBoard(){ if(isMobileAutoScroll() && els.draftBoard) els.draftBoard.scrollIntoView({behavior:'smooth', block:'start'}); }
+  function isMobileAutoScroll(){ return false; }
+  function scrollToHeroPanel(){ /* v17: Android auto-scroll removed. User keeps manual scroll control. */ }
+  function scrollToDraftBoard(){ /* v17: Android auto-scroll removed. User keeps manual scroll control. */ }
   function enterDraftFocus(){ document.body.classList.add('draft-active', 'route-draft-page'); }
   function leaveDraftFocus(){ document.body.classList.remove('draft-active', 'route-draft-page'); }
   function setNotice(message, isWarning = true){ if(!els.firebaseNotice) return; els.firebaseNotice.innerHTML = message; els.firebaseNotice.classList.toggle('warning', isWarning); els.firebaseNotice.hidden = false; }
@@ -298,7 +320,6 @@
         const field = fieldForStep(liveStep); const nextTurnIndex = Number(room.turnIndex || 0) + 1; const nextStatus = nextTurnIndex >= draftSteps(room).length ? 'finished' : 'drafting';
         tx.update(ref, { [field]: firebase.firestore.FieldValue.arrayUnion(hero.id), selectedHeroIds: firebase.firestore.FieldValue.arrayUnion(hero.id), turnIndex: nextTurnIndex, status: nextStatus, currentTurnStartedAt: nextStatus === 'drafting' ? firebase.firestore.FieldValue.serverTimestamp() : null, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
       });
-      setTimeout(scrollToDraftBoard, 180);
     }catch(error){ showToast(error.message); }
   }
   async function nextGame(){
@@ -348,7 +369,7 @@
     if((status === 'preparing' || status === 'drafting') && !isDraftRoute()) goToDraftRoute(currentRoom.id || currentRoomId);
     if(status === 'lobby' && isDraftRoute()){ hideSessionModal(); goToLobbyRoute(currentRoom.id || currentRoomId); }
     const isLobby = status === 'lobby', isPreparing = status === 'preparing', isDrafting = status === 'drafting', isFinished = status === 'finished';
-    document.body.classList.toggle('room-lobby', isLobby); document.body.classList.toggle('room-preparing', isPreparing); document.body.classList.toggle('room-drafting', isDrafting); document.body.classList.toggle('room-finished', isFinished);
+    document.body.classList.toggle('room-lobby', isLobby); document.body.classList.toggle('room-preparing', isPreparing); document.body.classList.toggle('room-drafting', isDrafting); document.body.classList.toggle('room-finished', isFinished); applyLayoutMode();
     if(isLobby){ leaveDraftFocus(); hideSessionModal(); lastFinishedModalKey = ''; } else { enterDraftFocus(); }
     setHidden(els.setupPanel, true); setHidden(els.roomPanel, false); setHidden(els.draftStage, isLobby);
     setText(els.roomNameDisplay, currentRoom.roomName || 'Draft Room'); setText(els.roomCodeDisplay, currentRoom.id || currentRoomId);
@@ -477,7 +498,7 @@
     clearInterval(timerInterval); if(!currentRoom || (currentRoom.status !== 'drafting' && currentRoom.status !== 'preparing')) return;
     timerInterval = setInterval(() => { if(!currentRoom) return; if(currentRoom.status === 'preparing'){ const remaining = Math.ceil(prepareRemainingMs()/1000); setTimerValue(`${Math.max(0, remaining)}s`); renderProDraftTopbar(); return; } if(currentRoom.status !== 'drafting' || !currentRoom.currentTurnStartedAt) return; const remainingMs = draftRemainingMs(currentRoom); const remaining = Math.ceil(remainingMs / 1000); setTimerValue(`${Math.max(0, remaining)}s`); renderProDraftTopbar(); if(remainingMs <= 0) tryAutoResolveTurn(); }, 250);
   }
-  function handleMobileTurnAutoScroll(){ if(!isMobileAutoScroll() || !currentRoom || currentRoom.status !== 'drafting') return; const step = draftSteps(currentRoom)[currentRoom.turnIndex]; if(!step || currentRole !== step.team) return; const key = `${currentRoom.id}-${currentRole}-${currentRoom.turnIndex}`; if(lastAutoScrollTurnKey === key) return; lastAutoScrollTurnKey = key; setTimeout(scrollToHeroPanel, 220); }
+  function handleMobileTurnAutoScroll(){ /* v17: Android auto-scroll removed. */ }
   function isPortraitDraftScreen(){ return window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches; }
   function maybeShowRotatePrompt(){
     if(!currentRoom || !['preparing','drafting'].includes(currentRoom.status)) return;
@@ -637,7 +658,13 @@
     });
   }
   function bindEvents(){
-    if(els.createRoomBtn) els.createRoomBtn.addEventListener('click', createRoom); if(els.joinRoomBtn) els.joinRoomBtn.addEventListener('click', joinRoom); if(els.roomIdInput) els.roomIdInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') joinRoom(); });
+    if(els.createRoomBtn) els.createRoomBtn.addEventListener('click', createRoom); if(els.joinRoomBtn) els.joinRoomBtn.addEventListener('click', joinRoom);
+    if(els.roomIdInput){
+      els.roomIdInput.addEventListener('input', () => normalizeRoomCodeInput(els.roomIdInput));
+      els.roomIdInput.addEventListener('paste', () => setTimeout(() => normalizeRoomCodeInput(els.roomIdInput), 0));
+      els.roomIdInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') joinRoom(); });
+    }
+    if(els.layoutModeSelect){ els.layoutModeSelect.value = getSavedLayoutMode(); els.layoutModeSelect.addEventListener('change', () => setLayoutMode(els.layoutModeSelect.value)); applyLayoutMode(); }
     [els.copyRoomBtn, els.copyRoomTopBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', copyRoomId));
     if(els.startDraftBtn) els.startDraftBtn.addEventListener('click', startDraft); if(els.copyResultBtn) els.copyResultBtn.addEventListener('click', copyResult); if(els.deleteRoomBtn) els.deleteRoomBtn.addEventListener('click', deleteRoom); if(els.deleteRoomTopBtn) els.deleteRoomTopBtn.addEventListener('click', deleteRoom); if(els.leaveRoomBtn) els.leaveRoomBtn.addEventListener('click', leaveRoom);
     [els.downloadResultTopBtn, els.downloadResultTopBtn2, els.downloadResultBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', downloadResultPng));
@@ -650,5 +677,5 @@
     window.addEventListener('resize', () => { maybeShowRotatePrompt(); renderProDraftTopbar(); });
     updateGameVisuals();
   }
-  bindEvents(); updateGameVisuals(); renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); initFirebase();
+  bindEvents(); applyLayoutMode(); updateGameVisuals(); renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); initFirebase();
 })();
