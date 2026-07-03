@@ -44,17 +44,14 @@
   function setText(el, value){ if(el) el.textContent = value; }
   function showToast(message){ if(!els.toast) return; els.toast.textContent = message; setHidden(els.toast, false); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => setHidden(els.toast, true), 2800); }
   function isConfigReady(){ const cfg = window.HCI_FIREBASE_CONFIG; return Boolean(cfg && typeof cfg === "object" && cfg.apiKey && !String(cfg.apiKey).includes("PASTE") && cfg.projectId && !String(cfg.projectId).includes("PASTE")); }
-  function isHok(){ return String(CONFIG.gameKey || "HOK").toUpperCase() === "HOK"; }
-  function isGbpLocked(heroId, room = currentRoom){ return Boolean(isHok() && room && Array.isArray(room.globalLockedHeroIds) && room.globalLockedHeroIds.includes(heroId)); }
-  function canControlStep(step){ return Boolean(step && (currentRole === step.team || (isHost() && !currentRoom?.teamBUid))); }
-  function roleIconHtml(role){ const gameKey = String(CONFIG.gameKey || "HOK").toUpperCase(); const gameIcons = ROLE_ICON_PATHS[gameKey] || ROLE_ICON_PATHS.HOK; const src = gameIcons[role] || gameIcons.ALL; return src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(role)}" loading="lazy" onerror="this.style.display=\'none\'">` : FALLBACK_ROLE_ICON; }
+  function roleIconHtml(role){ const gameKey = String(CONFIG.gameKey || "HOK").toUpperCase(); const gameIcons = ROLE_ICON_PATHS[gameKey] || ROLE_ICON_PATHS.HOK; const src = gameIcons[role] || gameIcons.ALL; return src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(role)}" loading="lazy">` : FALLBACK_ROLE_ICON; }
   function heroById(id){ return heroes.find((hero) => hero.id === id) || null; }
   function heroLabel(id){ const hero = heroById(id); return hero ? hero.name : id || "-"; }
   function heroInitials(name){ return String(name||"?").split(/\s+|\.|-/).filter(Boolean).slice(0,2).map((p)=>p[0]?.toUpperCase()).join("") || "?"; }
   function generateRoomId(){ const prefix = CONFIG.roomPrefix || CONFIG.gameKey || "HCI"; const number = Math.floor(1 + Math.random() * 100000); return `${prefix}-${number}`; }
   function gameNumber(){ return Number(currentRoom?.gameNumber || 1); }
   function bestOf(){ return Number(currentRoom?.bestOf || DEFAULT_BEST_OF); }
-  function gameTitle(){ return `Game ${gameNumber()} / ${bestOf()} Game Session`; }
+  function gameTitle(){ return `Game ${gameNumber()} / Best of ${bestOf()}`; }
   function hostSideForGame(number = gameNumber()){ return Number(number) % 2 === 0 ? "B" : "A"; }
   function getSelectedBestOf(){ const value = Number(els.seriesFormat?.value || DEFAULT_BEST_OF); return value === 5 ? 5 : 3; }
   function gameSlug(){ return String(CONFIG.gameKey || "HOK").toLowerCase() === "mlbb" ? "mlbb" : "hok"; }
@@ -136,7 +133,7 @@
       hostUid: currentUser.uid, hostName: currentUser.displayName || "Host", hostEmail: currentUser.email || "", hostSide:"A",
       opponentUid:"", teamAUid: currentUser.uid, teamBUid:"", teamAName:"Team A", teamBName:"Team B",
       turnIndex:0, turnSeconds:TURN_SECONDS, prepareSeconds: PREPARE_SECONDS,
-      bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[], globalLockedHeroIds:[], draftSteps:DRAFT_STEPS,
+      bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[], draftSteps:DRAFT_STEPS,
       currentTurnStartedAt:null, prepareEndsAt:null,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -231,6 +228,7 @@
   async function startDraft(){
     if(!currentRoom || !currentRoomId) return;
     if(!isHost()) return showToast("Only the host can start the draft.");
+    if(!hasBothTeams()) return showToast("Both Team A and Team B must be filled first.");
     try{
       const prepareEndsAt = firebase.firestore.Timestamp.fromDate(new Date(Date.now() + PREPARE_SECONDS * 1000));
       await db.collection("draftRooms").doc(currentRoomId).update({
@@ -241,38 +239,14 @@
     }catch(error){ showToast(error.message); }
   }
 
-  function heroLockDialog(hero, step){
-    return new Promise((resolve)=>{
-      const overlay = document.createElement("div");
-      overlay.className = "hero-lock-modal";
-      const initials = heroInitials(hero.name);
-      overlay.innerHTML = `
-        <div class="hero-lock-card" role="dialog" aria-modal="true">
-          <span class="eyebrow">Confirm ${escapeHtml(step.type)}</span>
-          <div class="hero-lock-preview"><span>${escapeHtml(initials)}</span></div>
-          <h2>${escapeHtml(hero.name)}</h2>
-          <p>Preview selected hero. Press Lock to finalize or Cancel to choose another hero.</p>
-          <div class="hero-lock-actions"><button class="secondary-btn" data-cancel>Cancel</button><button class="primary-btn" data-lock>Lock</button></div>
-        </div>`;
-      document.body.appendChild(overlay);
-      const cleanup = (value)=>{ overlay.remove(); resolve(value); };
-      overlay.querySelector("[data-cancel]").addEventListener("click",()=>cleanup(false));
-      overlay.querySelector("[data-lock]").addEventListener("click",()=>cleanup(true));
-      overlay.addEventListener("click",(e)=>{ if(e.target === overlay) cleanup(false); });
-    });
-  }
-
   async function selectHero(hero){
     if(!currentRoom || !currentRoomId || !hero) return;
     if(!hero.active) return showToast("This hero is disabled.");
     if(currentRoom.status !== "drafting") return showToast("The draft has not started.");
     const step = DRAFT_STEPS[currentRoom.turnIndex];
     if(!step) return showToast("The draft is complete.");
-    if(!canControlStep(step)) return showToast(`It is Team ${step.team}'s turn.`);
+    if(currentRole !== step.team) return showToast(`It is Team ${step.team}'s turn.`);
     if(currentRoom.selectedHeroIds?.includes(hero.id)) return showToast("This hero has already been selected or banned.");
-    if(isGbpLocked(hero.id)) return showToast("This hero is locked by Global Ban Pick for this HOK series.");
-    const confirmed = await heroLockDialog(hero, step);
-    if(!confirmed) return;
     const ref = db.collection("draftRooms").doc(currentRoomId);
     try{
       await db.runTransaction(async(tx)=>{
@@ -281,11 +255,8 @@
         const room = snap.data();
         const liveStep = DRAFT_STEPS[room.turnIndex];
         if(!liveStep) throw new Error("The draft is complete.");
-        const liveRole = room.teamAUid === currentUser.uid ? "A" : room.teamBUid === currentUser.uid ? "B" : "SPECTATOR";
-        const hostSoloControl = room.hostUid === currentUser.uid && !room.teamBUid;
-        if(liveStep.team !== liveRole && !hostSoloControl) throw new Error(`It is Team ${liveStep.team}'s turn.`);
+        if(liveStep.team !== currentRole) throw new Error(`It is Team ${liveStep.team}'s turn.`);
         if((room.selectedHeroIds || []).includes(hero.id)) throw new Error("This hero has already been selected or banned.");
-        if(isHok() && (room.globalLockedHeroIds || []).includes(hero.id)) throw new Error("This hero is locked by Global Ban Pick for this HOK series.");
         const field = liveStep.type === "ban" ? (liveStep.team === "A" ? "bansA" : "bansB") : (liveStep.team === "A" ? "picksA" : "picksB");
         const nextTurnIndex = room.turnIndex + 1;
         const nextStatus = nextTurnIndex >= DRAFT_STEPS.length ? "finished" : "drafting";
@@ -305,21 +276,17 @@
     if(!currentRoom || !currentRoomId) return;
     if(!isHost()) return showToast("Only the host can continue to the next game.");
     const next = gameNumber() + 1;
-    if(next > bestOf()) return showToast(`${bestOf()} Game Session is complete.`);
+    if(next > bestOf()) return showToast(`Best of ${bestOf()} is complete.`);
     const hostUid = currentRoom.hostUid;
     const opponentUid = currentRoom.opponentUid || (currentRoom.teamAUid === hostUid ? currentRoom.teamBUid : currentRoom.teamAUid) || "";
-    const hasOpponent = Boolean(opponentUid);
-    const hostSide = hasOpponent ? hostSideForGame(next) : "A";
-    const nextTeamAUid = hasOpponent ? (hostSide === "A" ? hostUid : opponentUid) : hostUid;
-    const nextTeamBUid = hasOpponent ? (hostSide === "B" ? hostUid : opponentUid) : "";
-    const previousSelected = currentRoom.selectedHeroIds || [];
-    const previousGlobal = currentRoom.globalLockedHeroIds || [];
-    const nextGlobal = isHok() ? Array.from(new Set([...previousGlobal, ...previousSelected])) : [];
+    if(!opponentUid) return showToast("Opponent is not available.");
+    const hostSide = hostSideForGame(next);
+    const nextTeamAUid = hostSide === "A" ? hostUid : opponentUid;
+    const nextTeamBUid = hostSide === "B" ? hostUid : opponentUid;
     try{
       await db.collection("draftRooms").doc(currentRoomId).update({
         gameNumber: next, status:"lobby", hostSide, opponentUid,
-        turnIndex:0, bansA:[], bansB:[], picksA:[], picksB:[],
-        selectedHeroIds: isHok() ? nextGlobal : [], globalLockedHeroIds: nextGlobal,
+        turnIndex:0, bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[],
         teamAUid: nextTeamAUid, teamBUid: nextTeamBUid, currentTurnStartedAt:null, prepareEndsAt:null,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -391,7 +358,7 @@
     document.querySelectorAll(".side-btn").forEach((btn)=>btn.classList.toggle("active",btn.dataset.side === currentRole));
     setHidden(els.sidePicker, !(isLobby && gameNumber() === 1));
     setHidden(els.startDraftBtn, !(isLobby && isHost()));
-    if(els.startDraftBtn) els.startDraftBtn.disabled = false;
+    if(els.startDraftBtn) els.startDraftBtn.disabled = !hasBothTeams();
     setHidden(els.copyResultBtn, !isFinished);
     setHidden(els.downloadResultTopBtn, !isFinished);
     setHidden(els.deleteRoomBtn, !isHost());
@@ -405,25 +372,11 @@
 
   function renderSlots(container,values,count,prefix){ if(!container) return; container.innerHTML = ""; for(let i=0;i<count;i++){ const heroId = values[i]; const div = document.createElement("div"); div.className = `slot ${heroId ? "filled" : ""}`; div.innerHTML = heroId ? `<span>${escapeHtml(heroLabel(heroId))}<small>${prefix} ${i+1}</small></span>` : `<span>${prefix} ${i+1}</span>`; container.appendChild(div); } }
   function renderDraftResult(){ if(!els.draftResultPanel || !currentRoom) return; const bansA = currentRoom.bansA || [], bansB = currentRoom.bansB || [], picksA = currentRoom.picksA || [], picksB = currentRoom.picksB || []; const complete = currentRoom.status === "finished" || (bansA.length >= 4 && bansB.length >= 4 && picksA.length >= 5 && picksB.length >= 5); setHidden(els.draftResultPanel, !complete); if(!complete) return; setText(els.resultGameTitle, `${gameTitle()} Draft Result`); renderResultBoxes(els.resultABans,bansA,4,"ban"); renderResultBoxes(els.resultBBans,bansB,4,"ban"); renderResultBoxes(els.resultAPicks,picksA,5,"pick"); renderResultBoxes(els.resultBPicks,picksB,5,"pick"); }
-  function renderResultBoxes(container,heroIds,count,type){
-    if(!container) return;
-    container.innerHTML = "";
-    for(let i=0;i<count;i++){
-      const heroId = heroIds[i];
-      const box = document.createElement("div");
-      if(!heroId){ box.className = `result-hero-box ${type} empty`; box.textContent = `${type === "ban" ? "Ban" : "Pick"} ${i+1}`; container.appendChild(box); continue; }
-      const hero = heroById(heroId);
-      const name = hero ? hero.name : heroId;
-      box.className = `result-hero-box ${type} filled`;
-      const avatar = `<span class="result-avatar">${escapeHtml(heroInitials(name))}</span>`;
-      box.innerHTML = `${avatar}<span class="result-hero-info"><span class="result-hero-name">${escapeHtml(name)}</span><span class="result-hero-order">${type === "ban" ? "Ban" : "Pick"} ${i+1}</span></span>`;
-      container.appendChild(box);
-    }
-  }
+  function renderResultBoxes(container,heroIds,count,type){ if(!container) return; container.innerHTML = ""; for(let i=0;i<count;i++){ const heroId = heroIds[i]; const box = document.createElement("div"); if(!heroId){ box.className = `result-hero-box ${type} empty`; box.textContent = `${type === "ban" ? "Ban" : "Pick"} ${i+1}`; container.appendChild(box); continue; } const hero = heroById(heroId); const name = hero ? hero.name : heroId; const image = hero && hero.image ? hero.image : ""; box.className = `result-hero-box ${type} filled`; const avatar = image ? `<span class="result-avatar"><img src="${escapeHtml(image)}" alt="${escapeHtml(name)}"></span>` : `<span class="result-avatar">${heroInitials(name)}</span>`; box.innerHTML = `${avatar}<span class="result-hero-info"><span class="result-hero-name">${escapeHtml(name)}</span><span class="result-hero-order">${type === "ban" ? "Ban" : "Pick"} ${i+1}</span></span>`; container.appendChild(box); } }
   function renderCurrentTurn(){
     if(!currentRoom) return;
     if(currentRoom.status === "lobby"){
-      const sideText = hasBothTeams() ? `Sides are set. Host side: Team ${hostSideForGame()}.` : "Solo draft is available. Team B may also join before the host starts.";
+      const sideText = hasBothTeams() ? `Sides are set. Host side: Team ${hostSideForGame()}.` : "Share the Room ID with Team B.";
       setText(els.currentTurnText, `${gameTitle()} Lobby`); setText(els.currentTurnHelp, sideText); setText(els.timerValue, "--"); return;
     }
     if(currentRoom.status === "preparing"){
@@ -439,35 +392,7 @@
   function renderDraftSequence(){ if(!els.draftSequence) return; els.draftSequence.innerHTML = ""; DRAFT_STEPS.forEach((step,i)=>{ const chip = document.createElement("span"); chip.className = "step-chip"; if(currentRoom){ if(i < currentRoom.turnIndex) chip.classList.add("done"); if(i === currentRoom.turnIndex && currentRoom.status === "drafting") chip.classList.add("active"); } chip.textContent = step.label; els.draftSequence.appendChild(chip); }); }
   function renderRoleFilters(){ if(!els.laneFilterButtons) return; els.laneFilterButtons.innerHTML = ""; (CONFIG.roles || ["ALL"]).forEach((role)=>{ const btn = document.createElement("button"); btn.type = "button"; btn.className = `role-filter ${activeLane === role ? "active" : ""}`; btn.title = role; btn.setAttribute("aria-label", role); btn.innerHTML = roleIconHtml(role); btn.addEventListener("click",()=>{ activeLane = role; renderRoleFilters(); renderHeroGrid(); }); els.laneFilterButtons.appendChild(btn); }); }
   function miniRoleIcons(lanes){ return (lanes || []).slice(0,3).map((lane)=>`<span class="mini-role" title="${escapeHtml(lane)}">${roleIconHtml(lane)}</span>`).join(""); }
-  function renderHeroGrid(){
-    if(!els.heroGrid) return;
-    const search = (els.heroSearch?.value || "").trim().toLowerCase();
-    const selected = currentRoom?.selectedHeroIds || [];
-    const globalLocked = isHok() ? (currentRoom?.globalLockedHeroIds || []) : [];
-    const step = currentRoom?.status === "drafting" ? DRAFT_STEPS[currentRoom.turnIndex] : null;
-    const canClick = step && canControlStep(step);
-    const filtered = heroes.filter((hero)=>{
-      const matchesSearch = !search || hero.name.toLowerCase().includes(search);
-      const lanes = Array.isArray(hero.lanes) ? hero.lanes : [];
-      const matchesLane = activeLane === "ALL" || lanes.includes(activeLane);
-      return matchesSearch && matchesLane;
-    });
-    els.heroGrid.innerHTML = "";
-    filtered.forEach((hero)=>{
-      const locked = selected.includes(hero.id);
-      const gbpLocked = globalLocked.includes(hero.id);
-      const disabledHero = hero.active === false;
-      const btn = document.createElement("button");
-      btn.className = `hero-card ${locked ? "locked" : ""} ${gbpLocked ? "gbp-locked" : ""} ${disabledHero ? "disabled-hero" : ""}`;
-      btn.disabled = locked || gbpLocked || disabledHero || !canClick;
-      const initials = heroInitials(hero.name);
-      const badge = gbpLocked ? '<span class="gbp-badge">GBP</span>' : '';
-      btn.innerHTML = `<span class="hero-avatar">${escapeHtml(initials)}</span>${badge}<span><span class="hero-name">${escapeHtml(hero.name)}</span><span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span></span>`;
-      btn.addEventListener("click",()=>selectHero(hero));
-      els.heroGrid.appendChild(btn);
-    });
-    if(!filtered.length) els.heroGrid.innerHTML = `<div class="notice compact">No heroes match this filter.</div>`;
-  }
+  function renderHeroGrid(){ if(!els.heroGrid) return; const search = (els.heroSearch?.value || "").trim().toLowerCase(); const selected = currentRoom?.selectedHeroIds || []; const step = currentRoom?.status === "drafting" ? DRAFT_STEPS[currentRoom.turnIndex] : null; const canClick = step && currentRole === step.team; const filtered = heroes.filter((hero)=>{ const matchesSearch = !search || hero.name.toLowerCase().includes(search); const lanes = Array.isArray(hero.lanes) ? hero.lanes : []; const matchesLane = activeLane === "ALL" || lanes.includes(activeLane); return matchesSearch && matchesLane; }); els.heroGrid.innerHTML = ""; filtered.forEach((hero)=>{ const locked = selected.includes(hero.id); const disabledHero = hero.active === false; const btn = document.createElement("button"); btn.className = `hero-card ${locked ? "locked" : ""} ${disabledHero ? "disabled-hero" : ""}`; btn.disabled = locked || disabledHero || !canClick; const initials = heroInitials(hero.name); const avatar = hero.image ? `<span class="hero-avatar"><img src="${escapeHtml(hero.image)}" alt="${escapeHtml(hero.name)}" onerror="this.parentElement.textContent='${initials}'"></span>` : `<span class="hero-avatar">${initials}</span>`; btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span><span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span></span>`; btn.addEventListener("click",()=>selectHero(hero)); els.heroGrid.appendChild(btn); }); if(!filtered.length) els.heroGrid.innerHTML = `<div class="notice compact">No heroes match this filter.</div>`; }
   function timestampToMillis(value){ return value && value.toDate ? value.toDate().getTime() : 0; }
   async function beginDraftAfterPreparing(){
     if(!db || !currentRoomId) return;
@@ -529,24 +454,6 @@
     });
   }
 
-
-  function initSessionChoice(){
-    const input = els.seriesFormat;
-    const buttons = Array.from(document.querySelectorAll('[data-series-value]'));
-    if(!input || !buttons.length) return;
-    const setValue = (value)=>{
-      const normalized = String(value) === "5" ? "5" : "3";
-      input.value = normalized;
-      buttons.forEach((button)=>{
-        const active = String(button.dataset.seriesValue) === normalized;
-        button.classList.toggle("active", active);
-        button.setAttribute("aria-pressed", active ? "true" : "false");
-      });
-    };
-    buttons.forEach((button)=>button.addEventListener("click",()=>setValue(button.dataset.seriesValue)));
-    setValue(input.value || "3");
-  }
-
   function bindEvents(){
     if(els.createRoomBtn) els.createRoomBtn.addEventListener("click",createRoom);
     if(els.joinRoomBtn) els.joinRoomBtn.addEventListener("click",joinRoom);
@@ -566,5 +473,5 @@
     document.querySelectorAll(".side-btn").forEach((btn)=>btn.addEventListener("click",()=>chooseSide(btn.dataset.side)));
   }
 
-  initSessionChoice(); bindEvents(); renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); initFirebase();
+  bindEvents(); renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); initFirebase();
 })();
