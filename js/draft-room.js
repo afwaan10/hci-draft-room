@@ -9,8 +9,8 @@
     { side:'BLUE', type:'pick', label:'Blue Pick 1' }, { side:'RED', type:'pick', label:'Red Pick 1' },
     { side:'RED', type:'pick', label:'Red Pick 2' }, { side:'BLUE', type:'pick', label:'Blue Pick 2' },
     { side:'BLUE', type:'pick', label:'Blue Pick 3' }, { side:'RED', type:'pick', label:'Red Pick 3' },
-    { side:'BLUE', type:'ban', label:'Blue Ban 3' }, { side:'RED', type:'ban', label:'Red Ban 3' },
-    { side:'BLUE', type:'ban', label:'Blue Ban 4' }, { side:'RED', type:'ban', label:'Red Ban 4' },
+    { side:'RED', type:'ban', label:'Red Ban 3' }, { side:'BLUE', type:'ban', label:'Blue Ban 3' },
+    { side:'RED', type:'ban', label:'Red Ban 4' }, { side:'BLUE', type:'ban', label:'Blue Ban 4' },
     { side:'RED', type:'pick', label:'Red Pick 4' }, { side:'BLUE', type:'pick', label:'Blue Pick 4' },
     { side:'BLUE', type:'pick', label:'Blue Pick 5' }, { side:'RED', type:'pick', label:'Red Pick 5' }
   ];
@@ -39,7 +39,8 @@
     teamATitle: $('teamATitle'), teamBTitle: $('teamBTitle'), teamASideLabel: $('teamASideLabel'), teamBSideLabel: $('teamBSideLabel'), resultATitle: $('resultATitle'), resultBTitle: $('resultBTitle'), resultASideLabel: $('resultASideLabel'), resultBSideLabel: $('resultBSideLabel'),
     heroSearch: $('heroSearch'), laneFilterButtons: $('laneFilterButtons'), draftSequence: $('draftSequence'), heroGrid: $('heroGrid'), draftBoard: $('draftBoard'), heroPanel: $('heroPanel'), draftStage: $('draftStage'), draftFocusHeader: $('draftFocusHeader'), focusRoomText: $('focusRoomText'), gameHeadline: $('gameHeadline'),
     draftResultPanel: $('draftResultPanel'), resultGameTitle: $('resultGameTitle'), resultABans: $('resultABans'), resultBBans: $('resultBBans'), resultAPicks: $('resultAPicks'), resultBPicks: $('resultBPicks'),
-    sessionModal: $('sessionModal'), sessionModalTitle: $('sessionModalTitle'), nextGameBtn: $('nextGameBtn'), backLobbyBtn: $('backLobbyBtn'), downloadResultBtn: $('downloadResultBtn'), toast: $('toast')
+    sessionModal: $('sessionModal'), sessionModalTitle: $('sessionModalTitle'), nextGameBtn: $('nextGameBtn'), backLobbyBtn: $('backLobbyBtn'), downloadResultBtn: $('downloadResultBtn'), toast: $('toast'),
+    siteNav: $('siteNav'), navToggle: $('navToggle'), seriesOptions: document.querySelectorAll('[data-series]')
   };
 
   let db = null, auth = null, currentUser = null, currentRoomId = null, currentRoom = null, currentRole = 'SPECTATOR';
@@ -75,6 +76,11 @@
   function gameTitle(room = currentRoom){ return `Game ${gameNumber(room)} / Best of ${bestOf(room)}`; }
   function isHost(){ return Boolean(currentRoom && currentUser && currentRoom.hostUid === currentUser.uid); }
   function getSelectedBestOf(){ const value = Number(els.seriesFormat?.value || DEFAULT_BEST_OF); return value === 5 ? 5 : 3; }
+  function uidForTeam(team, room = currentRoom){ return team === 'A' ? room?.teamAUid : room?.teamBUid; }
+  function valuesForTeam(team, type, room = currentRoom){ const field = type === 'ban' ? (team === 'A' ? 'bansA' : 'bansB') : (team === 'A' ? 'picksA' : 'picksB'); return room?.[field] || []; }
+  function displayTeams(room = currentRoom){ const number = gameNumber(room); const blue = blueTeamForGame(number); const red = redTeamForGame(number); return { left: blue, right: red, blue, red }; }
+  function teamState(team, room = currentRoom){ return uidForTeam(team, room) ? (currentRole === team ? 'You' : 'Filled') : 'Empty'; }
+  function updateSeriesButtons(){ const value = String(getSelectedBestOf()); document.querySelectorAll('[data-series]').forEach((btn) => { const active = btn.dataset.series === value; btn.classList.toggle('active', active); btn.setAttribute('aria-checked', active ? 'true' : 'false'); }); }
   function getBansPerTeam(){ return Number(CONFIG.bansPerTeam || (CONFIG.gameKey === 'MLBB' ? 5 : 4)); }
   function getTurnSeconds(){ return Number(CONFIG.turnSeconds || 45); }
   function generateRoomId(){ return `${CONFIG.roomPrefix || CONFIG.gameKey || 'HCI'}-${Math.floor(1000 + Math.random() * 90000)}`; }
@@ -86,6 +92,25 @@
   function draftSteps(room = currentRoom){ const number = gameNumber(room); return baseSteps().map((step, i) => ({ ...step, index:i, team: teamForSide(step.side, number), label: `${step.side === 'BLUE' ? 'Blue' : 'Red'} ${step.type === 'ban' ? 'Ban' : 'Pick'} ${countStepNo(step, i)}` })); }
   function countStepNo(step, index){ return baseSteps().slice(0, index + 1).filter((s) => s.side === step.side && s.type === step.type).length; }
   function fieldForStep(step){ if(step.type === 'ban') return step.team === 'A' ? 'bansA' : 'bansB'; return step.team === 'A' ? 'picksA' : 'picksB'; }
+  function isHokGBP(){ return String(CONFIG.gameKey || 'HOK').toUpperCase() === 'HOK'; }
+  function finishedGames(room = currentRoom){ return Array.isArray(room?.finishedGames) ? room.finishedGames : []; }
+  function previousPicksForTeam(team, room = currentRoom){
+    const key = team === 'A' ? 'picksA' : 'picksB';
+    return new Set(finishedGames(room).flatMap((game) => Array.isArray(game?.[key]) ? game[key] : []));
+  }
+  function isPreviousPickLockedForStep(room, step, heroId){
+    return Boolean(isHokGBP() && step?.type === 'pick' && step.team && heroId && previousPicksForTeam(step.team, room).has(heroId));
+  }
+  function heroUnavailableReason(room, step, heroId){
+    if(!heroId) return '';
+    if((room?.selectedHeroIds || []).includes(heroId)) return 'selected';
+    if(isPreviousPickLockedForStep(room, step, heroId)) return 'gbp-used';
+    return '';
+  }
+  function availableHeroPool(room, step){
+    const selected = new Set(room?.selectedHeroIds || []);
+    return heroes.filter((hero) => hero.active !== false && !selected.has(hero.id) && !isPreviousPickLockedForStep(room, step, hero.id));
+  }
   function teamName(team, room = currentRoom){ return team === 'A' ? (room?.teamAName || 'Team A') : (room?.teamBName || 'Team B'); }
   function isMobileAutoScroll(){ return window.matchMedia('(max-width: 760px)').matches; }
   function scrollToHeroPanel(){ if(isMobileAutoScroll() && els.heroPanel) els.heroPanel.scrollIntoView({behavior:'smooth', block:'start'}); }
@@ -120,7 +145,7 @@
       auth.onAuthStateChanged(async (user) => {
         if(!user || user.isAnonymous){ redirectToLogin(); return; }
         currentUser = user;
-        setText(els.signedUserMini, user.displayName || user.email || 'Google user');
+        if(els.signedUserMini){ const photo = user.photoURL ? `<img src="${escapeHtml(user.photoURL)}" alt="">` : '<span class="mini-avatar-fallback">HCI</span>'; els.signedUserMini.innerHTML = `${photo}<span>${escapeHtml(user.displayName || 'Profile')}</span>`; }
         setText(els.connectionStatus, 'Realtime ready');
         if(els.createRoomBtn) els.createRoomBtn.disabled = false;
         if(els.joinRoomBtn) els.joinRoomBtn.disabled = false;
@@ -231,7 +256,18 @@
     const steps = draftSteps(currentRoom); const step = steps[currentRoom.turnIndex];
     if(!step) return showToast('The draft is complete.');
     if(currentRole !== step.team) return showToast(`It is ${teamName(step.team)}'s turn.`);
-    if(currentRoom.selectedHeroIds?.includes(hero.id)) return showToast('This hero has already been selected or banned.');
+    const unavailable = heroUnavailableReason(currentRoom, step, hero.id);
+    if(unavailable === 'selected') return showToast('This hero has already been selected or banned.');
+    if(unavailable === 'gbp-used') return showToast(`${hero.name} was already used by ${teamName(step.team)} in a previous game and cannot be picked again.`);
+    const action = step.type === 'ban' ? 'Ban' : 'Pick';
+    const ok = await confirmDialog({
+      title: `${action} ${hero.name}?`,
+      message: `${teamName(step.team)} · ${step.side === 'BLUE' ? 'Blue Side' : 'Red Side'} · ${gameTitle(currentRoom)}`,
+      confirmText: action,
+      cancelText: 'Cancel',
+      danger: step.type === 'ban'
+    });
+    if(!ok) return;
     const ref = db.collection('draftRooms').doc(currentRoomId);
     try{
       await db.runTransaction(async (tx) => {
@@ -239,7 +275,9 @@
         const room = snap.data(); const liveStep = draftSteps(room)[room.turnIndex];
         if(!liveStep) throw new Error('The draft is complete.');
         if(liveStep.team !== currentRole) throw new Error(`It is ${teamName(liveStep.team, room)}'s turn.`);
-        if((room.selectedHeroIds || []).includes(hero.id)) throw new Error('This hero has already been selected or banned.');
+        const liveUnavailable = heroUnavailableReason(room, liveStep, hero.id);
+        if(liveUnavailable === 'selected') throw new Error('This hero has already been selected or banned.');
+        if(liveUnavailable === 'gbp-used') throw new Error(`${hero.name} was already used by ${teamName(liveStep.team, room)} and cannot be picked again.`);
         const field = fieldForStep(liveStep); const nextTurnIndex = Number(room.turnIndex || 0) + 1; const nextStatus = nextTurnIndex >= draftSteps(room).length ? 'finished' : 'drafting';
         tx.update(ref, { [field]: firebase.firestore.FieldValue.arrayUnion(hero.id), selectedHeroIds: firebase.firestore.FieldValue.arrayUnion(hero.id), turnIndex: nextTurnIndex, status: nextStatus, currentTurnStartedAt: nextStatus === 'drafting' ? firebase.firestore.FieldValue.serverTimestamp() : null, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
       });
@@ -250,8 +288,22 @@
     if(!currentRoom || !currentRoomId) return;
     if(!isHost()) return showToast('Only the host can continue to the next game.');
     const next = gameNumber() + 1; if(next > bestOf()) return showToast(`Best of ${bestOf()} is complete.`);
+    const boardTeams = displayTeams(currentRoom);
+    const summary = {
+      gameNumber: gameNumber(),
+      blueTeamKey: boardTeams.blue,
+      redTeamKey: boardTeams.red,
+      bansA: currentRoom.bansA || [], bansB: currentRoom.bansB || [],
+      picksA: currentRoom.picksA || [], picksB: currentRoom.picksB || [],
+      blueBans: valuesForTeam(boardTeams.blue, 'ban'), redBans: valuesForTeam(boardTeams.red, 'ban'),
+      bluePicks: valuesForTeam(boardTeams.blue, 'pick'), redPicks: valuesForTeam(boardTeams.red, 'pick'),
+      savedAtMillis: Date.now()
+    };
     try{
-      await db.collection('draftRooms').doc(currentRoomId).update({ gameNumber: next, status:'lobby', turnIndex:0, bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[], currentTurnStartedAt:null, prepareEndsAt:null, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      await db.collection('draftRooms').doc(currentRoomId).update({
+        finishedGames: firebase.firestore.FieldValue.arrayUnion(summary),
+        gameNumber: next, status:'lobby', turnIndex:0, bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[], currentTurnStartedAt:null, prepareEndsAt:null, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
       hideSessionModal(); goToLobbyRoute(currentRoomId);
     }catch(error){ showToast(error.message); }
   }
@@ -286,14 +338,15 @@
     setText(els.roomStatusDisplay, isPreparing ? 'Starting Soon' : isDrafting ? 'Drafting' : isFinished ? 'Finished' : 'Lobby');
     if(els.teamANameInput && els.teamANameInput !== document.activeElement) els.teamANameInput.value = teamName('A');
     if(els.teamBNameInput && els.teamBNameInput !== document.activeElement) els.teamBNameInput.value = teamName('B');
-    setText(els.teamATitle, teamName('A')); setText(els.teamBTitle, teamName('B')); setText(els.resultATitle, teamName('A')); setText(els.resultBTitle, teamName('B'));
-    setText(els.teamASideLabel, sideForTeam('A')); setText(els.teamBSideLabel, sideForTeam('B')); setText(els.resultASideLabel, sideForTeam('A')); setText(els.resultBSideLabel, sideForTeam('B'));
-    setText(els.teamAState, currentRoom.teamAUid ? (currentRole === 'A' ? 'You' : 'Filled') : 'Empty'); setText(els.teamBState, currentRoom.teamBUid ? (currentRole === 'B' ? 'You' : 'Filled') : 'Empty');
+    const boardTeams = displayTeams(currentRoom); const leftTeam = boardTeams.left; const rightTeam = boardTeams.right;
+    setText(els.teamATitle, teamName(leftTeam)); setText(els.teamBTitle, teamName(rightTeam)); setText(els.resultATitle, teamName(leftTeam)); setText(els.resultBTitle, teamName(rightTeam));
+    setText(els.teamASideLabel, 'Blue Side'); setText(els.teamBSideLabel, 'Red Side'); setText(els.resultASideLabel, 'Blue Side'); setText(els.resultBSideLabel, 'Red Side');
+    setText(els.teamAState, teamState(leftTeam)); setText(els.teamBState, teamState(rightTeam));
     setText(els.gameHeadline, gameTitle()); setText(els.focusRoomText, `${currentRoom.id || currentRoomId} · ${currentRoom.roomName || 'Draft Room'}`);
     document.querySelectorAll('.side-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.side === currentRole));
     setHidden(els.sidePicker, !isLobby); setHidden(els.startDraftBtn, !(isLobby && isHost())); if(els.startDraftBtn) els.startDraftBtn.disabled = !hasBothTeams();
     setHidden(els.copyResultBtn, !isFinished); setHidden(els.downloadResultTopBtn, !isFinished); setHidden(els.downloadResultTopBtn2, !isFinished); setHidden(els.deleteRoomBtn, !isHost()); setHidden(els.deleteRoomTopBtn, !isHost());
-    const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); renderSlots(els.teamABans, currentRoom.bansA || [], banCount, 'Ban'); renderSlots(els.teamBBans, currentRoom.bansB || [], banCount, 'Ban'); renderSlots(els.teamAPicks, currentRoom.picksA || [], 5, 'Pick'); renderSlots(els.teamBPicks, currentRoom.picksB || [], 5, 'Pick');
+    const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); renderSlots(els.teamABans, valuesForTeam(leftTeam, 'ban'), banCount, 'Ban'); renderSlots(els.teamBBans, valuesForTeam(rightTeam, 'ban'), banCount, 'Ban'); renderSlots(els.teamAPicks, valuesForTeam(leftTeam, 'pick'), 5, 'Pick'); renderSlots(els.teamBPicks, valuesForTeam(rightTeam, 'pick'), 5, 'Pick');
     renderDraftResult(); renderCurrentTurn(); renderDraftSequence(); renderHeroGrid(); ensurePrepareTransition(); startTimerRenderer(); handleMobileTurnAutoScroll(); maybeShowFinishedModal(); maybeSaveHistory();
   }
   function renderSlots(container, values, count, prefix){
@@ -308,7 +361,11 @@
   }
   function renderDraftResult(){
     if(!els.draftResultPanel || !currentRoom) return; const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); const complete = currentRoom.status === 'finished' || ((currentRoom.bansA || []).length >= banCount && (currentRoom.bansB || []).length >= banCount && (currentRoom.picksA || []).length >= 5 && (currentRoom.picksB || []).length >= 5);
-    setHidden(els.draftResultPanel, !complete); if(!complete) return; setText(els.resultGameTitle, `${gameTitle()} Draft Result`); renderResultBoxes(els.resultABans, currentRoom.bansA || [], banCount, 'ban'); renderResultBoxes(els.resultBBans, currentRoom.bansB || [], banCount, 'ban'); renderResultBoxes(els.resultAPicks, currentRoom.picksA || [], 5, 'pick'); renderResultBoxes(els.resultBPicks, currentRoom.picksB || [], 5, 'pick');
+    setHidden(els.draftResultPanel, !complete); if(!complete) return; const boardTeams = displayTeams(currentRoom); setText(els.resultGameTitle, `${gameTitle()} Draft Result`); renderResultBoxes(els.resultABans, valuesForTeam(boardTeams.left, 'ban'), banCount, 'ban'); renderResultBoxes(els.resultBBans, valuesForTeam(boardTeams.right, 'ban'), banCount, 'ban'); renderResultBoxes(els.resultAPicks, valuesForTeam(boardTeams.left, 'pick'), 5, 'pick'); renderResultBoxes(els.resultBPicks, valuesForTeam(boardTeams.right, 'pick'), 5, 'pick'); renderResultSimulationPanel(els.draftResultPanel, currentRoom);
+  }
+  function renderResultSimulationPanel(panel, room){
+    if(!panel) return; let node = panel.querySelector('.draft-sim-panel'); if(!node){ node = document.createElement('div'); node.className = 'draft-sim-panel'; panel.appendChild(node); }
+    node.innerHTML = buildSimulationHtml(room, false);
   }
   function renderResultBoxes(container, heroIds, count, type){
     if(!container) return; container.innerHTML = '';
@@ -341,9 +398,11 @@
   function miniRoleIcons(lanes){ return (lanes || []).slice(0,3).map((lane) => `<span class="mini-role" title="${escapeHtml(lane)}">${roleIconHtml(lane)}</span>`).join(''); }
   function renderHeroGrid(){
     if(!els.heroGrid) return; const search = (els.heroSearch?.value || '').trim().toLowerCase(); const selected = currentRoom?.selectedHeroIds || []; const step = currentRoom?.status === 'drafting' ? draftSteps(currentRoom)[currentRoom.turnIndex] : null; const canClick = step && currentRole === step.team;
-    const filtered = heroes.filter((hero) => { const name = String(hero.name || '').toLowerCase(); const matchesSearch = !search || name.includes(search); const lanes = Array.isArray(hero.lanes) ? hero.lanes : []; const matchesLane = activeLane === 'ALL' || lanes.includes(activeLane); return matchesSearch && matchesLane; });
+    const filtered = heroes.filter((hero) => { const name = String(hero.name || '').toLowerCase(); const lanes = Array.isArray(hero.lanes) ? hero.lanes : []; const matchesSearch = !search || name.includes(search); const matchesLane = activeLane === 'ALL' || lanes.includes(activeLane); return matchesSearch && matchesLane; });
     els.heroGrid.innerHTML = '';
-    filtered.forEach((hero) => { const locked = selected.includes(hero.id); const disabledHero = hero.active === false; const btn = document.createElement('button'); btn.className = `hero-card ${locked ? 'locked' : ''} ${disabledHero ? 'disabled-hero' : ''}`; btn.disabled = locked || disabledHero || !canClick; const initials = heroInitials(hero.name); const avatar = hero.image ? `<span class="hero-avatar"><img src="${escapeHtml(hero.image)}" alt="${escapeHtml(hero.name)}" onerror="this.parentElement.textContent='${initials}'"></span>` : `<span class="hero-avatar">${initials}</span>`; btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span><span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span></span>`; btn.addEventListener('click', () => selectHero(hero)); els.heroGrid.appendChild(btn); });
+    filtered.forEach((hero) => {
+      const locked = selected.includes(hero.id); const gbpLocked = Boolean(step && isPreviousPickLockedForStep(currentRoom, step, hero.id)); const disabledHero = hero.active === false; const btn = document.createElement('button'); btn.className = `hero-card ${locked ? 'locked' : ''} ${gbpLocked ? 'gbp-locked' : ''} ${disabledHero ? 'disabled-hero' : ''}`; btn.disabled = locked || gbpLocked || disabledHero || !canClick; const initials = heroInitials(hero.name); const avatar = hero.image ? `<span class="hero-avatar"><img src="${escapeHtml(hero.image)}" alt="${escapeHtml(hero.name)}" onerror="this.parentElement.textContent='${initials}'"></span>` : `<span class="hero-avatar">${initials}</span>`; const lockNote = gbpLocked ? '<span class="hero-lock-note">Used by your team</span>' : locked ? '<span class="hero-lock-note">Selected / Banned</span>' : ''; btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span>${lockNote}<span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span></span>`; btn.addEventListener('click', () => selectHero(hero)); els.heroGrid.appendChild(btn);
+    });
     if(!filtered.length) els.heroGrid.innerHTML = '<div class="notice compact">No heroes match this filter.</div>';
   }
   function timestampToMillis(value){ return value && value.toDate ? value.toDate().getTime() : 0; }
@@ -356,7 +415,7 @@
   function draftRemainingMs(room = currentRoom){ if(!room || room.status !== 'drafting' || !room.currentTurnStartedAt) return 0; const startedAt = timestampToMillis(room.currentTurnStartedAt) || 0; const duration = Number(room.turnSeconds || getTurnSeconds()) * 1000; return Math.max(0, (startedAt + duration) - Date.now()); }
   async function tryAutoResolveTurn(){
     if(autoResolveBusy || !db || !currentRoomId || !currentRoom || currentRoom.status !== 'drafting') return; if(draftRemainingMs(currentRoom) > 0) return; autoResolveBusy = true;
-    try{ const ref = db.collection('draftRooms').doc(currentRoomId); await db.runTransaction(async (tx) => { const snap = await tx.get(ref); if(!snap.exists) return; const room = snap.data(); if(room.status !== 'drafting' || !room.currentTurnStartedAt) return; if(draftRemainingMs(room) > 0) return; const liveStep = draftSteps(room)[room.turnIndex]; if(!liveStep) return; const selected = new Set(room.selectedHeroIds || []); const pool = heroes.filter((hero) => hero.active !== false && !selected.has(hero.id)); if(!pool.length) return; const randomHero = pool[Math.floor(Math.random() * pool.length)]; const field = fieldForStep(liveStep); const nextTurnIndex = Number(room.turnIndex || 0) + 1; const nextStatus = nextTurnIndex >= draftSteps(room).length ? 'finished' : 'drafting'; tx.update(ref, { [field]: firebase.firestore.FieldValue.arrayUnion(randomHero.id), selectedHeroIds: firebase.firestore.FieldValue.arrayUnion(randomHero.id), turnIndex: nextTurnIndex, status: nextStatus, currentTurnStartedAt: nextStatus === 'drafting' ? firebase.firestore.FieldValue.serverTimestamp() : null, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }); }catch(error){ console.warn('Auto random turn failed:', error.message); } finally { autoResolveBusy = false; }
+    try{ const ref = db.collection('draftRooms').doc(currentRoomId); await db.runTransaction(async (tx) => { const snap = await tx.get(ref); if(!snap.exists) return; const room = snap.data(); if(room.status !== 'drafting' || !room.currentTurnStartedAt) return; if(draftRemainingMs(room) > 0) return; const liveStep = draftSteps(room)[room.turnIndex]; if(!liveStep) return; const pool = availableHeroPool(room, liveStep); if(!pool.length) return; const randomHero = pool[Math.floor(Math.random() * pool.length)]; const field = fieldForStep(liveStep); const nextTurnIndex = Number(room.turnIndex || 0) + 1; const nextStatus = nextTurnIndex >= draftSteps(room).length ? 'finished' : 'drafting'; tx.update(ref, { [field]: firebase.firestore.FieldValue.arrayUnion(randomHero.id), selectedHeroIds: firebase.firestore.FieldValue.arrayUnion(randomHero.id), turnIndex: nextTurnIndex, status: nextStatus, currentTurnStartedAt: nextStatus === 'drafting' ? firebase.firestore.FieldValue.serverTimestamp() : null, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }); }catch(error){ console.warn('Auto random turn failed:', error.message); } finally { autoResolveBusy = false; }
   }
   function startTimerRenderer(){
     clearInterval(timerInterval); if(!currentRoom || (currentRoom.status !== 'drafting' && currentRoom.status !== 'preparing')) return;
@@ -364,52 +423,145 @@
   }
   function handleMobileTurnAutoScroll(){ if(!isMobileAutoScroll() || !currentRoom || currentRoom.status !== 'drafting') return; const step = draftSteps(currentRoom)[currentRoom.turnIndex]; if(!step || currentRole !== step.team) return; const key = `${currentRoom.id}-${currentRole}-${currentRoom.turnIndex}`; if(lastAutoScrollTurnKey === key) return; lastAutoScrollTurnKey = key; setTimeout(scrollToHeroPanel, 220); }
   function maybeShowFinishedModal(){ if(!currentRoom || currentRoom.status !== 'finished') return; const key = `${currentRoom.id}-${gameNumber()}`; if(lastFinishedModalKey === key) return; lastFinishedModalKey = key; setTimeout(showSessionModal, 350); }
-  function showSessionModal(){ if(!els.sessionModal) return; setText(els.sessionModalTitle, `${gameTitle()} complete`); if(els.nextGameBtn) els.nextGameBtn.disabled = gameNumber() >= bestOf() || !isHost(); if(els.backLobbyBtn) els.backLobbyBtn.disabled = !isHost(); setHidden(els.sessionModal, false); }
+  function showSessionModal(){
+    if(!els.sessionModal) return;
+    setText(els.sessionModalTitle, `${gameTitle()} Complete Result`);
+    const card = els.sessionModal.querySelector('.session-modal-card');
+    const info = card?.querySelector('p'); if(info) info.textContent = 'Draft result, estimated win chance, and action controls are shown below.';
+    let body = card?.querySelector('.session-result-body');
+    if(card && !body){ body = document.createElement('div'); body.className = 'session-result-body'; const actions = card.querySelector('.modal-actions'); card.insertBefore(body, actions || null); }
+    if(body) body.innerHTML = buildResultModalHtml(currentRoom);
+    if(els.nextGameBtn) els.nextGameBtn.disabled = gameNumber() >= bestOf() || !isHost();
+    if(els.backLobbyBtn){ els.backLobbyBtn.disabled = false; els.backLobbyBtn.textContent = 'Leave Match'; }
+    if(els.downloadResultBtn) els.downloadResultBtn.textContent = 'Download Result';
+    setHidden(els.sessionModal, false);
+  }
   function hideSessionModal(){ setHidden(els.sessionModal, true); }
+  function roleTagsForHero(hero){
+    const lanes = Array.isArray(hero?.lanes) ? hero.lanes : [];
+    const tags = new Set();
+    lanes.forEach((lane) => {
+      const v = String(lane).toLowerCase();
+      if(v.includes('jungle')) tags.add('jungle');
+      if(v.includes('mid')) tags.add('mid');
+      if(v.includes('roam')) tags.add('roam');
+      if(v.includes('farm') || v.includes('gold')) tags.add('carry');
+      if(v.includes('clash') || v.includes('exp')) tags.add('frontline');
+    });
+    if(!tags.size) tags.add('flex');
+    return tags;
+  }
+  function draftFeatureScore(heroIds){
+    const picked = (heroIds || []).map(heroById).filter(Boolean);
+    const counts = { carry:0, jungle:0, mid:0, roam:0, frontline:0, flex:0 };
+    picked.forEach((hero) => roleTagsForHero(hero).forEach((tag) => { counts[tag] = (counts[tag] || 0) + 1; }));
+    const covered = ['carry','jungle','mid','roam','frontline'].filter((tag) => counts[tag] > 0).length;
+    let score = 36 + covered * 7 + Math.min(10, picked.length * 2);
+    if(counts.jungle && counts.roam) score += 4;
+    if(counts.carry && counts.mid && counts.jungle) score += 4;
+    if(counts.frontline && counts.roam) score += 3;
+    ['carry','jungle','mid','roam'].forEach((tag) => { if(!counts[tag]) score -= 5; });
+    const overload = Math.max(...Object.values(counts)); if(overload >= 4) score -= 7; else if(overload >= 3) score -= 3;
+    return { score, counts, covered, picked };
+  }
+  function analyzeDraftResult(room = currentRoom){
+    const board = displayTeams(room);
+    const bluePicks = valuesForTeam(board.blue, 'pick', room); const redPicks = valuesForTeam(board.red, 'pick', room);
+    const blue = draftFeatureScore(bluePicks); const red = draftFeatureScore(redPicks);
+    const firstPickBoost = board.blue === blueTeamForGame(gameNumber(room)) ? 1 : 0;
+    const diff = (blue.score + firstPickBoost) - red.score;
+    const bluePct = Math.max(38, Math.min(62, Math.round(50 + diff * 0.85)));
+    const redPct = 100 - bluePct;
+    const leader = bluePct >= redPct ? 'blue' : 'red';
+    const leaderName = leader === 'blue' ? teamName(board.blue, room) : teamName(board.red, room);
+    const explainFor = (label, data, pct) => {
+      const notes = [];
+      if(data.covered >= 5) notes.push(`${label} has complete role coverage.`);
+      else notes.push(`${label} covers ${data.covered}/5 core role groups.`);
+      if(data.counts.jungle && data.counts.roam) notes.push('Jungle + Roam gives stronger tempo/setup.');
+      if(data.counts.carry && data.counts.mid && data.counts.jungle) notes.push('Damage threats are spread across carry, mid, and jungle.');
+      if(!data.counts.roam) notes.push('Draft lacks clear roam/utility protection.');
+      if(!data.counts.jungle) notes.push('Draft lacks clear jungle tempo.');
+      if(Math.max(...Object.values(data.counts)) >= 3) notes.push('Several heroes overlap roles, so execution risk is higher.');
+      notes.push(`Estimated chance: ${pct}%.`);
+      return notes;
+    };
+    return {
+      bluePct, redPct, leader, leaderName,
+      blueName: teamName(board.blue, room), redName: teamName(board.red, room),
+      blueTeamKey: board.blue, redTeamKey: board.red,
+      blueNotes: explainFor(teamName(board.blue, room), blue, bluePct), redNotes: explainFor(teamName(board.red, room), red, redPct),
+      summary: `${leaderName} has the stronger estimated draft edge from role coverage, tempo setup, and composition balance. This is a simulator estimate, not official statistics.`
+    };
+  }
+  function buildSimulationHtml(room, compact = false){
+    const sim = analyzeDraftResult(room);
+    const blueNotes = sim.blueNotes.slice(0, compact ? 2 : 4).map((n) => `<li>${escapeHtml(n)}</li>`).join('');
+    const redNotes = sim.redNotes.slice(0, compact ? 2 : 4).map((n) => `<li>${escapeHtml(n)}</li>`).join('');
+    return `<div class="sim-head"><span class="eyebrow">Estimated Draft Win Rate</span><strong>${escapeHtml(sim.blueName)} ${sim.bluePct}%</strong><b>vs</b><strong>${escapeHtml(sim.redName)} ${sim.redPct}%</strong></div><p>${escapeHtml(sim.summary)}</p><div class="sim-notes"><div><b>${escapeHtml(sim.blueName)}</b><ul>${blueNotes}</ul></div><div><b>${escapeHtml(sim.redName)}</b><ul>${redNotes}</ul></div></div><small class="sim-disclaimer">Simulation estimate only. It is not official win-rate data.</small>`;
+  }
+  function resultListHtml(ids, type){ return (ids || []).map((id, index) => `<span><b>${type} ${index+1}</b>${escapeHtml(heroLabel(id))}</span>`).join('') || '<span>-</span>'; }
+  function buildResultModalHtml(room){
+    const board = displayTeams(room); const banCount = Number(room?.bansPerTeam || getBansPerTeam());
+    const blueBans = valuesForTeam(board.blue, 'ban', room).slice(0, banCount); const redBans = valuesForTeam(board.red, 'ban', room).slice(0, banCount);
+    const bluePicks = valuesForTeam(board.blue, 'pick', room).slice(0, 5); const redPicks = valuesForTeam(board.red, 'pick', room).slice(0, 5);
+    return `<div class="modal-result-grid"><section><h3>${escapeHtml(teamName(board.blue, room))} · Blue Side</h3><div class="modal-mini-list"><h4>Ban</h4>${resultListHtml(blueBans, 'B')}</div><div class="modal-mini-list"><h4>Pick</h4>${resultListHtml(bluePicks, 'P')}</div></section><section><h3>${escapeHtml(teamName(board.red, room))} · Red Side</h3><div class="modal-mini-list"><h4>Ban</h4>${resultListHtml(redBans, 'B')}</div><div class="modal-mini-list"><h4>Pick</h4>${resultListHtml(redPicks, 'P')}</div></section></div><div class="draft-sim-panel modal-sim">${buildSimulationHtml(room, true)}</div>`;
+  }
   async function maybeSaveHistory(){
     if(historySaving || !db || !currentRoom || currentRoom.status !== 'finished' || !isHost()) return;
     const historyId = `${currentRoom.id || currentRoomId}_${gameNumber()}`; if(sessionStorage.getItem(`hciHistorySaved:${historyId}`)) return; historySaving = true;
-    try{ const ref = db.collection('draftHistory').doc(historyId); const snap = await ref.get(); if(!snap.exists){ await ref.set({ id: historyId, roomId: currentRoom.id || currentRoomId, roomName: currentRoom.roomName || 'Draft Room', game: CONFIG.gameKey, gameNumber: gameNumber(), bestOf: bestOf(), teamAName: teamName('A'), teamBName: teamName('B'), teamASide: sideForTeam('A'), teamBSide: sideForTeam('B'), bansA: currentRoom.bansA || [], bansB: currentRoom.bansB || [], picksA: currentRoom.picksA || [], picksB: currentRoom.picksB || [], participantUids: [currentRoom.teamAUid, currentRoom.teamBUid, currentRoom.hostUid].filter(Boolean), hostUid: currentRoom.hostUid, finishedAtMillis: Date.now(), createdAt: firebase.firestore.FieldValue.serverTimestamp() }); } sessionStorage.setItem(`hciHistorySaved:${historyId}`, '1'); }catch(error){ console.warn('History save failed:', error.message); }finally{ historySaving = false; }
+    try{ const ref = db.collection('draftHistory').doc(historyId); const snap = await ref.get(); if(!snap.exists){ const boardTeams = displayTeams(currentRoom); await ref.set({ id: historyId, roomId: currentRoom.id || currentRoomId, roomName: currentRoom.roomName || 'Draft Room', game: CONFIG.gameKey, gameNumber: gameNumber(), bestOf: bestOf(), teamAName: teamName('A'), teamBName: teamName('B'), teamASide: sideForTeam('A'), teamBSide: sideForTeam('B'), blueTeamKey: boardTeams.blue, redTeamKey: boardTeams.red, blueTeamName: teamName(boardTeams.blue), redTeamName: teamName(boardTeams.red), bansA: currentRoom.bansA || [], bansB: currentRoom.bansB || [], picksA: currentRoom.picksA || [], picksB: currentRoom.picksB || [], blueBans: valuesForTeam(boardTeams.blue, 'ban'), redBans: valuesForTeam(boardTeams.red, 'ban'), bluePicks: valuesForTeam(boardTeams.blue, 'pick'), redPicks: valuesForTeam(boardTeams.red, 'pick'), participantUids: [currentRoom.teamAUid, currentRoom.teamBUid, currentRoom.hostUid].filter(Boolean), hostUid: currentRoom.hostUid, simulation: analyzeDraftResult(currentRoom), finishedAtMillis: Date.now(), createdAt: firebase.firestore.FieldValue.serverTimestamp() }); } sessionStorage.setItem(`hciHistorySaved:${historyId}`, '1'); }catch(error){ console.warn('History save failed:', error.message); }finally{ historySaving = false; }
   }
 
   async function copyRoomId(){ if(!currentRoomId) return; await navigator.clipboard.writeText(currentRoomId); showToast('Room Code copied.'); }
-  async function copyResult(){ if(!currentRoom) return; const result = [`HCI MOBA Draft Hub - ${CONFIG.gameKey} - ${currentRoom.id}`, currentRoom.roomName || 'Draft Room', gameTitle(), `${teamName('A')} (${sideForTeam('A')}) Ban: ${(currentRoom.bansA || []).map(heroLabel).join(', ') || '-'}`, `${teamName('A')} Pick: ${(currentRoom.picksA || []).map(heroLabel).join(', ') || '-'}`, '', `${teamName('B')} (${sideForTeam('B')}) Ban: ${(currentRoom.bansB || []).map(heroLabel).join(', ') || '-'}`, `${teamName('B')} Pick: ${(currentRoom.picksB || []).map(heroLabel).join(', ') || '-'}`].join('\n'); await navigator.clipboard.writeText(result); showToast('Result copied.'); }
+  async function copyResult(){ if(!currentRoom) return; const result = [`HCI MOBA Draft Hub - ${CONFIG.gameKey} - ${currentRoom.id}`, currentRoom.roomName || 'Draft Room', gameTitle(), `${teamName('A')} (${sideForTeam('A')}) Ban: ${(currentRoom.bansA || []).map(heroLabel).join(', ') || '-'}`, `${teamName('A')} Pick: ${(currentRoom.picksA || []).map(heroLabel).join(', ') || '-'}`, '', `${teamName('B')} (${sideForTeam('B')}) Ban: ${(currentRoom.bansB || []).map(heroLabel).join(', ') || '-'}`, `${teamName('B')} Pick: ${(currentRoom.picksB || []).map(heroLabel).join(', ') || '-'}`, '', `Estimated WR: ${analyzeDraftResult(currentRoom).blueName} ${analyzeDraftResult(currentRoom).bluePct}% vs ${analyzeDraftResult(currentRoom).redName} ${analyzeDraftResult(currentRoom).redPct}%`, analyzeDraftResult(currentRoom).summary].join('\n'); await navigator.clipboard.writeText(result); showToast('Result copied.'); }
   async function downloadResultPng(){
     if(!currentRoom) return showToast('Result is not available yet.');
-    const canvas = document.createElement('canvas'); canvas.width = 1400; canvas.height = 940; const ctx = canvas.getContext('2d');
+    const canvas = document.createElement('canvas'); canvas.width = 1500; canvas.height = 1160; const ctx = canvas.getContext('2d');
     const allIds = [...(currentRoom.bansA || []), ...(currentRoom.picksA || []), ...(currentRoom.bansB || []), ...(currentRoom.picksB || [])]; const imageCache = await buildHeroImageCache(allIds);
-    const gradient = ctx.createLinearGradient(0,0,1400,940); gradient.addColorStop(0,'#071018'); gradient.addColorStop(0.55,'#0d2030'); gradient.addColorStop(1,'#0a111b'); ctx.fillStyle = gradient; ctx.fillRect(0,0,1400,940);
-    roundRect(ctx,42,42,1316,856,34,true,false,'rgba(255,255,255,.055)'); ctx.strokeStyle = 'rgba(245,196,81,.44)'; ctx.lineWidth = 3; roundRect(ctx,42,42,1316,856,34,false,true);
+    const gradient = ctx.createLinearGradient(0,0,1500,1160); gradient.addColorStop(0,'#071018'); gradient.addColorStop(0.55,'#0d2030'); gradient.addColorStop(1,'#0a111b'); ctx.fillStyle = gradient; ctx.fillRect(0,0,1500,1160);
+    roundRect(ctx,42,42,1416,1076,34,true,false,'rgba(255,255,255,.055)'); ctx.strokeStyle = 'rgba(245,196,81,.44)'; ctx.lineWidth = 3; roundRect(ctx,42,42,1416,1076,34,false,true);
     ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 34px Arial'; ctx.fillText('HCI MOBA Draft Hub',82,108); ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 54px Arial'; ctx.fillText(`${CONFIG.gameKey} ${gameTitle()} Result`,82,172);
     ctx.fillStyle = '#a8bacf'; ctx.font = '23px Arial'; ctx.fillText(`${currentRoom.roomName || 'Draft Room'} · Room ${currentRoom.id || currentRoomId}`,82,214);
-    drawTeamResult(ctx, `${teamName('A')} · ${sideForTeam('A')}`, currentRoom.bansA || [], currentRoom.picksA || [], 82,250, sideForTeam('A').startsWith('Blue') ? '#4dabf7' : '#ff6b6b', imageCache);
-    drawTeamResult(ctx, `${teamName('B')} · ${sideForTeam('B')}`, currentRoom.bansB || [], currentRoom.picksB || [], 720,250, sideForTeam('B').startsWith('Blue') ? '#4dabf7' : '#ff6b6b', imageCache);
-    ctx.fillStyle = '#a8bacf'; ctx.font = '22px Arial'; ctx.fillText(new Date().toLocaleString('en-GB', { hour12:false }),82,855);
+    const boardTeams = displayTeams(currentRoom);
+    drawTeamResult(ctx, `${teamName(boardTeams.blue)} · Blue Side`, valuesForTeam(boardTeams.blue, 'ban'), valuesForTeam(boardTeams.blue, 'pick'), 82,250, '#4dabf7', imageCache);
+    drawTeamResult(ctx, `${teamName(boardTeams.red)} · Red Side`, valuesForTeam(boardTeams.red, 'ban'), valuesForTeam(boardTeams.red, 'pick'), 770,250, '#ff6b6b', imageCache);
+    drawSimulationResult(ctx, analyzeDraftResult(currentRoom), 82,850, 1336, 210);
+    ctx.fillStyle = '#a8bacf'; ctx.font = '22px Arial'; ctx.fillText(new Date().toLocaleString('en-GB', { hour12:false }),82,1085);
     const a = document.createElement('a'); a.download = `hci-${String(CONFIG.gameKey).toLowerCase()}-${String(currentRoom.id || currentRoomId).toLowerCase()}-game-${gameNumber()}-result.png`; a.href = canvas.toDataURL('image/png'); a.click(); showToast('Result PNG downloaded.');
   }
   async function buildHeroImageCache(heroIds){ const ids = [...new Set((heroIds || []).filter(Boolean))]; const entries = await Promise.all(ids.map(async (heroId) => { const hero = heroById(heroId); if(!hero?.image) return [heroId, null]; const img = await loadImageSafe(hero.image); return [heroId, img]; })); return new Map(entries); }
   function loadImageSafe(src){ return new Promise((resolve) => { if(!src) return resolve(null); const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = src; }); }
   function drawTeamResult(ctx, title, bans, picks, x, y, color, imageCache){
-    const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); roundRect(ctx,x,y,596,570,28,true,false,'rgba(255,255,255,.055)'); ctx.fillStyle = color; ctx.font = 'bold 30px Arial'; ctx.fillText(title,x+28,y+52); ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 23px Arial'; ctx.fillText('BAN',x+28,y+102);
-    const banW = banCount === 5 ? 98 : 116; for(let i=0;i<banCount;i++) drawHeroBox(ctx, bans[i], x+28+i*(banW+10), y+122, banW, 88, `Ban ${i+1}`, imageCache);
-    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 23px Arial'; ctx.fillText('PICK',x+28,y+260); for(let i=0;i<5;i++) drawHeroBox(ctx, picks[i], x+28, y+282+i*56, 540, 48, `Pick ${i+1}`, imageCache);
+    const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); roundRect(ctx,x,y,648,570,28,true,false,'rgba(255,255,255,.055)'); ctx.fillStyle = color; ctx.font = 'bold 30px Arial'; ctx.fillText(title,x+28,y+52); ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 23px Arial'; ctx.fillText('BAN',x+28,y+102);
+    const banW = banCount === 5 ? 108 : 128; for(let i=0;i<banCount;i++) drawHeroBox(ctx, bans[i], x+28+i*(banW+10), y+122, banW, 104, `Ban ${i+1}`, imageCache);
+    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 23px Arial'; ctx.fillText('PICK',x+28,y+270); for(let i=0;i<5;i++) drawHeroBox(ctx, picks[i], x+28, y+292+i*58, 590, 52, `Pick ${i+1}`, imageCache);
   }
   function drawHeroBox(ctx, heroId, x, y, w, h, label, imageCache){
-    const hero = heroId ? heroById(heroId) : null; const name = hero ? hero.name : (heroId ? heroLabel(heroId) : '-'); const img = heroId && imageCache ? imageCache.get(heroId) : null; roundRect(ctx,x,y,w,h,14,true,false,'rgba(0,0,0,.22)'); let textX = x + 12; const textTop = y + 22;
-    if(img){ const size = Math.min(h - 16, 32); const imgX = x + 10; const imgY = y + (h - size) / 2; ctx.save(); roundRect(ctx,imgX,imgY,size,size,10,false,false); ctx.clip(); ctx.drawImage(img, imgX, imgY, size, size); ctx.restore(); textX = imgX + size + 10; }
-    ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 16px Arial'; wrapText(ctx, name || '-', textX, textTop, w - (textX - x) - 10, 17); ctx.fillStyle = '#a8bacf'; ctx.font = '12px Arial'; ctx.fillText(label,textX,y+h-8);
+    const hero = heroId ? heroById(heroId) : null; const name = hero ? hero.name : (heroId ? heroLabel(heroId) : '-'); const img = heroId && imageCache ? imageCache.get(heroId) : null; roundRect(ctx,x,y,w,h,14,true,false,'rgba(0,0,0,.22)'); let textX = x + 12; const textTop = y + (h >= 90 ? 72 : 24);
+    if(img){ const size = h >= 90 ? 58 : 42; const imgX = h >= 90 ? x + (w - size) / 2 : x + 10; const imgY = h >= 90 ? y + 10 : y + (h - size) / 2; ctx.save(); roundRect(ctx,imgX,imgY,size,size,10,false,false); ctx.clip(); ctx.drawImage(img, imgX, imgY, size, size); ctx.restore(); textX = h >= 90 ? x + 8 : imgX + size + 10; }
+    ctx.fillStyle = '#eef6ff'; ctx.textAlign = h >= 90 ? 'center' : 'left'; ctx.font = h >= 90 ? 'bold 16px Arial' : 'bold 18px Arial'; wrapText(ctx, name || '-', h >= 90 ? x + w/2 : textX, textTop, h >= 90 ? w - 16 : w - (textX - x) - 10, h >= 90 ? 17 : 20, h >= 90 ? 'center' : 'left'); ctx.fillStyle = '#a8bacf'; ctx.font = '13px Arial'; ctx.fillText(label,h >= 90 ? x + w/2 : textX,y+h-10); ctx.textAlign = 'left';
+  }
+  function drawSimulationResult(ctx, sim, x, y, w, h){
+    roundRect(ctx,x,y,w,h,24,true,false,'rgba(245,196,81,.09)'); ctx.strokeStyle = 'rgba(245,196,81,.28)'; ctx.lineWidth = 2; roundRect(ctx,x,y,w,h,24,false,true);
+    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 24px Arial'; ctx.fillText('Estimated Draft Win Rate Simulation', x+28, y+42);
+    ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 34px Arial'; ctx.fillText(`${sim.blueName}: ${sim.bluePct}%`, x+28, y+88); ctx.fillText(`${sim.redName}: ${sim.redPct}%`, x+420, y+88);
+    ctx.fillStyle = '#a8bacf'; ctx.font = '19px Arial'; wrapText(ctx, sim.summary, x+28, y+126, w-56, 24);
+    ctx.font = '16px Arial'; ctx.fillText('Simulation estimate only, not official statistics.', x+28, y+h-24);
   }
   function roundRect(ctx,x,y,w,h,r,fill,stroke,fillStyle){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill){ ctx.fillStyle = fillStyle || ctx.fillStyle; ctx.fill(); } if(stroke) ctx.stroke(); }
-  function wrapText(ctx,text,x,y,maxWidth,lineHeight){ const words = String(text).split(' '); let line = ''; for(let n=0;n<words.length;n++){ const test = line + words[n] + ' '; if(ctx.measureText(test).width > maxWidth && n>0){ ctx.fillText(line,x,y); line = words[n] + ' '; y += lineHeight; } else line = test; } ctx.fillText(line,x,y); }
+  function wrapText(ctx,text,x,y,maxWidth,lineHeight,align){ const words = String(text).split(' '); let line = ''; const oldAlign = ctx.textAlign; if(align) ctx.textAlign = align; for(let n=0;n<words.length;n++){ const test = line + words[n] + ' '; if(ctx.measureText(test).width > maxWidth && n>0){ ctx.fillText(line.trim(),x,y); line = words[n] + ' '; y += lineHeight; } else line = test; } ctx.fillText(line.trim(),x,y); ctx.textAlign = oldAlign; }
   function confirmDialog({ title, message, confirmText = 'OK', cancelText = 'Cancel', danger = false } = {}){ return new Promise((resolve) => { const overlay = document.createElement('div'); overlay.className = 'custom-confirm'; overlay.innerHTML = `<div class="custom-confirm-card" role="dialog" aria-modal="true"><div class="custom-confirm-icon ${danger ? 'danger' : ''}" aria-hidden="true">${danger ? '!' : '✓'}</div><div class="custom-confirm-copy"><h2>${escapeHtml(title || 'Confirm Action')}</h2><p>${escapeHtml(message || 'Are you sure?')}</p></div><div class="custom-confirm-actions"><button class="secondary-btn" data-cancel>${escapeHtml(cancelText)}</button><button class="${danger ? 'danger-btn' : 'primary-btn'}" data-confirm>${escapeHtml(confirmText)}</button></div></div>`; document.body.appendChild(overlay); const cleanup = (value) => { overlay.remove(); resolve(value); }; overlay.querySelector('[data-cancel]').addEventListener('click', () => cleanup(false)); overlay.querySelector('[data-confirm]').addEventListener('click', () => cleanup(true)); overlay.addEventListener('click', (e) => { if(e.target === overlay) cleanup(false); }); }); }
   function bindEvents(){
     if(els.createRoomBtn) els.createRoomBtn.addEventListener('click', createRoom); if(els.joinRoomBtn) els.joinRoomBtn.addEventListener('click', joinRoom); if(els.roomIdInput) els.roomIdInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') joinRoom(); });
     [els.copyRoomBtn, els.copyRoomTopBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', copyRoomId));
     if(els.startDraftBtn) els.startDraftBtn.addEventListener('click', startDraft); if(els.copyResultBtn) els.copyResultBtn.addEventListener('click', copyResult); if(els.deleteRoomBtn) els.deleteRoomBtn.addEventListener('click', deleteRoom); if(els.deleteRoomTopBtn) els.deleteRoomTopBtn.addEventListener('click', deleteRoom); if(els.leaveRoomBtn) els.leaveRoomBtn.addEventListener('click', leaveRoom);
     [els.downloadResultTopBtn, els.downloadResultTopBtn2, els.downloadResultBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', downloadResultPng));
-    if(els.heroSearch) els.heroSearch.addEventListener('input', renderHeroGrid); if(els.nextGameBtn) els.nextGameBtn.addEventListener('click', nextGame); if(els.backLobbyBtn) els.backLobbyBtn.addEventListener('click', backToLobby);
+    if(els.heroSearch) els.heroSearch.addEventListener('input', renderHeroGrid); if(els.nextGameBtn) els.nextGameBtn.addEventListener('click', nextGame); if(els.backLobbyBtn) els.backLobbyBtn.addEventListener('click', leaveRoom);
     document.querySelectorAll('.side-btn').forEach((btn) => btn.addEventListener('click', () => chooseSide(btn.dataset.side)));
     [els.teamANameInput, els.teamBNameInput].filter(Boolean).forEach((input) => input.addEventListener('change', updateTeamNames));
+    document.querySelectorAll('[data-series]').forEach((btn) => btn.addEventListener('click', () => { if(els.seriesFormat) els.seriesFormat.value = btn.dataset.series === '5' ? '5' : '3'; updateSeriesButtons(); })); updateSeriesButtons();
+    if(els.navToggle && els.siteNav){ els.navToggle.addEventListener('click', () => { const open = !els.siteNav.classList.contains('open'); els.siteNav.classList.toggle('open', open); els.navToggle.setAttribute('aria-expanded', open ? 'true' : 'false'); }); }
     window.addEventListener('popstate', () => { const roomId = getRouteRoomId() || new URLSearchParams(location.search).get('room'); if(roomId && roomId !== currentRoomId) listenRoom(String(roomId).toUpperCase()); });
   }
   bindEvents(); renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); initFirebase();
