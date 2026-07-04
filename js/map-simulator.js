@@ -7,6 +7,7 @@
   const mapNote = $('mapNote');
   const mapHeading = $('mapPlanHeading');
   const mapGameLabel = $('mapGameLabel');
+  const mapBoardShort = $('mapBoardShort');
   const toast = $('toast');
   let activeType = 'attack';
   let activeGame = 'hok';
@@ -21,8 +22,8 @@
     vision: { label:'Vision', icon:'◉', color:'#51cf66' }
   };
   const gameInfo = {
-    hok: { label:'Honor of Kings', short:'HOK', cls:'hok-map' },
-    mlbb: { label:'Mobile Legends', short:'MLBB', cls:'mlbb-map' }
+    hok: { label:'Honor of Kings', short:'HOK', cls:'hok-map', title:'HOK Hero Gorge', lanes:['CLASH','MID','FARM'], objectives:['TYRANT','OVERLORD'] },
+    mlbb: { label:'Mobile Legends', short:'MLBB', cls:'mlbb-map', title:'MLBB Land of Dawn', lanes:['EXP','MID','GOLD'], objectives:['TURTLE','LORD'] }
   };
 
   function showToast(message){
@@ -57,7 +58,8 @@
       board.classList.toggle('mlbb-map', activeGame === 'mlbb');
     }
     document.querySelectorAll('.map-game-tab').forEach((btn) => btn.classList.toggle('active', btn.dataset.game === activeGame));
-    if(mapGameLabel) mapGameLabel.textContent = info.label;
+    if(mapGameLabel) mapGameLabel.textContent = info.title || info.label;
+    if(mapBoardShort) mapBoardShort.textContent = info.short;
   }
   function updateTools(){
     document.querySelectorAll('.marker-tool').forEach((btn) => btn.classList.toggle('active', btn.dataset.type === activeType));
@@ -103,31 +105,56 @@
     }
   }
   function drawMap(ctx, w, h){
-    const gradient = ctx.createLinearGradient(0, 0, w, h);
-    gradient.addColorStop(0, activeGame === 'hok' ? '#061a25' : '#120a20');
-    gradient.addColorStop(.5, '#071018');
-    gradient.addColorStop(1, activeGame === 'hok' ? '#1f1a0d' : '#20110a');
-    ctx.fillStyle = gradient; ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 4;
-    for(let i = -h; i < w; i += 95){
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + h, h); ctx.stroke();
+    const info = gameInfo[activeGame] || gameInfo.hok;
+    const accent = activeGame === 'hok' ? '#f5c451' : '#ffb347';
+    const bg = ctx.createLinearGradient(0, 0, w, h);
+    bg.addColorStop(0, activeGame === 'hok' ? '#051724' : '#130b20');
+    bg.addColorStop(.52, '#071018');
+    bg.addColorStop(1, '#1f1a0d');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+    const blueGlow = ctx.createRadialGradient(w*.12, h*.86, 0, w*.12, h*.86, w*.42);
+    blueGlow.addColorStop(0, 'rgba(77,171,247,.24)');
+    blueGlow.addColorStop(1, 'rgba(77,171,247,0)');
+    ctx.fillStyle = blueGlow; ctx.fillRect(0,0,w,h);
+    const redGlow = ctx.createRadialGradient(w*.88, h*.14, 0, w*.88, h*.14, w*.42);
+    redGlow.addColorStop(0, 'rgba(255,107,107,.23)');
+    redGlow.addColorStop(1, 'rgba(255,107,107,0)');
+    ctx.fillStyle = redGlow; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 4;
+    for(let i = -h; i < w; i += 86){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+h,h); ctx.stroke(); }
+    function path(points, color, width){ ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(points[0][0],points[0][1]); for(const p of points.slice(1)){ if(p.length===4) ctx.quadraticCurveTo(p[0],p[1],p[2],p[3]); else ctx.lineTo(p[0],p[1]); } ctx.stroke(); }
+    path([[135,h-120],[w*.5,h*.52,w-135,120]], 'rgba(245,196,81,.25)', 10);
+    path([[125,155],[w*.36,95,w-125,160]], 'rgba(77,171,247,.30)', 6);
+    path([[145,h/2],[w-145,h/2]], 'rgba(255,255,255,.18)', 5);
+    path([[125,h-155],[w*.36,h-95,w-125,h-160]], 'rgba(77,171,247,.28)', 6);
+    function circle(x,y,r,label,sub,color){
+      ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.24)'; ctx.lineWidth=4; ctx.stroke();
+      ctx.fillStyle='#eef6ff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='900 28px system-ui, Arial'; ctx.fillText(label,x,y-7);
+      if(sub){ ctx.fillStyle='rgba(238,246,255,.70)'; ctx.font='800 15px system-ui, Arial'; ctx.fillText(sub,x,y+22); }
     }
-    ctx.strokeStyle = 'rgba(245,196,81,.22)'; ctx.lineWidth = 8;
-    ctx.beginPath(); ctx.moveTo(90, h - 110); ctx.lineTo(w - 90, 110); ctx.stroke();
-    ctx.strokeStyle = 'rgba(77,171,247,.22)'; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(120, 130); ctx.quadraticCurveTo(w/2, 80, w - 120, 130); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(120, h - 130); ctx.quadraticCurveTo(w/2, h - 80, w - 120, h - 130); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(120, h/2); ctx.lineTo(w - 120, h/2); ctx.stroke();
-    function circle(x,y,r,label,color){
-      ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=3; ctx.stroke();
-      ctx.fillStyle='#eef6ff'; ctx.font='700 26px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(label,x,y);
-    }
-    circle(115, h-105, 58, 'BLUE', 'rgba(77,171,247,.22)');
-    circle(w-115, 105, 58, 'RED', 'rgba(255,107,107,.22)');
-    circle(w*.33, h*.43, 42, 'OBJ', 'rgba(245,196,81,.20)');
-    circle(w*.67, h*.57, 42, 'OBJ', 'rgba(245,196,81,.20)');
+    circle(118,h-118,68,'BLUE','BASE','rgba(77,171,247,.22)');
+    circle(w-118,118,68,'RED','BASE','rgba(255,107,107,.22)');
+    const obj = info.objectives || ['OBJ','OBJ'];
+    circle(w*.33,h*.43,54,obj[0],'OBJ', 'rgba(245,196,81,.22)');
+    circle(w*.67,h*.57,54,obj[1],'OBJ', 'rgba(245,196,81,.22)');
+    ctx.font='900 23px system-ui, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const lanes = info.lanes || ['TOP','MID','BOT'];
+    function tag(x,y,t,stroke,fill){ ctx.fillStyle='rgba(6,16,25,.72)'; ctx.strokeStyle=stroke; ctx.lineWidth=2; roundRect(ctx,x-62,y-22,124,44,18,true,true); ctx.fillStyle=fill; ctx.fillText(t,x,y+1); }
+    tag(w*.18,h*.15,lanes[0],'rgba(77,171,247,.35)','#dceeff');
+    tag(w*.50,h*.49,lanes[1],'rgba(245,196,81,.40)','#fff1c8');
+    tag(w*.82,h*.84,lanes[2],'rgba(77,171,247,.35)','#dceeff');
+    ctx.fillStyle = 'rgba(255,255,255,.10)';
+    [[.22,.30],[.27,.68],[.44,.34],[.56,.65],[.74,.34],[.78,.70]].forEach(([x,y]) => { ctx.beginPath(); ctx.arc(w*x,h*y,22,0,Math.PI*2); ctx.fill(); });
+    ctx.fillStyle = '#ffe3a2'; ctx.font = '900 26px system-ui, Arial'; ctx.textAlign = 'left'; ctx.textBaseline='top';
+    ctx.fillText(`${info.short} · HCI MOBA MAP SIMULATOR`, 36, 22);
+    ctx.fillStyle = '#eef6ff'; ctx.font = '900 34px system-ui, Arial'; ctx.fillText((mapTitle?.value || 'HCI Map Plan').slice(0, 44), 36, 52);
+    ctx.fillStyle = '#a8bacf'; ctx.font = '700 22px system-ui, Arial'; ctx.textAlign='right';
+    ctx.fillText((mapNote?.value || 'Map strategy plan').slice(0, 80), w-36, 36);
+  }
+  function roundRect(ctx,x,y,w,h,r,fill,stroke){
+    ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill) ctx.fill(); if(stroke) ctx.stroke();
   }
   function downloadPng(){
     const w = 1600, h = 900;
