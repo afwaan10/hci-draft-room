@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
-  <title>HCI MOBA Draft Hub</title>
-  <meta name="description" content="HCI MOBA Draft Hub - real-time MOBA draft simulator for teams, coaches, and analysts." />
+  <title>HCI MOBA Hub</title>
+  <meta name="description" content="HCI MOBA Hub - modular MOBA tools for draft, map strategy, meta analysis, and team practice." />
   <link rel="stylesheet" href="/css/draft-room.css" />
 </head>
 <body class="hub-page">
@@ -14,7 +14,7 @@
     <div class="loader-card">
       <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" class="loader-logo" />
       <div class="loader-loop"><span></span></div>
-      <div class="loader-text">Loading HCI MOBA Draft Hub</div>
+      <div class="loader-text">Loading HCI MOBA Hub</div>
     </div>
   </div>
 
@@ -22,7 +22,7 @@
     <header class="hub-topbar">
       <a class="hub-brand" href="/" aria-label="HCI MOBA Draft Hub">
         <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" />
-        <span>HCI MOBA Draft Hub</span>
+        <span>HCI MOBA Hub</span>
       </a>
       <div class="hub-user-card profile-compact" id="userCard" hidden>
         <img id="userPhoto" alt="User" />
@@ -44,14 +44,14 @@
 
     <section class="hub-hero">
       <div class="hub-copy">
-        <h1>HCI MOBA Draft Hub</h1>
-        <p class="hub-lead">Real-time MOBA draft simulator for teams, coaches, and analysts. Practice pick-ban strategy across multiple MOBA titles with a clean, competitive, and community-ready room system.</p>
+        <h1>HCI MOBA Hub</h1>
+        <p class="hub-lead">All-in-one MOBA tools for draft, map strategy, meta reference, and team practice. Draft Hub stays as the first active module, while Map Simulator v1 is now available for basic strategy planning.</p>
         <div class="hub-actions" id="signedOutActions">
           <button class="primary-btn" id="googleLoginBtn" type="button">Login with Google</button>
           <span class="hub-note">Login is required before entering any draft simulator.</span>
         </div>
         <div class="hub-actions" id="signedInActions" hidden>
-          <a class="primary-btn" href="#games">Choose Game</a>
+          <a class="primary-btn" href="#modules">Choose Module</a>
           <a class="secondary-btn" href="#history">Draft History</a>
         </div>
       </div>
@@ -61,15 +61,56 @@
     </section>
 
     <section class="hub-status-strip">
-      <div><strong>Active</strong><span>Honor of Kings & Mobile Legends</span></div>
-      <div><strong>Series</strong><span>BO3 / BO5 / Flat</span></div>
-      <div><strong>Access</strong><span>Free, Google login required</span></div>
-      <div><strong>Output</strong><span>Draft result PNG + history</span></div>
+      <div><strong>Active</strong><span>Draft Hub + Map Simulator v1</span></div>
+      <div><strong>Draft</strong><span>BO3 / BO5 / Flat formats</span></div>
+      <div><strong>Map</strong><span>Markers, routes, objective notes</span></div>
+      <div><strong>Output</strong><span>Draft PNG + map plan PNG</span></div>
+    </section>
+
+
+    <section class="hub-modules" id="modules" aria-labelledby="modulesTitle">
+      <div class="section-heading center">
+        <span class="eyebrow">HCI MOBA Hub Modules</span>
+        <h2 id="modulesTitle">Choose your MOBA tool</h2>
+        <p>Draft Hub remains the main active tool. Map Simulator v1 is separated as its own module so draft rooms stay clean and focused.</p>
+      </div>
+      <div class="module-card-grid">
+        <a class="module-card module-active" href="#games">
+          <span class="module-icon">⚔</span>
+          <b>Draft Hub</b>
+          <small>Realtime pick-ban room for HOK and MLBB.</small>
+          <em>Active</em>
+        </a>
+        <a class="module-card module-active map-module" href="/map/">
+          <span class="module-icon">⌖</span>
+          <b>Map Simulator</b>
+          <small>Place markers for attack, defend, rotate, objective, danger, and vision.</small>
+          <em>v1 Active</em>
+        </a>
+        <article class="module-card module-soon">
+          <span class="module-icon">%</span>
+          <b>Meta Stats</b>
+          <small>WR, Pick Rate, Ban Rate, Tier, and weekly trend.</small>
+          <em>Coming Soon</em>
+        </article>
+        <article class="module-card module-soon">
+          <span class="module-icon">◎</span>
+          <b>Team Practice</b>
+          <small>Team profiles, draft history, scrim prep, and saved plans.</small>
+          <em>Coming Soon</em>
+        </article>
+        <article class="module-card module-soon">
+          <span class="module-icon">♛</span>
+          <b>Tournament Tools</b>
+          <small>Match rooms, BO flow, bracket support, and result tools.</small>
+          <em>Coming Soon</em>
+        </article>
+      </div>
     </section>
 
     <section class="hub-games" id="games" aria-labelledby="gamesTitle">
       <div class="section-heading center">
-        <span class="eyebrow">Choose Game</span>
+        <span class="eyebrow">Draft Hub</span>
         <h2 id="gamesTitle">Select your draft simulator</h2>
         <p>Each card follows the visual identity of its game. HOK and MLBB are ready for the first launch, while the other MOBA titles are prepared as coming soon modules.</p>
       </div>
