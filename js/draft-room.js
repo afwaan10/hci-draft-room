@@ -450,6 +450,21 @@
     } else if(currentRoom.status === 'finished'){ setTimerValue('Done'); pct = 100; }
     setText(phase, phaseText); setText(team, teamText); if(fill) fill.style.width = `${pct || 0}%`;
   }
+  function updateProTimerProgress(){
+    if(!currentRoom) return;
+    const fill = document.getElementById('proTimerFill');
+    if(!fill) return;
+    let pct = 0;
+    if(currentRoom.status === 'drafting'){
+      const total = Number(currentRoom.turnSeconds || getTurnSeconds()) * 1000;
+      pct = total ? Math.max(0, Math.min(100, (draftRemainingMs(currentRoom) / total) * 100)) : 0;
+    } else if(currentRoom.status === 'preparing'){
+      pct = Math.max(0, Math.min(100, (prepareRemainingMs() / (PREPARE_SECONDS * 1000)) * 100));
+    } else if(currentRoom.status === 'finished'){
+      pct = 100;
+    }
+    fill.style.width = `${pct || 0}%`;
+  }
   function renderDraftResult(){
     if(!els.draftResultPanel || !currentRoom) return; const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); const complete = currentRoom.status === 'finished' || ((currentRoom.bansA || []).length >= banCount && (currentRoom.bansB || []).length >= banCount && (currentRoom.picksA || []).length >= 5 && (currentRoom.picksB || []).length >= 5);
     setHidden(els.draftResultPanel, !complete); if(!complete) return; const boardTeams = displayTeams(currentRoom); setText(els.resultGameTitle, `${gameTitle()} Draft Result`); renderResultBoxes(els.resultABans, valuesForTeam(boardTeams.left, 'ban'), banCount, 'ban'); renderResultBoxes(els.resultBBans, valuesForTeam(boardTeams.right, 'ban'), banCount, 'ban'); renderResultBoxes(els.resultAPicks, valuesForTeam(boardTeams.left, 'pick'), 5, 'pick'); renderResultBoxes(els.resultBPicks, valuesForTeam(boardTeams.right, 'pick'), 5, 'pick'); renderResultSimulationPanel(els.draftResultPanel, currentRoom);
@@ -488,13 +503,38 @@
   }
   function miniRoleIcons(lanes){ return (lanes || []).slice(0,3).map((lane) => `<span class="mini-role" title="${escapeHtml(lane)}">${roleIconHtml(lane)}</span>`).join(''); }
   function renderHeroGrid(){
-    if(!els.heroGrid) return; const search = (els.heroSearch?.value || '').trim().toLowerCase(); const selected = currentRoom?.selectedHeroIds || []; const step = currentRoom?.status === 'drafting' ? draftSteps(currentRoom)[currentRoom.turnIndex] : null; const canClick = step && currentRole === step.team;
-    const filtered = heroes.filter((hero) => { const name = String(hero.name || '').toLowerCase(); const lanes = Array.isArray(hero.lanes) ? hero.lanes : []; const matchesSearch = !search || name.includes(search); const matchesLane = activeLane === 'ALL' || lanes.includes(activeLane); return matchesSearch && matchesLane; });
-    els.heroGrid.innerHTML = '';
-    filtered.forEach((hero) => {
-      const locked = selected.includes(hero.id); const gbpLocked = Boolean(step && isPreviousPickLockedForStep(currentRoom, step, hero.id)); const disabledHero = hero.active === false; const btn = document.createElement('button'); btn.className = `hero-card ${locked ? 'locked' : ''} ${gbpLocked ? 'gbp-locked' : ''} ${disabledHero ? 'disabled-hero' : ''}`; btn.disabled = locked || gbpLocked || disabledHero || !canClick; const avatar = heroAvatarHtml(hero, 'hero-avatar', hero.name); const lockNote = gbpLocked ? '<span class="hero-lock-note">Used by your team</span>' : locked ? '<span class="hero-lock-note">Selected / Banned</span>' : ''; btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span>${lockNote}<span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span></span>`; btn.addEventListener('click', () => selectHero(hero)); els.heroGrid.appendChild(btn);
+    if(!els.heroGrid) return;
+    const search = (els.heroSearch?.value || '').trim().toLowerCase();
+    const selected = currentRoom?.selectedHeroIds || [];
+    const step = currentRoom?.status === 'drafting' ? draftSteps(currentRoom)[currentRoom.turnIndex] : null;
+    const canClick = step && currentRole === step.team;
+    const filtered = heroes.filter((hero) => {
+      const name = String(hero.name || '').toLowerCase();
+      const lanes = Array.isArray(hero.lanes) ? hero.lanes : [];
+      const matchesSearch = !search || name.includes(search);
+      const matchesLane = activeLane === 'ALL' || lanes.includes(activeLane);
+      return matchesSearch && matchesLane;
     });
-    if(!filtered.length) els.heroGrid.innerHTML = '<div class="notice compact">No heroes match this filter.</div>';
+    els.heroGrid.textContent = '';
+    if(!filtered.length){
+      els.heroGrid.innerHTML = '<div class="notice compact">No heroes match this filter.</div>';
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    for(const hero of filtered){
+      const locked = selected.includes(hero.id);
+      const gbpLocked = Boolean(step && isPreviousPickLockedForStep(currentRoom, step, hero.id));
+      const disabledHero = hero.active === false;
+      const btn = document.createElement('button');
+      btn.className = `hero-card ${locked ? 'locked' : ''} ${gbpLocked ? 'gbp-locked' : ''} ${disabledHero ? 'disabled-hero' : ''}`;
+      btn.disabled = locked || gbpLocked || disabledHero || !canClick;
+      const avatar = heroAvatarHtml(hero, 'hero-avatar', hero.name);
+      const lockNote = gbpLocked ? '<span class="hero-lock-note">Used by your team</span>' : locked ? '<span class="hero-lock-note">Selected / Banned</span>' : '';
+      btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span>${lockNote}<span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span></span>`;
+      btn.addEventListener('click', () => selectHero(hero), { passive: true });
+      frag.appendChild(btn);
+    }
+    els.heroGrid.appendChild(frag);
   }
   function timestampToMillis(value){ return value && value.toDate ? value.toDate().getTime() : 0; }
   async function beginDraftAfterPreparing(){
@@ -510,7 +550,21 @@
   }
   function startTimerRenderer(){
     clearInterval(timerInterval); if(!currentRoom || (currentRoom.status !== 'drafting' && currentRoom.status !== 'preparing')) return;
-    timerInterval = setInterval(() => { if(!currentRoom) return; if(currentRoom.status === 'preparing'){ const remaining = Math.ceil(prepareRemainingMs()/1000); setTimerValue(`${Math.max(0, remaining)}s`); renderProDraftTopbar(); return; } if(currentRoom.status !== 'drafting' || !currentRoom.currentTurnStartedAt) return; const remainingMs = draftRemainingMs(currentRoom); const remaining = Math.ceil(remainingMs / 1000); setTimerValue(`${Math.max(0, remaining)}s`); renderProDraftTopbar(); if(remainingMs <= 0) tryAutoResolveTurn(); }, 250);
+    timerInterval = setInterval(() => {
+      if(!currentRoom) return;
+      if(currentRoom.status === 'preparing'){
+        const remaining = Math.ceil(prepareRemainingMs()/1000);
+        setTimerValue(`${Math.max(0, remaining)}s`);
+        updateProTimerProgress();
+        return;
+      }
+      if(currentRoom.status !== 'drafting' || !currentRoom.currentTurnStartedAt) return;
+      const remainingMs = draftRemainingMs(currentRoom);
+      const remaining = Math.ceil(remainingMs / 1000);
+      setTimerValue(`${Math.max(0, remaining)}s`);
+      updateProTimerProgress();
+      if(remainingMs <= 0) tryAutoResolveTurn();
+    }, 250);
   }
   function handleMobileTurnAutoScroll(){ return; }
   function isPortraitDraftScreen(){ return window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches; }
@@ -677,7 +731,7 @@
     [els.copyRoomBtn, els.copyRoomTopBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', copyRoomId));
     if(els.startDraftBtn) els.startDraftBtn.addEventListener('click', startDraft); if(els.copyResultBtn) els.copyResultBtn.addEventListener('click', copyResult); if(els.deleteRoomBtn) els.deleteRoomBtn.addEventListener('click', deleteRoom); if(els.deleteRoomTopBtn) els.deleteRoomTopBtn.addEventListener('click', deleteRoom); if(els.leaveRoomBtn) els.leaveRoomBtn.addEventListener('click', leaveRoom);
     [els.downloadResultTopBtn, els.downloadResultTopBtn2, els.downloadResultBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', downloadResultPng));
-    if(els.heroSearch) els.heroSearch.addEventListener('input', renderHeroGrid); if(els.nextGameBtn) els.nextGameBtn.addEventListener('click', nextGame); if(els.backLobbyBtn) els.backLobbyBtn.addEventListener('click', leaveRoom);
+    if(els.heroSearch) els.heroSearch.addEventListener('input', () => { clearTimeout(renderHeroGrid.searchTimer); renderHeroGrid.searchTimer = setTimeout(renderHeroGrid, 80); }); if(els.nextGameBtn) els.nextGameBtn.addEventListener('click', nextGame); if(els.backLobbyBtn) els.backLobbyBtn.addEventListener('click', leaveRoom);
     document.querySelectorAll('.side-btn').forEach((btn) => btn.addEventListener('click', () => chooseSide(btn.dataset.side)));
     [els.teamANameInput, els.teamBNameInput].filter(Boolean).forEach((input) => input.addEventListener('change', updateTeamNames));
     document.querySelectorAll('[data-series]').forEach((btn) => btn.addEventListener('click', () => { if(els.seriesFormat) els.seriesFormat.value = btn.dataset.series === '5' ? '5' : '3'; updateSeriesButtons(); })); updateSeriesButtons();
