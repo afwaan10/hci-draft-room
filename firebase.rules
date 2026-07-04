@@ -2,9 +2,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    function adminEmail() {
+      return signedIn() && request.auth.token.email in [
+        'muhammaddeha03@gmail.com'
+      ];
+    }
 
     match /draftRooms/{roomId} {
       allow read, create, update, delete: if signedIn();
+
+      match /activityLogs/{logId} {
+        allow read: if signedIn();
+        allow create: if signedIn();
+        allow update, delete: if adminEmail();
+      }
     }
 
     match /draftHistory/{historyId} {
@@ -14,7 +25,27 @@ service cloud.firestore {
 
     match /heroes/{heroId} {
       allow read: if signedIn();
-      allow write: if signedIn();
+      allow create, update, delete: if adminEmail();
+    }
+
+    match /userAccess/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || adminEmail());
+      allow create, update, delete: if adminEmail();
+    }
+
+    match /siteConfig/{docId} {
+      allow read: if signedIn();
+      allow create, update, delete: if adminEmail();
+    }
+
+    match /sponsors/{sponsorId} {
+      allow read: if signedIn();
+      allow create, update, delete: if adminEmail();
+    }
+
+    match /communityLinks/{linkId} {
+      allow read: if signedIn();
+      allow create, update, delete: if adminEmail();
     }
   }
 }
