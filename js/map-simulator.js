@@ -49,11 +49,11 @@
       short: 'HOK',
       boardSrc: '/assets/maps/hok-real-map.webp',
       roles: [
-        { code: 'C', label: 'Clash Lane' },
-        { code: 'J', label: 'Jungle' },
-        { code: 'M', label: 'Mid Lane' },
-        { code: 'F', label: 'Farm Lane' },
-        { code: 'R', label: 'Roam' }
+        { code: 'C', label: 'Clash Lane', icon: '/assets/role-icons/hok/clash.png' },
+        { code: 'J', label: 'Jungle', icon: '/assets/role-icons/hok/jungle.png' },
+        { code: 'M', label: 'Mid Lane', icon: '/assets/role-icons/hok/mid.png' },
+        { code: 'F', label: 'Farm Lane', icon: '/assets/role-icons/hok/farm.png' },
+        { code: 'R', label: 'Roam', icon: '/assets/role-icons/hok/roam.png' }
       ],
       roleHint: 'Clash / Jungle / Mid / Farm / Roam',
       lanes: [
@@ -133,11 +133,11 @@
       short: 'MLBB',
       boardSrc: '/assets/maps/mlbb-real-map.jpg',
       roles: [
-        { code: 'E', label: 'EXP Lane' },
-        { code: 'J', label: 'Jungle' },
-        { code: 'M', label: 'Mid Lane' },
-        { code: 'G', label: 'Gold Lane' },
-        { code: 'R', label: 'Roam' }
+        { code: 'E', label: 'EXP Lane', icon: '/assets/role-icons/mlbb/exp.png' },
+        { code: 'J', label: 'Jungle', icon: '/assets/role-icons/mlbb/jungle.png' },
+        { code: 'M', label: 'Mid Lane', icon: '/assets/role-icons/mlbb/mid.png' },
+        { code: 'G', label: 'Gold Lane', icon: '/assets/role-icons/mlbb/gold.png' },
+        { code: 'R', label: 'Roam', icon: '/assets/role-icons/mlbb/roam.png' }
       ],
       roleHint: 'EXP / Jungle / Mid / Gold / Roam',
       lanes: [
@@ -222,12 +222,34 @@
   let draggingRoutePoint = null;
   let suppressNextBoardClick = false;
   let suppressMarkerClick = false;
+  let drawingRoute = false;
+  let routePointerId = null;
+  let rolePaletteDrag = null;
   const plans = {
     hok: { markers: [], routes: [], title: 'HCI Map Plan', note: '' },
     mlbb: { markers: [], routes: [], title: 'HCI Map Plan', note: '' }
   };
 
   const currentPlan = () => plans[activeGame];
+
+  function roleDefinition(code){
+    return gameInfo[activeGame]?.roles?.find((role) => role.code === code) || null;
+  }
+
+  function distancePct(a,b){
+    const dx=(a.x-b.x), dy=(a.y-b.y);
+    return Math.sqrt(dx*dx+dy*dy);
+  }
+
+  function simplifyRoutePoints(points){
+    if(points.length <= 3) return points;
+    const out=[points[0]];
+    for(let i=1;i<points.length-1;i++){
+      if(distancePct(points[i], out[out.length-1]) >= 1.25) out.push(points[i]);
+    }
+    out.push(points[points.length-1]);
+    return out.slice(0,180);
+  }
 
   function showToast(message){
     const toast = $('toast');
@@ -270,69 +292,21 @@
     if(mapNote) plan.note = mapNote.value || '';
   }
 
-  function save(){
-    persistCurrentFields();
+  // v38: map plans are temporary by default. We intentionally do not restore
+  // markers/routes/notes after the user leaves the Map Simulator. Explicit Save Plan
+  // can be added later without silently reviving old scratch work.
+  function clearLegacyPlanStorage(){
     try {
-      localStorage.setItem('hciMapPlanV37', JSON.stringify({
-        activeGame,
-        activeMode,
-        selectedTool,
-        routeSettings,
-        plans,
-        showLabels: !!toggleLabels?.checked,
-        showObjectives: !!toggleObjectives?.checked,
-        showRoutes: toggleRoutes ? !!toggleRoutes.checked : true,
-        showVisionRange: toggleVisionRange ? !!toggleVisionRange.checked : true
-      }));
+      ['hciMapPlanV37','hciMapPlanV36','hciMapPlanV35','hciMapPlanV2','hciMapPlanV1'].forEach((key) => localStorage.removeItem(key));
     } catch (_e) {}
   }
 
-  function load(){
-    try {
-      const raw37 = localStorage.getItem('hciMapPlanV37') || localStorage.getItem('hciMapPlanV36');
-      if(raw37){
-        const data = JSON.parse(raw37);
-        if(gameInfo[data.activeGame]) activeGame = data.activeGame;
-        if(data.selectedTool?.kind) selectedTool = data.selectedTool;
-        if(data.routeSettings) routeSettings = {
-          team: routeColors[data.routeSettings.team] ? data.routeSettings.team : 'blue',
-          style: data.routeSettings.style === 'solid' ? 'solid' : 'dashed',
-          arrow: data.routeSettings.arrow !== false
-        };
-        ['hok','mlbb'].forEach((game) => {
-          const source = data.plans?.[game];
-          if(!source) return;
-          plans[game] = {
-            markers: normalizeMarkers(source.markers),
-            routes: normalizeRoutes(source.routes),
-            title: String(source.title || 'HCI Map Plan').slice(0,44),
-            note: String(source.note || '').slice(0,80)
-          };
-        });
-        if(toggleLabels && typeof data.showLabels === 'boolean') toggleLabels.checked = data.showLabels;
-        if(toggleObjectives && typeof data.showObjectives === 'boolean') toggleObjectives.checked = data.showObjectives;
-        if(toggleRoutes && typeof data.showRoutes === 'boolean') toggleRoutes.checked = data.showRoutes;
-        if(toggleVisionRange && typeof data.showVisionRange === 'boolean') toggleVisionRange.checked = data.showVisionRange;
-        return;
-      }
+  function save(){
+    persistCurrentFields();
+  }
 
-      // Migrate v35 or older data into the game that was active at that time.
-      const rawOld = localStorage.getItem('hciMapPlanV35') || localStorage.getItem('hciMapPlanV2') || localStorage.getItem('hciMapPlanV1');
-      if(!rawOld) return;
-      const data = JSON.parse(rawOld);
-      if(gameInfo[data.activeGame]) activeGame = data.activeGame;
-      plans[activeGame] = {
-        markers: normalizeMarkers(data.markers),
-        routes: normalizeRoutes(data.routes),
-        title: String(data.title || 'HCI Map Plan').slice(0,44),
-        note: String(data.note || '').slice(0,80)
-      };
-      if(data.selectedTool?.kind) selectedTool = data.selectedTool;
-      if(toggleLabels && typeof data.showLabels === 'boolean') toggleLabels.checked = data.showLabels;
-      if(toggleObjectives && typeof data.showObjectives === 'boolean') toggleObjectives.checked = data.showObjectives;
-      if(toggleRoutes && typeof data.showRoutes === 'boolean') toggleRoutes.checked = data.showRoutes;
-      if(toggleVisionRange && typeof data.showVisionRange === 'boolean') toggleVisionRange.checked = data.showVisionRange;
-    } catch (_e) {}
+  function load(){
+    clearLegacyPlanStorage();
   }
 
   function loadPlanFields(){
@@ -344,30 +318,41 @@
   function renderRoleChips(){
     const info = gameInfo[activeGame];
     if(!info || !blueRoleGrid || !redRoleGrid) return;
+    const dockBlue = $('blueRoleDock');
+    const dockRed = $('redRoleDock');
     blueRoleGrid.replaceChildren();
     redRoleGrid.replaceChildren();
+    dockBlue?.replaceChildren();
+    dockRed?.replaceChildren();
     if(blueTeamLabel) blueTeamLabel.textContent = info.roleHint;
     if(redTeamLabel) redTeamLabel.textContent = info.roleHint;
 
-    const buildChip = (team, role) => {
+    const buildChip = (team, role, compact=false) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'role-chip';
+      btn.className = compact ? 'role-dock-item' : 'role-chip';
       btn.dataset.team = team;
       btn.dataset.code = role.code;
-      btn.innerHTML = `<span class="role-code">${role.code}</span><span><strong>${role.label}</strong><small>${team === 'blue' ? 'Blue Team' : 'Red Team'}</small></span>`;
+      btn.dataset.roleLabel = role.label;
+      btn.dataset.icon = role.icon || '';
+      btn.innerHTML = compact
+        ? `<img src="${role.icon}" alt="" /><span>${role.label}</span>`
+        : `<span class="role-code role-icon-code"><img src="${role.icon}" alt="" /></span><span><strong>${role.label}</strong><small>${team === 'blue' ? 'Blue Team' : 'Red Team'} · drag to map</small></span>`;
       btn.addEventListener('click', () => {
-        selectedTool = { kind:'role', team, code:role.code, label:role.label };
+        selectedTool = { kind:'role', team, code:role.code, label:role.label, icon:role.icon };
         activeMode = 'select';
         routeDraft = [];
         updateToolHighlights();
         save();
       });
+      btn.addEventListener('pointerdown', startRolePaletteDrag);
       return btn;
     };
 
-    info.roles.forEach((role) => blueRoleGrid.appendChild(buildChip('blue', role)));
-    info.roles.forEach((role) => redRoleGrid.appendChild(buildChip('red', role)));
+    info.roles.forEach((role) => blueRoleGrid.appendChild(buildChip('blue', role, false)));
+    info.roles.forEach((role) => redRoleGrid.appendChild(buildChip('red', role, false)));
+    info.roles.forEach((role) => dockBlue?.appendChild(buildChip('blue', role, true)));
+    info.roles.forEach((role) => dockRed?.appendChild(buildChip('red', role, true)));
   }
 
   function updateToolHighlights(){
@@ -408,8 +393,8 @@
       const hint = document.createElement('div');
       hint.className = 'map-route-hint';
       hint.textContent = routeDraft.length
-        ? `${routeDraft.length} point${routeDraft.length > 1 ? 's' : ''} · tap next point or Finish Line`
-        : 'Tap the first route point';
+        ? `${routeDraft.length} pts · keep dragging or release to finish`
+        : 'Hold and drag to draw a rotation line';
       overlayLayer.appendChild(hint);
     }
 
@@ -585,7 +570,11 @@
       } else {
         btn.dataset.team = marker.team;
         btn.title = `${marker.team === 'blue' ? 'Blue' : 'Red'} ${marker.label} - drag to move, tap to remove`;
-        btn.innerHTML = `<span class="marker-core">${marker.code}</span><small>${marker.team === 'blue' ? 'B' : 'R'}</small>`;
+        const role = roleDefinition(marker.code);
+        const icon = marker.icon || role?.icon || '';
+        btn.innerHTML = icon
+          ? `<span class="marker-core role-marker-icon"><img src="${icon}" alt="" /></span><small>${marker.team === 'blue' ? 'B' : 'R'}</small>`
+          : `<span class="marker-core">${marker.code}</span><small>${marker.team === 'blue' ? 'B' : 'R'}</small>`;
       }
       frag.appendChild(btn);
     });
@@ -626,7 +615,7 @@
         markers.push({ kind:'strategy', id:selectedTool.id, x:point.x, y:point.y });
       }
     } else if(selectedTool.kind === 'role'){
-      markers.push({ kind:'role', team:selectedTool.team, code:selectedTool.code, label:selectedTool.label, x:point.x, y:point.y });
+      markers.push({ kind:'role', team:selectedTool.team, code:selectedTool.code, label:selectedTool.label, icon:selectedTool.icon || roleDefinition(selectedTool.code)?.icon || '', x:point.x, y:point.y });
     }
   }
 
@@ -636,13 +625,112 @@
     const point = getPointFromEvent(event);
     if(!point) return;
     if(activeMode === 'route'){
-      routeDraft.push(point);
-      render();
-      if(routeDraft.length === 1) showToast('First point added. Continue route, then Finish Line.');
+      // Direct drawing is handled by pointerdown/move/up in v38.
       return;
     }
     addMarkerAt(point);
     render();
+  }
+
+  function startDirectRouteDraw(event){
+    if(activeMode !== 'route' || event.button > 0 || event.target.closest('.map-marker') || event.target.closest('.route-point-handle')) return;
+    const point = getPointFromEvent(event);
+    if(!point) return;
+    event.preventDefault();
+    drawingRoute = true;
+    routePointerId = event.pointerId;
+    routeDraft = [point];
+    selectedRouteIndex = null;
+    try { board.setPointerCapture(event.pointerId); } catch (_e) {}
+    renderRoutes();
+    renderOverlays();
+  }
+
+  function moveDirectRouteDraw(event){
+    if(!drawingRoute || event.pointerId !== routePointerId) return;
+    const point = getPointFromEvent(event);
+    if(!point) return;
+    event.preventDefault();
+    const last = routeDraft[routeDraft.length - 1];
+    if(!last || distancePct(point,last) >= 0.9){
+      routeDraft.push(point);
+      renderRoutes();
+    }
+  }
+
+  function endDirectRouteDraw(event){
+    if(!drawingRoute || event.pointerId !== routePointerId) return;
+    event.preventDefault();
+    drawingRoute = false;
+    try { board.releasePointerCapture(event.pointerId); } catch (_e) {}
+    routePointerId = null;
+    routeDraft = simplifyRoutePoints(routeDraft);
+    if(routeDraft.length >= 2 && distancePct(routeDraft[0],routeDraft[routeDraft.length-1]) >= 1.5){
+      currentPlan().routes.push({ ...routeSettings, points:clone(routeDraft) });
+      selectedRouteIndex = currentPlan().routes.length - 1;
+      showToast('Rotation line created.');
+    }
+    routeDraft = [];
+    render();
+  }
+
+  function cancelDirectRouteDraw(event){
+    if(!drawingRoute || event.pointerId !== routePointerId) return;
+    drawingRoute = false;
+    routePointerId = null;
+    routeDraft = [];
+    render();
+  }
+
+  function startRolePaletteDrag(event){
+    const btn = event.currentTarget;
+    if(!btn?.dataset?.code) return;
+    event.preventDefault();
+    const role = roleDefinition(btn.dataset.code);
+    const ghost = document.createElement('div');
+    ghost.className = `role-drag-ghost ${btn.dataset.team}`;
+    ghost.innerHTML = `<img src="${btn.dataset.icon || role?.icon || ''}" alt="" /><span>${btn.dataset.roleLabel || role?.label || btn.dataset.code}</span>`;
+    document.body.appendChild(ghost);
+    rolePaletteDrag = {
+      pointerId:event.pointerId,
+      team:btn.dataset.team,
+      code:btn.dataset.code,
+      label:btn.dataset.roleLabel || role?.label || btn.dataset.code,
+      icon:btn.dataset.icon || role?.icon || '',
+      ghost
+    };
+    try { btn.setPointerCapture(event.pointerId); } catch (_e) {}
+    moveRolePaletteDrag(event);
+  }
+
+  function moveRolePaletteDrag(event){
+    if(!rolePaletteDrag || event.pointerId !== rolePaletteDrag.pointerId) return;
+    const {ghost}=rolePaletteDrag;
+    ghost.style.left = `${event.clientX}px`;
+    ghost.style.top = `${event.clientY}px`;
+  }
+
+  function endRolePaletteDrag(event){
+    if(!rolePaletteDrag || event.pointerId !== rolePaletteDrag.pointerId) return;
+    const drag = rolePaletteDrag;
+    rolePaletteDrag = null;
+    drag.ghost?.remove();
+    const rect = board?.getBoundingClientRect();
+    if(!rect) return;
+    if(event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom){
+      const point = getPointFromEvent(event);
+      if(point){
+        currentPlan().markers.push({kind:'role', team:drag.team, code:drag.code, label:drag.label, icon:drag.icon, x:point.x, y:point.y});
+        selectedTool = {kind:'role', team:drag.team, code:drag.code, label:drag.label, icon:drag.icon};
+        activeMode='select';
+        closeMobileSheets();
+        setMobileToolbarActive('roles');
+        render();
+        showToast(`${drag.label} placed on map.`);
+      }
+    } else {
+      showToast('Drag the role icon onto the map.');
+    }
   }
 
   function finishRoute(){
@@ -861,11 +949,12 @@
     }
     if(action === 'line'){
       activeMode = 'route';
-      openMobileSheet('tools');
+      routeDraft = [];
+      selectedRouteIndex = null;
+      closeMobileSheets();
       setMobileToolbarActive('line');
       render();
-      setTimeout(() => document.querySelector('.line-tool-panel')?.scrollIntoView({behavior:'smooth', block:'start'}), 80);
-      showToast('Line mode active. Configure line, then tap map points.');
+      showToast('Line mode: hold and drag directly on the map.');
       return;
     }
     if(action === 'markers'){
@@ -892,6 +981,9 @@
     document.querySelectorAll('[data-close-sheet]').forEach((btn) => btn.addEventListener('click', closeMobileSheets));
     $('mobileSheetBackdrop')?.addEventListener('click', closeMobileSheets);
     window.addEventListener('keydown', (event) => { if(event.key === 'Escape') closeMobileSheets(); });
+    window.addEventListener('pointermove', moveRolePaletteDrag, {passive:true});
+    window.addEventListener('pointerup', endRolePaletteDrag);
+    window.addEventListener('pointercancel', endRolePaletteDrag);
 
     document.querySelectorAll('.map-game-tab').forEach((btn) => btn.addEventListener('click', () => switchGame(btn.dataset.game)));
 
@@ -912,7 +1004,7 @@
       }
       setMobileToolbarActive(activeMode === 'route' ? 'line' : 'move');
       render();
-      showToast(activeMode === 'route' ? 'Line mode: tap multiple map points, then Finish Line.' : 'Select mode: tap to place markers, drag to move.');
+      showToast(activeMode === 'route' ? 'Line mode: hold and drag directly on the map.' : 'Select mode: tap to place markers, drag to move.');
     }));
 
     document.querySelectorAll('.line-team-btn').forEach((btn) => btn.addEventListener('click', () => {
@@ -956,6 +1048,10 @@
     document.querySelectorAll('.preset-btn').forEach((btn) => btn.addEventListener('click', () => applyPreset(btn.dataset.preset)));
 
     board?.addEventListener('click', handleBoardClick);
+    board?.addEventListener('pointerdown', startDirectRouteDraw);
+    board?.addEventListener('pointermove', moveDirectRouteDraw);
+    board?.addEventListener('pointerup', endDirectRouteDraw);
+    board?.addEventListener('pointercancel', cancelDirectRouteDraw);
 
     if(markerLayer){
       markerLayer.addEventListener('click', removeMarker, true);
@@ -1187,6 +1283,8 @@
     showToast('Map plan PNG downloaded.');
   }
 
+  window.addEventListener('pagehide', clearLegacyPlanStorage);
+  window.addEventListener('beforeunload', clearLegacyPlanStorage);
   load();
   bind();
   updateGame();
