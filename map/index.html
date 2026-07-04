@@ -7,9 +7,9 @@
   <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
   <meta name="theme-color" content="#050b11" />
   <title>HCI MOBA Map Simulator</title>
-  <meta name="description" content="HCI MOBA Map Simulator v1 - simple map marker planner for MOBA teams." />
-  <link rel="stylesheet" href="/css/draft-room.css?v=33" />
-  <link rel="stylesheet" href="/css/hub-map.css?v=33" />
+  <meta name="description" content="HCI MOBA Map Simulator - tactical planner board for HOK and MLBB." />
+  <link rel="stylesheet" href="/css/draft-room.css?v=35" />
+  <link rel="stylesheet" href="/css/hub-map.css?v=35" />
 </head>
 <body class="map-page">
   <main class="app-shell map-shell">
@@ -26,21 +26,25 @@
 
     <section class="map-hero panel">
       <div>
-        <span class="eyebrow">Map Simulator v1</span>
+        <span class="eyebrow">Map Simulator v3</span>
         <h1>HCI MOBA Map Simulator</h1>
-        <p>Plan rotations, objective calls, danger zones, and vision notes on a custom HCI tactical board. The map module stays separate from active draft rooms.</p>
+        <p>Plan rotations, objective calls, danger zones, vision points, and role positions on a cleaner tactical planner. The map module stays separate from active draft rooms so analysis stays focused.</p>
       </div>
       <div class="map-game-tabs" role="tablist" aria-label="Choose game map">
-        <button type="button" class="map-game-tab active" data-game="hok"><img src="/assets/hok.png" alt="" /><span><b>HOK</b><small>Hero Gorge board</small></span></button>
-        <button type="button" class="map-game-tab" data-game="mlbb"><img src="/assets/ml.png" alt="" /><span><b>MLBB</b><small>Land of Dawn board</small></span></button>
+        <button type="button" class="map-game-tab active" data-game="hok"><img src="/assets/hok.png" alt="" /><span><b>HOK</b><small>Hero Gorge tactical board</small></span></button>
+        <button type="button" class="map-game-tab" data-game="mlbb"><img src="/assets/ml.png" alt="" /><span><b>MLBB</b><small>Land of Dawn tactical board</small></span></button>
       </div>
     </section>
 
     <section class="map-workspace">
       <aside class="panel map-tools" aria-label="Map controls">
-        <span class="eyebrow">Marker Tools</span>
-        <h2>Strategy Board</h2>
-        <p class="map-small-note">Tap/click on the map to place the selected marker. Tap a marker to remove it.</p>
+        <span class="eyebrow">Strategy Markers</span>
+        <h2>Planner Tools</h2>
+        <p class="map-small-note">Tap/click on the board to place the active marker. Tap a placed marker to remove it.</p>
+        <div class="tool-mode-row" id="toolModeRow">
+          <button type="button" class="mode-tool active" data-mode="select"><b>↕</b><span>Select / Move</span></button>
+          <button type="button" class="mode-tool" data-mode="route"><b>⟶</b><span>Draw Route</span></button>
+        </div>
         <div class="marker-palette" id="markerPalette">
           <button type="button" class="marker-tool active" data-type="attack"><b>⚔</b><span>Attack</span></button>
           <button type="button" class="marker-tool" data-type="defend"><b>◆</b><span>Defend</span></button>
@@ -49,14 +53,29 @@
           <button type="button" class="marker-tool" data-type="danger"><b>!</b><span>Danger</span></button>
           <button type="button" class="marker-tool" data-type="vision"><b>◉</b><span>Vision</span></button>
         </div>
+        <div class="map-switches">
+          <label class="map-switch"><input type="checkbox" id="toggleLabels" checked /> <span>Show lane labels</span></label>
+          <label class="map-switch"><input type="checkbox" id="toggleObjectives" checked /> <span>Show objectives</span></label>
+          <label class="map-switch"><input type="checkbox" id="toggleRoutes" checked /> <span>Show routes</span></label>
+        </div>
+        <div class="preset-panel">
+          <span>Rotation Presets</span>
+          <div class="preset-grid">
+            <button type="button" class="preset-btn" data-preset="early">Early Objective</button>
+            <button type="button" class="preset-btn" data-preset="mid">Mid Control</button>
+            <button type="button" class="preset-btn" data-preset="siege">Late Siege</button>
+            <button type="button" class="preset-btn" data-preset="split">Split Push</button>
+          </div>
+        </div>
         <label class="map-note-field"><span>Plan Title</span><input id="mapTitle" type="text" maxlength="44" value="HCI Map Plan" /></label>
-        <label class="map-note-field"><span>Quick Note</span><input id="mapNote" type="text" maxlength="80" placeholder="Example: Roam cover mid before objective" /></label>
+        <label class="map-note-field"><span>Quick Note</span><input id="mapNote" type="text" maxlength="80" placeholder="Example: Roam cover mid before first objective" /></label>
         <div class="map-actions">
           <button class="secondary-btn" id="undoMarkerBtn" type="button">Undo</button>
           <button class="ghost-btn" id="clearMarkersBtn" type="button">Clear</button>
           <button class="primary-btn" id="downloadMapBtn" type="button">Download PNG</button>
           <button class="secondary-btn" id="copyMapBtn" type="button">Copy Summary</button>
         </div>
+        <div class="map-counts panel-lite" id="markerSummary"></div>
       </aside>
 
       <section class="panel map-panel">
@@ -65,19 +84,19 @@
             <span class="eyebrow" id="mapGameLabel">Honor of Kings</span>
             <h2 id="mapPlanHeading">HCI Map Plan</h2>
           </div>
-          <div class="map-counter"><strong id="markerCount">0</strong><span>markers</span></div>
+          <div class="map-panel-metrics">
+            <div class="map-counter"><strong id="markerCount">0</strong><span>markers</span></div>
+            <div class="map-counter"><strong id="roleCount">0</strong><span>roles</span></div>
+            <div class="map-counter"><strong id="routeCount">0</strong><span>routes</span></div>
+          </div>
         </div>
         <div class="map-board hok-map" id="mapBoard" aria-label="Strategy map board">
+          <div class="map-board-frame">
+            <div class="map-overlay-layer" id="overlayLayer"></div>
+            <svg class="map-route-layer" id="routeLayer" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="map-marker-layer" id="markerLayer"></div>
+          </div>
           <div class="map-board-watermark"><span id="mapBoardShort">HOK</span><small>Tactical Board</small></div>
-          <div class="map-lane lane-top"></div>
-          <div class="map-lane lane-mid"></div>
-          <div class="map-lane lane-bottom"></div>
-          <div class="map-river"></div>
-          <div class="map-base blue-base">BLUE</div>
-          <div class="map-base red-base">RED</div>
-          <div class="map-objective obj-left">OBJ</div>
-          <div class="map-objective obj-right">OBJ</div>
-          <div class="map-marker-layer" id="markerLayer"></div>
         </div>
         <div class="map-legend">
           <span><b class="attack-dot"></b> Attack</span>
@@ -86,11 +105,38 @@
           <span><b class="objective-dot"></b> Objective</span>
           <span><b class="danger-dot"></b> Danger</span>
           <span><b class="vision-dot"></b> Vision</span>
+          <span><b class="blue-role-dot"></b> Blue role</span>
+          <span><b class="red-role-dot"></b> Red role</span>
         </div>
       </section>
+
+      <aside class="panel team-planner" aria-label="Role planner">
+        <span class="eyebrow">Role Planner</span>
+        <h2>Team Position Markers</h2>
+        <p class="map-small-note">Use role chips below, then tap the map to place Blue or Red side position markers like a tactical planner.</p>
+        <div class="team-role-columns">
+          <section class="role-group blue-role-group">
+            <header><strong>Blue Team</strong><small id="blueTeamLabel">Clash / Jungle / Mid / Farm / Roam</small></header>
+            <div class="role-chip-grid" id="blueRoleGrid"></div>
+          </section>
+          <section class="role-group red-role-group">
+            <header><strong>Red Team</strong><small id="redTeamLabel">Clash / Jungle / Mid / Farm / Roam</small></header>
+            <div class="role-chip-grid" id="redRoleGrid"></div>
+          </section>
+        </div>
+        <div class="panel-lite planner-tips">
+          <strong>Suggested use</strong>
+          <ul>
+            <li>Place role markers first to show formation.</li>
+            <li>Add objective + vision markers after setup.</li>
+            <li>Use quick note for macro reminders.</li>
+            <li>Download PNG for scrim or team review.</li>
+          </ul>
+        </div>
+      </aside>
     </section>
   </main>
   <div class="toast" id="toast" hidden></div>
-  <script src="/js/map-simulator.js?v=33"></script>
+  <script src="/js/map-simulator.js?v=35"></script>
 </body>
 </html>
