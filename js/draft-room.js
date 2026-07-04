@@ -40,7 +40,7 @@
     heroSearch: $('heroSearch'), laneFilterButtons: $('laneFilterButtons'), draftSequence: $('draftSequence'), heroGrid: $('heroGrid'), draftBoard: $('draftBoard'), heroPanel: $('heroPanel'), draftStage: $('draftStage'), draftFocusHeader: $('draftFocusHeader'), focusRoomText: $('focusRoomText'), gameHeadline: $('gameHeadline'),
     draftResultPanel: $('draftResultPanel'), resultGameTitle: $('resultGameTitle'), resultABans: $('resultABans'), resultBBans: $('resultBBans'), resultAPicks: $('resultAPicks'), resultBPicks: $('resultBPicks'),
     sessionModal: $('sessionModal'), sessionModalTitle: $('sessionModalTitle'), nextGameBtn: $('nextGameBtn'), backLobbyBtn: $('backLobbyBtn'), downloadResultBtn: $('downloadResultBtn'), toast: $('toast'),
-    siteNav: $('siteNav'), navToggle: $('navToggle'), seriesOptions: document.querySelectorAll('[data-series]'), layoutModeSelect: $('layoutModeSelect')
+    siteNav: $('siteNav'), navToggle: $('navToggle'), seriesOptions: document.querySelectorAll('[data-series]')
   };
 
   let db = null, auth = null, currentUser = null, currentRoomId = null, currentRoom = null, currentRole = 'SPECTATOR';
@@ -75,19 +75,23 @@
     document.querySelectorAll('[data-game-logo]').forEach((img) => { img.src = logo; img.alt = `${CONFIG.gameKey || 'HCI'} Logo`; });
     const landingLogo = document.querySelector('.hero-title-row img'); if(landingLogo){ landingLogo.src = logo; landingLogo.alt = `${CONFIG.gameKey || 'HCI'} Logo`; landingLogo.setAttribute('data-game-logo',''); }
   }
-  const LAYOUT_MODE_KEY = `hciDraftLayoutMode:${CONFIG.gameKey || 'HCI'}`;
-  const VALID_LAYOUT_MODES = new Set(['auto','compact','arena','minimal']);
-  function getSavedLayoutMode(){ const saved = localStorage.getItem(LAYOUT_MODE_KEY) || 'auto'; return VALID_LAYOUT_MODES.has(saved) ? saved : 'auto'; }
-  function applyLayoutMode(mode = getSavedLayoutMode()){
-    const safeMode = VALID_LAYOUT_MODES.has(mode) ? mode : 'auto';
+  function inferredLayoutMode(){
+    const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+    const isSmall = window.matchMedia('(max-width: 760px)').matches;
+    if(isLandscape) return 'arena';
+    if(isSmall) return 'compact';
+    return 'arena';
+  }
+  function applyLayoutMode(){
+    const safeMode = inferredLayoutMode();
     document.body.dataset.layoutMode = safeMode;
-    document.body.classList.toggle('layout-mode-auto', safeMode === 'auto');
+    document.body.classList.toggle('layout-mode-auto', false);
     document.body.classList.toggle('layout-mode-compact', safeMode === 'compact');
     document.body.classList.toggle('layout-mode-arena', safeMode === 'arena');
-    document.body.classList.toggle('layout-mode-minimal', safeMode === 'minimal');
-    if(els.layoutModeSelect && els.layoutModeSelect.value !== safeMode) els.layoutModeSelect.value = safeMode;
+    document.body.classList.toggle('layout-mode-minimal', false);
+    document.body.classList.toggle('draft-orientation-landscape', window.matchMedia('(orientation: landscape)').matches);
+    document.body.classList.toggle('draft-orientation-portrait', window.matchMedia('(orientation: portrait)').matches);
   }
-  function setLayoutMode(mode){ const safeMode = VALID_LAYOUT_MODES.has(mode) ? mode : 'auto'; localStorage.setItem(LAYOUT_MODE_KEY, safeMode); applyLayoutMode(safeMode); showToast(`Layout mode: ${safeMode.charAt(0).toUpperCase() + safeMode.slice(1)}`); }
   function normalizeRoomCodeInput(input){
     if(!input) return;
     const start = input.selectionStart, end = input.selectionEnd;
@@ -401,6 +405,7 @@
     if(!els.draftStage || document.getElementById('proDraftTopbar')) return;
     const topbar = document.createElement('section'); topbar.id = 'proDraftTopbar'; topbar.className = 'pro-draft-topbar';
     topbar.innerHTML = `
+      <button class="pro-room-settings-btn" type="button" data-open-room-settings aria-label="Room Settings">☰</button>
       <div class="pro-game-badge"><img data-game-logo src="${escapeHtml(gameLogoPath())}" alt="${escapeHtml(CONFIG.gameKey || 'HCI')} Logo"><span>${escapeHtml(CONFIG.gameKey || 'HCI')}</span></div>
       <div class="pro-ban-row pro-blue" id="proBlueBans" aria-label="Blue ban slots"></div>
       <div class="pro-turn-box"><span id="proTurnPhase">WAITING</span><strong id="proTimerValue">--</strong><small id="proTurnTeam">Draft Lobby</small><div class="pro-timer-line"><i id="proTimerFill"></i></div></div>
@@ -419,13 +424,36 @@
     const container = document.getElementById(containerId); if(!container) return;
     container.innerHTML = Array.from({length: count}, (_, i) => compactSlotHtml(values[i], i, type)).join('');
   }
+
+  function ensureArenaShell(){
+    if(!els.draftStage || !els.heroPanel || document.getElementById('arenaDraftShell')) return;
+    const shell = document.createElement('section'); shell.id = 'arenaDraftShell'; shell.className = 'arena-draft-shell';
+    shell.innerHTML = `<aside class="arena-pick-side arena-blue"><strong>BLUE</strong><small id="arenaBlueLabel">Pick</small><div id="arenaBluePicks" class="arena-pick-list"></div></aside><aside class="arena-pick-side arena-red"><strong>RED</strong><small id="arenaRedLabel">Pick</small><div id="arenaRedPicks" class="arena-pick-list"></div></aside>`;
+    els.heroPanel.insertAdjacentElement('beforebegin', shell);
+    const red = shell.querySelector('.arena-red');
+    shell.insertBefore(els.heroPanel, red);
+  }
+  function arenaPickSlotHtml(heroId, index){
+    if(!heroId) return `<span class="arena-pick-slot empty"><b>${index+1}</b></span>`;
+    const hero = heroById(heroId); const name = hero ? hero.name : heroId;
+    const avatar = heroAvatarHtml(hero, 'arena-pick-avatar', name);
+    return `<span class="arena-pick-slot filled" title="${escapeHtml(name)} · Pick ${index+1}">${avatar}<em>${index+1}</em></span>`;
+  }
+  function renderArenaPickSlots(containerId, values, teamLabel){
+    const container = document.getElementById(containerId); if(!container) return;
+    container.innerHTML = Array.from({length:5}, (_, i) => arenaPickSlotHtml(values[i], i)).join('');
+    const labelId = containerId === 'arenaBluePicks' ? 'arenaBlueLabel' : 'arenaRedLabel';
+    setText(document.getElementById(labelId), teamLabel || 'Pick');
+  }
   function renderProDraftTopbar(){
-    if(!currentRoom) return; ensureProDraftTopbar(); updateGameVisuals();
+    if(!currentRoom) return; ensureProDraftTopbar(); ensureArenaShell(); updateGameVisuals();
     const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); const board = displayTeams(currentRoom);
     renderCompactSlots('proBlueBans', valuesForTeam(board.blue, 'ban'), banCount, 'ban');
     renderCompactSlots('proRedBans', valuesForTeam(board.red, 'ban'), banCount, 'ban');
     renderCompactSlots('proBluePicks', valuesForTeam(board.blue, 'pick'), 5, 'pick');
     renderCompactSlots('proRedPicks', valuesForTeam(board.red, 'pick'), 5, 'pick');
+    renderArenaPickSlots('arenaBluePicks', valuesForTeam(board.blue, 'pick'), teamName(board.blue, currentRoom));
+    renderArenaPickSlots('arenaRedPicks', valuesForTeam(board.red, 'pick'), teamName(board.red, currentRoom));
     const phase = document.getElementById('proTurnPhase'); const team = document.getElementById('proTurnTeam'); const fill = document.getElementById('proTimerFill');
     let phaseText = currentRoom.status === 'preparing' ? 'PREPARE' : currentRoom.status === 'finished' ? 'COMPLETE' : 'LOBBY'; let teamText = gameTitle(currentRoom); let pct = 0;
     if(currentRoom.status === 'drafting'){
@@ -603,6 +631,29 @@
   }
 
   async function copyRoomId(){ if(!currentRoomId) return; await navigator.clipboard.writeText(currentRoomId); showToast('Room Code copied.'); }
+
+  async function copyRoomLink(){
+    if(!currentRoomId) return;
+    const url = `${location.origin}${draftRouteForRoom(currentRoomId)}`;
+    await navigator.clipboard.writeText(url);
+    showToast('Room link copied.');
+  }
+  function openRoomSettings(){
+    if(!currentRoom) return showToast('Room is not open yet.');
+    const overlay = document.createElement('div'); overlay.className = 'custom-confirm room-settings-modal';
+    const canDelete = isHost();
+    const canDownload = currentRoom.status === 'finished';
+    overlay.innerHTML = `<div class="custom-confirm-card room-settings-card" role="dialog" aria-modal="true"><div class="room-settings-head"><span class="eyebrow">Room Settings</span><h2>${escapeHtml(currentRoom.id || currentRoomId)}</h2><p>${escapeHtml(currentRoom.roomName || 'Draft Room')} · ${escapeHtml(gameTitle(currentRoom))}</p></div><div class="room-settings-actions"><button class="secondary-btn" data-copy-id>Copy Room ID</button><button class="secondary-btn" data-copy-link>Copy Room Link</button>${canDownload ? '<button class="secondary-btn" data-download-result>Download Result</button>' : ''}<button class="ghost-btn" data-leave-room>Leave Match</button>${canDelete ? '<button class="danger-btn" data-delete-room>Delete Room</button>' : ''}</div><button class="tiny-btn room-settings-close" data-close>Close</button></div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('[data-close]').addEventListener('click', close);
+    overlay.addEventListener('click', (e) => { if(e.target === overlay) close(); });
+    overlay.querySelector('[data-copy-id]')?.addEventListener('click', async () => { await copyRoomId(); close(); });
+    overlay.querySelector('[data-copy-link]')?.addEventListener('click', async () => { await copyRoomLink(); close(); });
+    overlay.querySelector('[data-download-result]')?.addEventListener('click', async () => { close(); await downloadResultPng(); });
+    overlay.querySelector('[data-leave-room]')?.addEventListener('click', () => { close(); leaveRoom(); });
+    overlay.querySelector('[data-delete-room]')?.addEventListener('click', () => { close(); deleteRoom(); });
+  }
   async function copyResult(){ if(!currentRoom) return; const result = [`HCI MOBA Draft Hub - ${CONFIG.gameKey} - ${currentRoom.id}`, currentRoom.roomName || 'Draft Room', gameTitle(), `${teamName('A')} (${sideForTeam('A')}) Ban: ${(currentRoom.bansA || []).map(heroLabel).join(', ') || '-'}`, `${teamName('A')} Pick: ${(currentRoom.picksA || []).map(heroLabel).join(', ') || '-'}`, '', `${teamName('B')} (${sideForTeam('B')}) Ban: ${(currentRoom.bansB || []).map(heroLabel).join(', ') || '-'}`, `${teamName('B')} Pick: ${(currentRoom.picksB || []).map(heroLabel).join(', ') || '-'}`, '', `Estimated WR: ${analyzeDraftResult(currentRoom).blueName} ${analyzeDraftResult(currentRoom).bluePct}% vs ${analyzeDraftResult(currentRoom).redName} ${analyzeDraftResult(currentRoom).redPct}%`, analyzeDraftResult(currentRoom).summary].join('\n'); await navigator.clipboard.writeText(result); showToast('Result copied.'); }
   async function downloadResultPng(){
     if(!currentRoom) return showToast('Result is not available yet.');
@@ -659,12 +710,13 @@
   }
   function bindEvents(){
     if(els.createRoomBtn) els.createRoomBtn.addEventListener('click', createRoom); if(els.joinRoomBtn) els.joinRoomBtn.addEventListener('click', joinRoom);
+    document.addEventListener('click', (event) => { if(event.target.closest('[data-open-room-settings]')) openRoomSettings(); });
     if(els.roomIdInput){
       els.roomIdInput.addEventListener('input', () => normalizeRoomCodeInput(els.roomIdInput));
       els.roomIdInput.addEventListener('paste', () => setTimeout(() => normalizeRoomCodeInput(els.roomIdInput), 0));
       els.roomIdInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') joinRoom(); });
     }
-    if(els.layoutModeSelect){ els.layoutModeSelect.value = getSavedLayoutMode(); els.layoutModeSelect.addEventListener('change', () => setLayoutMode(els.layoutModeSelect.value)); applyLayoutMode(); }
+    applyLayoutMode();
     [els.copyRoomBtn, els.copyRoomTopBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', copyRoomId));
     if(els.startDraftBtn) els.startDraftBtn.addEventListener('click', startDraft); if(els.copyResultBtn) els.copyResultBtn.addEventListener('click', copyResult); if(els.deleteRoomBtn) els.deleteRoomBtn.addEventListener('click', deleteRoom); if(els.deleteRoomTopBtn) els.deleteRoomTopBtn.addEventListener('click', deleteRoom); if(els.leaveRoomBtn) els.leaveRoomBtn.addEventListener('click', leaveRoom);
     [els.downloadResultTopBtn, els.downloadResultTopBtn2, els.downloadResultBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', downloadResultPng));
@@ -674,7 +726,7 @@
     document.querySelectorAll('[data-series]').forEach((btn) => btn.addEventListener('click', () => { if(els.seriesFormat) els.seriesFormat.value = btn.dataset.series === '5' ? '5' : '3'; updateSeriesButtons(); })); updateSeriesButtons();
     if(els.navToggle && els.siteNav){ els.navToggle.addEventListener('click', () => { const open = !els.siteNav.classList.contains('open'); els.siteNav.classList.toggle('open', open); els.navToggle.setAttribute('aria-expanded', open ? 'true' : 'false'); }); }
     window.addEventListener('popstate', () => { const roomId = getRouteRoomId() || new URLSearchParams(location.search).get('room'); if(roomId && roomId !== currentRoomId) listenRoom(String(roomId).toUpperCase()); });
-    window.addEventListener('resize', () => { maybeShowRotatePrompt(); renderProDraftTopbar(); });
+    window.addEventListener('resize', () => { applyLayoutMode(); maybeShowRotatePrompt(); renderProDraftTopbar(); });
     updateGameVisuals();
   }
   bindEvents(); applyLayoutMode(); updateGameVisuals(); renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); initFirebase();
