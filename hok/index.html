@@ -54,7 +54,7 @@
       <div class="quick-info">
         <div class="panel info-card"><span class="eyebrow">Real-Time</span><h3>Live room sync</h3><p>All logged-in users see the same draft state without manual refresh.</p></div>
         <div class="panel info-card"><span class="eyebrow">Auto Random</span><h3>Timer-safe drafting</h3><p>If a team runs out of time, the system randomly picks or bans an available hero.</p></div>
-        <div class="panel info-card"><span class="eyebrow">Series</span><h3>BO3 / BO5 with side switch</h3><p>Team side is calculated automatically for every game in the series.</p></div>
+        <div class="panel info-card"><span class="eyebrow">Series</span><h3>BO3 / BO5 / Flat formats</h3><p>HOK supports BO3, BO5, BO2 Flat, BO3 Flat, and BO4 Flat formats.</p></div>
       </div>
     </section>
 
@@ -69,7 +69,7 @@
           <h3>Create Room</h3>
           <p>The creator becomes the host and Team A by default. Team names can be edited in the lobby.</p>
           <label class="series-picker" for="roomNameInput"><span>Room Name</span><input id="roomNameInput" type="text" maxlength="36" placeholder="Example: HCI Scrim Draft" value="HCI Practice Room" /></label>
-          <div class="series-picker custom-series-picker"><span>Match Format</span><input id="seriesFormat" type="hidden" value="3" /><div class="series-options" role="radiogroup" aria-label="Match format"><button type="button" class="series-option active" data-series="3" aria-checked="true"><strong>Best of 3</strong><small>Scrim / training series</small></button><button type="button" class="series-option" data-series="5" aria-checked="false"><strong>Best of 5</strong><small>Final / longer series</small></button></div></div>
+          <div class="series-picker custom-series-picker"><span>Match Format</span><input id="seriesFormat" type="hidden" value="bo3" /><div class="series-options series-options-five" role="radiogroup" aria-label="Match format"><button type="button" class="series-option active" data-series="bo3" aria-checked="true"><strong>BO 3</strong><small>Standard series</small></button><button type="button" class="series-option" data-series="bo5" aria-checked="false"><strong>BO 5</strong><small>Long series</small></button><button type="button" class="series-option" data-series="flat2" aria-checked="false"><strong>BO 2 Flat</strong><small>Exact 2 games</small></button><button type="button" class="series-option" data-series="flat3" aria-checked="false"><strong>BO 3 Flat</strong><small>Exact 3 games</small></button><button type="button" class="series-option" data-series="flat4" aria-checked="false"><strong>BO 4 Flat</strong><small>Exact 4 games</small></button></div></div>
           <div class="team-name-seed"><input id="teamANameSeed" type="text" maxlength="24" placeholder="Team A name" value="Team A" /><input id="teamBNameSeed" type="text" maxlength="24" placeholder="Team B name" value="Team B" /></div>
           <button class="primary-btn" id="createRoomBtn" disabled>Create Room</button>
         </div>
