@@ -8,7 +8,8 @@
   <meta name="theme-color" content="#050b11" />
   <title>HCI MOBA Map Simulator</title>
   <meta name="description" content="HCI MOBA Map Simulator v1 - simple map marker planner for MOBA teams." />
-  <link rel="stylesheet" href="/css/draft-room.css" />
+  <link rel="stylesheet" href="/css/draft-room.css?v=33" />
+  <link rel="stylesheet" href="/css/hub-map.css?v=33" />
 </head>
 <body class="map-page">
   <main class="app-shell map-shell">
@@ -27,11 +28,11 @@
       <div>
         <span class="eyebrow">Map Simulator v1</span>
         <h1>HCI MOBA Map Simulator</h1>
-        <p>Plan rotations, objective calls, danger zones, and vision notes without mixing map tools into the active draft room.</p>
+        <p>Plan rotations, objective calls, danger zones, and vision notes on a custom HCI tactical board. The map module stays separate from active draft rooms.</p>
       </div>
       <div class="map-game-tabs" role="tablist" aria-label="Choose game map">
-        <button type="button" class="map-game-tab active" data-game="hok"><img src="/assets/hok.png" alt="" />HOK</button>
-        <button type="button" class="map-game-tab" data-game="mlbb"><img src="/assets/ml.png" alt="" />MLBB</button>
+        <button type="button" class="map-game-tab active" data-game="hok"><img src="/assets/hok.png" alt="" /><span><b>HOK</b><small>Hero Gorge board</small></span></button>
+        <button type="button" class="map-game-tab" data-game="mlbb"><img src="/assets/ml.png" alt="" /><span><b>MLBB</b><small>Land of Dawn board</small></span></button>
       </div>
     </section>
 
@@ -67,6 +68,7 @@
           <div class="map-counter"><strong id="markerCount">0</strong><span>markers</span></div>
         </div>
         <div class="map-board hok-map" id="mapBoard" aria-label="Strategy map board">
+          <div class="map-board-watermark"><span id="mapBoardShort">HOK</span><small>Tactical Board</small></div>
           <div class="map-lane lane-top"></div>
           <div class="map-lane lane-mid"></div>
           <div class="map-lane lane-bottom"></div>
@@ -89,6 +91,6 @@
     </section>
   </main>
   <div class="toast" id="toast" hidden></div>
-  <script src="/js/map-simulator.js"></script>
+  <script src="/js/map-simulator.js?v=33"></script>
 </body>
 </html>
