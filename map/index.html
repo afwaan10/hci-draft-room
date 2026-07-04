@@ -8,8 +8,8 @@
   <meta name="theme-color" content="#050b11" />
   <title>HCI MOBA Map Simulator</title>
   <meta name="description" content="HCI MOBA Map Simulator - tactical planner board for HOK and MLBB." />
-  <link rel="stylesheet" href="/css/draft-room.css?v=35" />
-  <link rel="stylesheet" href="/css/hub-map.css?v=35" />
+  <link rel="stylesheet" href="/css/draft-room.css?v=37" />
+  <link rel="stylesheet" href="/css/hub-map.css?v=37" />
 </head>
 <body class="map-page">
   <main class="app-shell map-shell">
@@ -26,24 +26,45 @@
 
     <section class="map-hero panel">
       <div>
-        <span class="eyebrow">Map Simulator v3</span>
+        <span class="eyebrow">Map Simulator v5</span>
         <h1>HCI MOBA Map Simulator</h1>
         <p>Plan rotations, objective calls, danger zones, vision points, and role positions on a cleaner tactical planner. The map module stays separate from active draft rooms so analysis stays focused.</p>
       </div>
       <div class="map-game-tabs" role="tablist" aria-label="Choose game map">
-        <button type="button" class="map-game-tab active" data-game="hok"><img src="/assets/hok.png" alt="" /><span><b>HOK</b><small>Hero Gorge tactical board</small></span></button>
-        <button type="button" class="map-game-tab" data-game="mlbb"><img src="/assets/ml.png" alt="" /><span><b>MLBB</b><small>Land of Dawn tactical board</small></span></button>
+        <button type="button" class="map-game-tab active" data-game="hok"><img src="/assets/hok.png" alt="" /><span><b>HOK</b><small>Hero Gorge real map</small></span></button>
+        <button type="button" class="map-game-tab" data-game="mlbb"><img src="/assets/ml.png" alt="" /><span><b>MLBB</b><small>Land of Dawn real map</small></span></button>
       </div>
     </section>
 
     <section class="map-workspace">
-      <aside class="panel map-tools" aria-label="Map controls">
+      <aside class="panel map-tools mobile-sheet" id="mapToolsSheet" aria-label="Map controls">
+        <button type="button" class="mobile-sheet-close" data-close-sheet aria-label="Close tools">×</button>
         <span class="eyebrow">Strategy Markers</span>
         <h2>Planner Tools</h2>
         <p class="map-small-note">Tap/click on the board to place the active marker. Tap a placed marker to remove it.</p>
         <div class="tool-mode-row" id="toolModeRow">
           <button type="button" class="mode-tool active" data-mode="select"><b>↕</b><span>Select / Move</span></button>
-          <button type="button" class="mode-tool" data-mode="route"><b>⟶</b><span>Draw Route</span></button>
+          <button type="button" class="mode-tool" data-mode="route"><b>⟶</b><span>Draw Line / Route</span></button>
+        </div>
+        <div class="line-tool-panel" id="lineToolPanel">
+          <div class="line-tool-head"><span>Line Direction Tool</span><small>Tap multiple points on the map, then Finish Line.</small></div>
+          <div class="line-team-row" aria-label="Line color">
+            <button type="button" class="line-team-btn active" data-team="blue"><b></b>Blue</button>
+            <button type="button" class="line-team-btn" data-team="red"><b></b>Red</button>
+            <button type="button" class="line-team-btn" data-team="neutral"><b></b>Neutral</button>
+          </div>
+          <div class="line-style-row">
+            <button type="button" class="line-style-btn" data-style="solid">━━ Solid</button>
+            <button type="button" class="line-style-btn active" data-style="dashed">┅┅ Dashed</button>
+            <label class="line-arrow-toggle"><input type="checkbox" id="lineArrowToggle" checked /> Arrow</label>
+          </div>
+          <div class="line-action-row">
+            <button type="button" class="secondary-btn" id="finishRouteBtn">Finish Line</button>
+            <button type="button" class="ghost-btn" id="cancelRouteBtn">Cancel Draft</button>
+            <button type="button" class="ghost-btn" id="reverseRouteBtn">Reverse Direction</button>
+            <button type="button" class="ghost-btn danger-soft" id="clearRoutesBtn">Clear Lines</button>
+          </div>
+          <div class="route-list" id="routeList" aria-live="polite"></div>
         </div>
         <div class="marker-palette" id="markerPalette">
           <button type="button" class="marker-tool active" data-type="attack"><b>⚔</b><span>Attack</span></button>
@@ -52,11 +73,13 @@
           <button type="button" class="marker-tool" data-type="objective"><b>★</b><span>Objective</span></button>
           <button type="button" class="marker-tool" data-type="danger"><b>!</b><span>Danger</span></button>
           <button type="button" class="marker-tool" data-type="vision"><b>◉</b><span>Vision</span></button>
+          <button type="button" class="marker-tool note-tool" data-type="note"><b>✎</b><span>Note</span></button>
         </div>
         <div class="map-switches">
           <label class="map-switch"><input type="checkbox" id="toggleLabels" checked /> <span>Show lane labels</span></label>
           <label class="map-switch"><input type="checkbox" id="toggleObjectives" checked /> <span>Show objectives</span></label>
           <label class="map-switch"><input type="checkbox" id="toggleRoutes" checked /> <span>Show routes</span></label>
+          <label class="map-switch"><input type="checkbox" id="toggleVisionRange" checked /> <span>Estimated vision range</span></label>
         </div>
         <div class="preset-panel">
           <span>Rotation Presets</span>
@@ -90,13 +113,15 @@
             <div class="map-counter"><strong id="routeCount">0</strong><span>routes</span></div>
           </div>
         </div>
-        <div class="map-board hok-map" id="mapBoard" aria-label="Strategy map board">
-          <div class="map-board-frame">
-            <div class="map-overlay-layer" id="overlayLayer"></div>
-            <svg class="map-route-layer" id="routeLayer" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
-            <div class="map-marker-layer" id="markerLayer"></div>
+        <div class="map-board-scroll" id="mapBoardScroll">
+          <div class="map-board hok-map" id="mapBoard" aria-label="Strategy map board">
+            <div class="map-board-frame">
+              <div class="map-overlay-layer" id="overlayLayer"></div>
+              <svg class="map-route-layer" id="routeLayer" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div class="map-marker-layer" id="markerLayer"></div>
+            </div>
+            <div class="map-board-watermark"><span id="mapBoardShort">HOK</span><small>Tactical Board</small></div>
           </div>
-          <div class="map-board-watermark"><span id="mapBoardShort">HOK</span><small>Tactical Board</small></div>
         </div>
         <div class="map-legend">
           <span><b class="attack-dot"></b> Attack</span>
@@ -105,12 +130,14 @@
           <span><b class="objective-dot"></b> Objective</span>
           <span><b class="danger-dot"></b> Danger</span>
           <span><b class="vision-dot"></b> Vision</span>
+          <span><b class="note-dot"></b> Note</span>
           <span><b class="blue-role-dot"></b> Blue role</span>
           <span><b class="red-role-dot"></b> Red role</span>
         </div>
       </section>
 
-      <aside class="panel team-planner" aria-label="Role planner">
+      <aside class="panel team-planner mobile-sheet" id="rolePlannerSheet" aria-label="Role planner">
+        <button type="button" class="mobile-sheet-close" data-close-sheet aria-label="Close role planner">×</button>
         <span class="eyebrow">Role Planner</span>
         <h2>Team Position Markers</h2>
         <p class="map-small-note">Use role chips below, then tap the map to place Blue or Red side position markers like a tactical planner.</p>
@@ -136,7 +163,15 @@
       </aside>
     </section>
   </main>
+  <div class="mobile-sheet-backdrop" id="mobileSheetBackdrop" hidden></div>
+  <nav class="mobile-map-toolbar" aria-label="Mobile map tools">
+    <button type="button" data-mobile-action="move"><b>↕</b><span>Move</span></button>
+    <button type="button" data-mobile-action="line"><b>⟶</b><span>Line</span></button>
+    <button type="button" data-mobile-action="markers"><b>⌖</b><span>Marker</span></button>
+    <button type="button" data-mobile-action="roles"><b>◎</b><span>Roles</span></button>
+    <button type="button" data-mobile-action="tools"><b>☰</b><span>Tools</span></button>
+  </nav>
   <div class="toast" id="toast" hidden></div>
-  <script src="/js/map-simulator.js?v=35"></script>
+  <script src="/js/map-simulator.js?v=37"></script>
 </body>
 </html>
