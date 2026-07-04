@@ -442,3 +442,142 @@
   .map-marker.strategy-marker[data-strategy="vision"]::before{width:96px!important;height:96px!important;}
   .map-marker.note-marker{min-width:105px!important;max-width:180px!important;padding:8px 11px!important;}
 }
+
+/* v38 interaction rebuild: Android map-first, direct draw, role icon dock */
+.role-icon-code{padding:5px!important;overflow:hidden!important;}
+.role-icon-code img,.role-marker-icon img,.role-dock-item img{width:100%!important;height:100%!important;object-fit:contain!important;display:block!important;pointer-events:none!important;}
+.role-marker-icon{width:28px!important;height:28px!important;display:grid!important;place-items:center!important;pointer-events:none!important;}
+.role-marker-icon img{filter:brightness(1.2) contrast(1.06)!important;}
+.role-chip{touch-action:none!important;user-select:none!important;-webkit-user-select:none!important;}
+.role-chip .role-code{overflow:hidden!important;}
+
+.role-drag-ghost{position:fixed!important;z-index:9999!important;transform:translate(-50%,-50%)!important;pointer-events:none!important;display:flex!important;align-items:center!important;gap:8px!important;padding:8px 12px!important;border-radius:16px!important;background:rgba(8,18,28,.96)!important;border:2px solid rgba(255,255,255,.28)!important;color:#eef6ff!important;box-shadow:0 18px 42px rgba(0,0,0,.55)!important;font-weight:900!important;}
+.role-drag-ghost.blue{border-color:rgba(37,99,235,.9)!important;}
+.role-drag-ghost.red{border-color:rgba(239,68,68,.9)!important;}
+.role-drag-ghost img{width:34px!important;height:34px!important;object-fit:contain!important;}
+.role-drag-ghost span{font-size:.8rem!important;white-space:nowrap!important;}
+
+.mobile-role-dock{display:none!important;}
+.map-board.route-mode{touch-action:none!important;cursor:crosshair!important;}
+.map-board:not(.route-mode){touch-action:pan-y pinch-zoom!important;}
+.map-marker,.route-point-handle{touch-action:none!important;}
+
+@media (max-width:780px){
+  /* Homepage modules become a true one-column mobile layout. This avoids narrow clipped cards. */
+  .module-card-grid{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-auto-flow:row!important;
+    grid-auto-columns:auto!important;
+    overflow:visible!important;
+    padding:0 14px!important;
+    margin:0!important;
+    gap:14px!important;
+    scroll-snap-type:none!important;
+  }
+  .module-card{
+    width:100%!important;
+    min-height:190px!important;
+    padding:20px!important;
+    scroll-snap-align:none!important;
+  }
+  .module-card b{font-size:1.48rem!important;}
+  .module-card small{font-size:1rem!important;line-height:1.48!important;}
+  .module-card em{margin-top:10px!important;}
+}
+
+@media (max-width:980px){
+  /* Fit the whole map inside the phone width; no horizontal hold-drag just to see the board. */
+  .map-board-scroll{
+    overflow:hidden!important;
+    width:100%!important;
+    border-radius:18px!important;
+    background:#030911!important;
+    touch-action:pan-y pinch-zoom!important;
+  }
+  .map-board.hok-map,
+  .map-board.mlbb-map{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    margin:0!important;
+  }
+  .map-board.hok-map{aspect-ratio:1000/523!important;}
+  .map-board.mlbb-map{aspect-ratio:1/1!important;}
+
+  .map-panel{padding:10px!important;}
+  .map-panel-head{margin-bottom:6px!important;}
+  .map-panel-metrics{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+  .map-helper-label{font-size:.54rem!important;padding:4px 6px!important;}
+  .map-marker{width:40px!important;height:40px!important;}
+  .map-marker.role-marker{width:42px!important;height:42px!important;}
+  .role-marker-icon{width:24px!important;height:24px!important;}
+  .map-marker.strategy-marker[data-strategy="vision"]::before{width:78px!important;height:78px!important;}
+  .map-board-watermark{right:10px!important;bottom:8px!important;}
+  .map-board-watermark span{font-size:1.4rem!important;}
+  .map-board-watermark small{font-size:.58rem!important;}
+
+  .mobile-role-dock{
+    display:grid!important;
+    gap:10px!important;
+    padding:12px!important;
+    border-radius:18px!important;
+    border:1px solid rgba(255,255,255,.10)!important;
+    background:rgba(255,255,255,.035)!important;
+  }
+  .role-dock-team{display:grid!important;grid-template-columns:72px minmax(0,1fr)!important;align-items:center!important;gap:8px!important;}
+  .role-dock-team strong{font-size:.72rem!important;line-height:1.1!important;color:#dbe7f5!important;}
+  .role-dock-row{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:6px!important;}
+  .role-dock-item{
+    min-width:0!important;
+    height:48px!important;
+    padding:6px!important;
+    border-radius:14px!important;
+    border:1px solid rgba(255,255,255,.12)!important;
+    background:rgba(255,255,255,.05)!important;
+    color:#eef6ff!important;
+    display:grid!important;
+    place-items:center!important;
+    touch-action:none!important;
+    user-select:none!important;
+  }
+  .role-dock-team.blue .role-dock-item{box-shadow:inset 0 0 0 1px rgba(37,99,235,.18)!important;}
+  .role-dock-team.red .role-dock-item{box-shadow:inset 0 0 0 1px rgba(239,68,68,.18)!important;}
+  .role-dock-item img{width:28px!important;height:28px!important;}
+  .role-dock-item span{display:none!important;}
+  .mobile-role-dock>small{font-size:.72rem!important;color:var(--muted)!important;text-align:center!important;}
+
+  .mobile-map-toolbar{
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    padding:7px!important;
+    gap:5px!important;
+  }
+  .mobile-map-toolbar button{min-height:48px!important;padding:7px 3px!important;}
+  .mobile-map-toolbar b{font-size:1.05rem!important;}
+  .mobile-map-toolbar span{font-size:.62rem!important;}
+
+  /* Direct draw panel wording is compact; line drawing itself happens on the map. */
+  .line-tool-head small{line-height:1.35!important;}
+  .line-team-row{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+}
+
+@media (max-width:430px){
+  .module-card-grid{padding:0 10px!important;}
+  .module-card{min-height:180px!important;}
+  .map-board.hok-map,.map-board.mlbb-map{width:100%!important;min-width:0!important;}
+  .map-panel-metrics{gap:5px!important;}
+  .map-counter{padding:7px 6px!important;}
+  .map-counter strong{font-size:1.05rem!important;}
+  .map-counter span{font-size:.52rem!important;}
+  .role-dock-team{grid-template-columns:64px minmax(0,1fr)!important;}
+  .role-dock-item{height:44px!important;padding:5px!important;}
+  .role-dock-item img{width:25px!important;height:25px!important;}
+}
+
+@media (min-width:981px){
+  .map-tools,.team-planner{position:sticky!important;top:14px!important;max-height:calc(100svh - 28px)!important;overflow:auto!important;}
+  .map-panel{min-width:0!important;}
+  .map-board{width:100%!important;}
+  .role-chip-grid{grid-template-columns:1fr!important;}
+  .role-chip{min-height:58px!important;}
+}
