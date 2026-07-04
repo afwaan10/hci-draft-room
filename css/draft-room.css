@@ -735,3 +735,83 @@ body.draft-active .heroes-panel{box-sizing:border-box!important;width:100%!impor
 
 /* Performance mode for mobile/tablet draft screens: avoid expensive repaint effects */
 @media (max-width:1023px){body.draft-active .site-nav,body.draft-active .pro-draft-topbar,body.draft-active .heroes-panel,.room-settings-panel{backdrop-filter:none!important}.hero-card,.pro-slot,.role-filter{transition:none!important}.primary-btn:hover,.secondary-btn:hover,.danger-btn:hover,.ghost-btn:hover,.tiny-btn:hover,.side-btn:hover,.role-filter:hover{transform:none!important}}
+
+
+/* v23 hotfix: deleted-room redirect, homepage cards, and Android render stabilization
+   This final layer intentionally avoids grid row collisions by using flex rows for game cards. */
+.hub-games{clear:both!important;position:relative!important;z-index:2!important;overflow:visible!important;margin-bottom:0!important;}
+.hub-page .game-card-grid{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:stretch!important;
+  justify-content:center!important;
+  gap:clamp(14px,1.8vw,22px)!important;
+  grid-template-columns:none!important;
+  grid-auto-rows:unset!important;
+  grid-auto-flow:unset!important;
+  contain:none!important;
+  isolation:auto!important;
+  overflow:visible!important;
+  margin:0 auto!important;
+  width:100%!important;
+}
+.hub-page .moba-card,
+.hub-page .moba-card:nth-child(1),
+.hub-page .moba-card:nth-child(2),
+.hub-page .moba-card:nth-child(n+3){
+  grid-column:auto!important;
+  grid-row:auto!important;
+  float:none!important;
+  position:relative!important;
+  margin:0!important;
+  height:auto!important;
+  transform:none!important;
+  box-sizing:border-box!important;
+  flex:1 1 calc(33.333% - 16px)!important;
+  min-width:260px!important;
+  max-width:none!important;
+  min-height:220px!important;
+}
+.hub-page .moba-card:nth-child(1),
+.hub-page .moba-card:nth-child(2){
+  flex-basis:calc(50% - 12px)!important;
+  min-height:260px!important;
+}
+.hub-page .moba-card:hover{transform:none!important;}
+.hub-page .moba-card img{pointer-events:none!important;}
+.hub-page .hub-history{clear:both!important;position:relative!important;z-index:1!important;margin-top:clamp(28px,4vw,54px)!important;}
+@media (max-width:980px){
+  .hub-page .moba-card:nth-child(1),
+  .hub-page .moba-card:nth-child(2),
+  .hub-page .moba-card:nth-child(n+3){
+    flex-basis:calc(50% - 12px)!important;
+    min-width:min(100%,280px)!important;
+    min-height:210px!important;
+  }
+}
+@media (max-width:620px){
+  .hub-page .game-card-grid{gap:14px!important;}
+  .hub-page .moba-card,
+  .hub-page .moba-card:nth-child(1),
+  .hub-page .moba-card:nth-child(2),
+  .hub-page .moba-card:nth-child(n+3){
+    flex:1 1 100%!important;
+    min-width:0!important;
+    width:100%!important;
+    min-height:188px!important;
+  }
+}
+
+/* v23 Android render mode: fewer expensive effects and less off-screen work. */
+body.draft-active .hero-grid{content-visibility:auto!important;contain-intrinsic-size:900px 1200px!important;}
+body.draft-active .hero-card{contain:layout paint style!important;}
+body.draft-active .hero-avatar img{decoding:auto!important;}
+@media (max-width:1023px){
+  body.draft-active .hero-card,
+  body.draft-active .pro-slot,
+  body.draft-active .role-filter,
+  body.draft-active .moba-card{filter:none!important;text-shadow:none!important;}
+  body.draft-active .hero-card{will-change:auto!important;}
+  body.draft-active .pro-draft-topbar,
+  body.draft-active .heroes-panel{box-shadow:0 10px 24px rgba(0,0,0,.26)!important;}
+}
