@@ -2,6 +2,13 @@
   const CONFIG = window.HCI_GAME_CONFIG || { gameKey: 'HOK', gameName: 'Honor of Kings', roomPrefix: 'HOK', roles: ['ALL'], bansPerTeam: 4, turnSeconds: 45 };
   const PREPARE_SECONDS = 5;
   const DEFAULT_BEST_OF = 3;
+  const SERIES_FORMATS = {
+    bo3: { key:'bo3', games:3, mode:'bestOf', label:'BO 3', title:'BO 3', short:'BO 3' },
+    bo5: { key:'bo5', games:5, mode:'bestOf', label:'BO 5', title:'BO 5', short:'BO 5' },
+    flat2: { key:'flat2', games:2, mode:'flat', label:'BO2 Flat', title:'BO2 Flat', short:'BO2 Flat' },
+    flat3: { key:'flat3', games:3, mode:'flat', label:'BO3 Flat', title:'BO3 Flat', short:'BO3 Flat' },
+    flat4: { key:'flat4', games:4, mode:'flat', label:'BO4 Flat', title:'BO4 Flat', short:'BO4 Flat' }
+  };
 
   const BASE_STEPS_HOK = [
     { side:'BLUE', type:'ban', label:'Blue Ban 1' }, { side:'RED', type:'ban', label:'Red Ban 1' },
@@ -77,6 +84,17 @@
   function roleIconHtml(role){ const gameKey = String(CONFIG.gameKey || 'HOK').toUpperCase(); const src = (ROLE_ICON_PATHS[gameKey] || ROLE_ICON_PATHS.HOK)[role] || (ROLE_ICON_PATHS[gameKey] || ROLE_ICON_PATHS.HOK).ALL; return src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(role)}" loading="lazy">` : FALLBACK_ROLE_ICON; }
   function heroById(id){ return heroes.find((hero) => hero.id === id) || null; }
   function heroLabel(id){ const hero = heroById(id); return hero ? hero.name : id || '-'; }
+  function hashHeroValue(seed){ let h=0; const text=String(seed||'HCI'); for(let i=0;i<text.length;i++) h=(h*31+text.charCodeAt(i))>>>0; return h; }
+  function heroMeta(hero){
+    const data = hero?.meta || hero?.stats || {};
+    const h = hashHeroValue(`${CONFIG.gameKey}:${hero?.id || hero?.name}`);
+    const wr = Number(data.winRate ?? data.wr ?? (47 + (h % 110) / 10));
+    const pr = Number(data.pickRate ?? data.pr ?? (4 + ((h >> 4) % 230) / 10));
+    const br = Number(data.banRate ?? data.br ?? (((h >> 9) % 160) / 10));
+    const tier = String(data.tier || (wr >= 54 || br >= 12 ? 'S' : wr >= 51 ? 'A' : wr >= 49 ? 'B' : 'C'));
+    return { wr: Math.max(38, Math.min(62, wr)).toFixed(1), pr: Math.max(0, Math.min(45, pr)).toFixed(1), br: Math.max(0, Math.min(45, br)).toFixed(1), tier, updated: data.updated || data.lastUpdated || 'Sample HCI Meta' };
+  }
+  function metaBadgeHtml(hero){ const meta = heroMeta(hero); return `<span class="hero-meta-line"><b>WR ${escapeHtml(meta.wr)}%</b><small>PR ${escapeHtml(meta.pr)} · BR ${escapeHtml(meta.br)} · ${escapeHtml(meta.tier)}</small></span>`; }
   function heroInitials(name){ return String(name || '?').split(/\s+|\.|-/).filter(Boolean).slice(0,2).map((p) => p[0]?.toUpperCase()).join('') || '?'; }
   function gameSlug(){ return String(CONFIG.gameKey || 'HOK').toLowerCase() === 'mlbb' ? 'mlbb' : 'hok'; }
   function gameHomeRoute(){ return `/${gameSlug()}/`; }
@@ -88,15 +106,25 @@
   function goToDraftRoute(roomId){ pushRoute(draftRouteForRoom(roomId)); }
   function goToLobbyRoute(roomId){ pushRoute(lobbyRouteForRoom(roomId)); }
   function gameNumber(room = currentRoom){ return Number(room?.gameNumber || 1); }
-  function bestOf(room = currentRoom){ return Number(room?.bestOf || DEFAULT_BEST_OF); }
-  function gameTitle(room = currentRoom){ return `Game ${gameNumber(room)} / Best of ${bestOf(room)}`; }
+  function normalizeSeriesKey(value){ const raw = String(value || '').trim(); if(SERIES_FORMATS[raw]) return raw; if(raw === '5') return 'bo5'; if(raw === '3') return 'bo3'; if(raw === '2') return 'flat2'; if(raw === '4') return 'flat4'; return 'bo3'; }
+  function getSelectedSeries(){ return SERIES_FORMATS[normalizeSeriesKey(els.seriesFormat?.value || 'bo3')] || SERIES_FORMATS.bo3; }
+  function seriesInfo(room = currentRoom){
+    if(room?.seriesKey && SERIES_FORMATS[room.seriesKey]) return SERIES_FORMATS[room.seriesKey];
+    const games = Number(room?.seriesGames || room?.gameCount || room?.bestOf || DEFAULT_BEST_OF);
+    const mode = room?.seriesMode === 'flat' ? 'flat' : 'bestOf';
+    if(mode === 'flat') return SERIES_FORMATS[`flat${games}`] || { key:`flat${games}`, games, mode:'flat', label:`BO${games} Flat`, title:`BO${games} Flat`, short:`BO${games} Flat` };
+    return games === 5 ? SERIES_FORMATS.bo5 : SERIES_FORMATS.bo3;
+  }
+  function bestOf(room = currentRoom){ return Number(seriesInfo(room).games || DEFAULT_BEST_OF); }
+  function seriesLabel(room = currentRoom){ return seriesInfo(room).title || `Best of ${bestOf(room)}`; }
+  function gameTitle(room = currentRoom){ return `Game ${gameNumber(room)} / ${seriesLabel(room)}`; }
   function isHost(){ return Boolean(currentRoom && currentUser && currentRoom.hostUid === currentUser.uid); }
-  function getSelectedBestOf(){ const value = Number(els.seriesFormat?.value || DEFAULT_BEST_OF); return value === 5 ? 5 : 3; }
+  function getSelectedBestOf(){ return Number(getSelectedSeries().games || DEFAULT_BEST_OF); }
   function uidForTeam(team, room = currentRoom){ return team === 'A' ? room?.teamAUid : room?.teamBUid; }
   function valuesForTeam(team, type, room = currentRoom){ const field = type === 'ban' ? (team === 'A' ? 'bansA' : 'bansB') : (team === 'A' ? 'picksA' : 'picksB'); return room?.[field] || []; }
   function displayTeams(room = currentRoom){ const number = gameNumber(room); const blue = blueTeamForGame(number); const red = redTeamForGame(number); return { left: blue, right: red, blue, red }; }
   function teamState(team, room = currentRoom){ return uidForTeam(team, room) ? (currentRole === team ? 'You' : 'Filled') : 'Empty'; }
-  function updateSeriesButtons(){ const value = String(getSelectedBestOf()); document.querySelectorAll('[data-series]').forEach((btn) => { const active = btn.dataset.series === value; btn.classList.toggle('active', active); btn.setAttribute('aria-checked', active ? 'true' : 'false'); }); }
+  function updateSeriesButtons(){ const value = normalizeSeriesKey(els.seriesFormat?.value || 'bo3'); if(els.seriesFormat) els.seriesFormat.value = value; document.querySelectorAll('[data-series]').forEach((btn) => { const active = normalizeSeriesKey(btn.dataset.series) === value; btn.classList.toggle('active', active); btn.setAttribute('aria-checked', active ? 'true' : 'false'); }); }
   function getBansPerTeam(){ return Number(CONFIG.bansPerTeam || (CONFIG.gameKey === 'MLBB' ? 5 : 4)); }
   function getTurnSeconds(){ return Number(CONFIG.turnSeconds || 45); }
   function generateRoomId(){ return `${CONFIG.roomPrefix || CONFIG.gameKey || 'HCI'}-${Math.floor(1000 + Math.random() * 90000)}`; }
@@ -182,8 +210,9 @@
     const roomName = (els.roomNameInput?.value || 'HCI Practice Room').trim().slice(0,36) || 'HCI Practice Room';
     const teamAName = (els.teamANameSeed?.value || 'Team A').trim().slice(0,24) || 'Team A';
     const teamBName = (els.teamBNameSeed?.value || 'Team B').trim().slice(0,24) || 'Team B';
+    const series = getSelectedSeries();
     return {
-      id: roomId, roomName, game: CONFIG.gameKey, bestOf: getSelectedBestOf(), gameNumber: 1, status:'lobby',
+      id: roomId, roomName, game: CONFIG.gameKey, bestOf: series.games, seriesGames: series.games, seriesMode: series.mode, seriesKey: series.key, seriesLabel: series.title, flatSeries: series.mode === 'flat', gameNumber: 1, status:'lobby',
       hostUid: currentUser.uid, hostName: currentUser.displayName || 'Host', hostEmail: currentUser.email || '',
       teamAUid: currentUser.uid, teamBUid:'', teamAName, teamBName, spectatorUids: [],
       turnIndex:0, turnSeconds:getTurnSeconds(), prepareSeconds: PREPARE_SECONDS, bansPerTeam:getBansPerTeam(),
@@ -312,7 +341,7 @@
   async function nextGame(){
     if(!currentRoom || !currentRoomId) return;
     if(!isHost()) return showToast('Only the host can continue to the next game.');
-    const next = gameNumber() + 1; if(next > bestOf()) return showToast(`Best of ${bestOf()} is complete.`);
+    const next = gameNumber() + 1; if(next > bestOf()) return showToast(`${seriesLabel()} is complete.`);
     const boardTeams = displayTeams(currentRoom);
     const summary = {
       gameNumber: gameNumber(),
@@ -551,7 +580,7 @@
       btn.disabled = locked || gbpLocked || disabledHero || !canClick;
       const avatar = heroAvatarHtml(hero, 'hero-avatar', hero.name);
       const lockNote = gbpLocked ? '<span class="hero-lock-note">Used by your team</span>' : locked ? '<span class="hero-lock-note">Selected / Banned</span>' : '';
-      btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span>${lockNote}<span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span></span>`;
+      btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span>${lockNote}<span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span>${metaBadgeHtml(hero)}</span>`;
       btn.addEventListener('click', () => selectHero(hero), { passive: true });
       frag.appendChild(btn);
     }
@@ -688,7 +717,7 @@
   async function maybeSaveHistory(){
     if(historySaving || !db || !currentRoom || currentRoom.status !== 'finished' || !isHost()) return;
     const historyId = `${currentRoom.id || currentRoomId}_${gameNumber()}`; if(sessionStorage.getItem(`hciHistorySaved:${historyId}`)) return; historySaving = true;
-    try{ const ref = db.collection('draftHistory').doc(historyId); const snap = await ref.get(); if(!snap.exists){ const boardTeams = displayTeams(currentRoom); await ref.set({ id: historyId, roomId: currentRoom.id || currentRoomId, roomName: currentRoom.roomName || 'Draft Room', game: CONFIG.gameKey, gameNumber: gameNumber(), bestOf: bestOf(), teamAName: teamName('A'), teamBName: teamName('B'), teamASide: sideForTeam('A'), teamBSide: sideForTeam('B'), blueTeamKey: boardTeams.blue, redTeamKey: boardTeams.red, blueTeamName: teamName(boardTeams.blue), redTeamName: teamName(boardTeams.red), bansA: currentRoom.bansA || [], bansB: currentRoom.bansB || [], picksA: currentRoom.picksA || [], picksB: currentRoom.picksB || [], blueBans: valuesForTeam(boardTeams.blue, 'ban'), redBans: valuesForTeam(boardTeams.red, 'ban'), bluePicks: valuesForTeam(boardTeams.blue, 'pick'), redPicks: valuesForTeam(boardTeams.red, 'pick'), participantUids: [currentRoom.teamAUid, currentRoom.teamBUid, currentRoom.hostUid].filter(Boolean), hostUid: currentRoom.hostUid, simulation: analyzeDraftResult(currentRoom), finishedAtMillis: Date.now(), createdAt: firebase.firestore.FieldValue.serverTimestamp() }); } sessionStorage.setItem(`hciHistorySaved:${historyId}`, '1'); }catch(error){ console.warn('History save failed:', error.message); }finally{ historySaving = false; }
+    try{ const ref = db.collection('draftHistory').doc(historyId); const snap = await ref.get(); if(!snap.exists){ const boardTeams = displayTeams(currentRoom); await ref.set({ id: historyId, roomId: currentRoom.id || currentRoomId, roomName: currentRoom.roomName || 'Draft Room', game: CONFIG.gameKey, gameNumber: gameNumber(), bestOf: bestOf(), seriesKey: currentRoom.seriesKey || seriesInfo(currentRoom).key, seriesMode: currentRoom.seriesMode || seriesInfo(currentRoom).mode, seriesLabel: seriesLabel(), teamAName: teamName('A'), teamBName: teamName('B'), teamASide: sideForTeam('A'), teamBSide: sideForTeam('B'), blueTeamKey: boardTeams.blue, redTeamKey: boardTeams.red, blueTeamName: teamName(boardTeams.blue), redTeamName: teamName(boardTeams.red), bansA: currentRoom.bansA || [], bansB: currentRoom.bansB || [], picksA: currentRoom.picksA || [], picksB: currentRoom.picksB || [], blueBans: valuesForTeam(boardTeams.blue, 'ban'), redBans: valuesForTeam(boardTeams.red, 'ban'), bluePicks: valuesForTeam(boardTeams.blue, 'pick'), redPicks: valuesForTeam(boardTeams.red, 'pick'), participantUids: [currentRoom.teamAUid, currentRoom.teamBUid, currentRoom.hostUid].filter(Boolean), hostUid: currentRoom.hostUid, simulation: analyzeDraftResult(currentRoom), finishedAtMillis: Date.now(), createdAt: firebase.firestore.FieldValue.serverTimestamp() }); } sessionStorage.setItem(`hciHistorySaved:${historyId}`, '1'); }catch(error){ console.warn('History save failed:', error.message); }finally{ historySaving = false; }
   }
 
   async function copyRoomId(){ if(!currentRoomId) return; await navigator.clipboard.writeText(currentRoomId); showToast('Room Code copied.'); }
@@ -755,7 +784,7 @@
     if(els.heroSearch) els.heroSearch.addEventListener('input', () => { clearTimeout(renderHeroGrid.searchTimer); renderHeroGrid.searchTimer = setTimeout(renderHeroGrid, 80); }); if(els.nextGameBtn) els.nextGameBtn.addEventListener('click', nextGame); if(els.backLobbyBtn) els.backLobbyBtn.addEventListener('click', leaveRoom);
     document.querySelectorAll('.side-btn').forEach((btn) => btn.addEventListener('click', () => chooseSide(btn.dataset.side)));
     [els.teamANameInput, els.teamBNameInput].filter(Boolean).forEach((input) => input.addEventListener('change', updateTeamNames));
-    document.querySelectorAll('[data-series]').forEach((btn) => btn.addEventListener('click', () => { if(els.seriesFormat) els.seriesFormat.value = btn.dataset.series === '5' ? '5' : '3'; updateSeriesButtons(); })); updateSeriesButtons();
+    document.querySelectorAll('[data-series]').forEach((btn) => btn.addEventListener('click', () => { if(els.seriesFormat) els.seriesFormat.value = normalizeSeriesKey(btn.dataset.series || 'bo3'); updateSeriesButtons(); })); updateSeriesButtons();
     if(els.navToggle && els.siteNav){ els.navToggle.addEventListener('click', () => { const open = !els.siteNav.classList.contains('open'); els.siteNav.classList.toggle('open', open); els.navToggle.setAttribute('aria-expanded', open ? 'true' : 'false'); }); }
     window.addEventListener('popstate', () => { const roomId = getRouteRoomId() || new URLSearchParams(location.search).get('room'); if(roomId && roomId !== currentRoomId) listenRoom(String(roomId).toUpperCase()); });
     window.addEventListener('resize', () => { maybeShowRotatePrompt(); renderProDraftTopbar(); updateRoomSettingsUI(); });
