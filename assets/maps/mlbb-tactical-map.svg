@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="MLBB LAND OF DAWN tactical map">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#130b20"/><stop offset="0.52" stop-color="#071018"/><stop offset="1" stop-color="#1f1a0d"/></linearGradient>
+    <radialGradient id="glowB" cx="12%" cy="86%" r="35%"><stop offset="0" stop-color="#4dabf7" stop-opacity=".25"/><stop offset="1" stop-color="#4dabf7" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glowR" cx="88%" cy="14%" r="35%"><stop offset="0" stop-color="#ff6b6b" stop-opacity=".24"/><stop offset="1" stop-color="#ff6b6b" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="86" height="86" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="86" stroke="white" stroke-opacity=".06" stroke-width="4"/></pattern>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000" flood-opacity=".45"/></filter>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#glowB)"/>
+  <rect width="1600" height="900" fill="url(#glowR)"/>
+  <rect width="1600" height="900" fill="url(#grid)" opacity=".72"/>
+  <path d="M135 780 C 440 730, 810 740, 1465 125" fill="none" stroke="#ffb347" stroke-opacity=".25" stroke-width="10" stroke-linecap="round"/>
+  <path d="M125 155 C 525 95, 995 110, 1475 160" fill="none" stroke="#4dabf7" stroke-opacity=".30" stroke-width="6" stroke-linecap="round"/>
+  <path d="M145 450 L 1455 450" fill="none" stroke="white" stroke-opacity=".18" stroke-width="5" stroke-linecap="round"/>
+  <path d="M125 745 C 525 805, 995 790, 1475 740" fill="none" stroke="#4dabf7" stroke-opacity=".28" stroke-width="6" stroke-linecap="round"/>
+  <g filter="url(#shadow)">
+    <circle cx="118" cy="782" r="68" fill="#4dabf7" fill-opacity=".22" stroke="white" stroke-opacity=".23" stroke-width="4"/>
+    <text x="118" y="775" text-anchor="middle" fill="#eef6ff" font-size="30" font-weight="900" font-family="Arial, sans-serif">BLUE</text>
+    <text x="118" y="807" text-anchor="middle" fill="#a8dfff" font-size="16" font-weight="800" font-family="Arial, sans-serif">BASE</text>
+    <circle cx="1482" cy="118" r="68" fill="#ff6b6b" fill-opacity=".22" stroke="white" stroke-opacity=".23" stroke-width="4"/>
+    <text x="1482" y="111" text-anchor="middle" fill="#fff1f1" font-size="30" font-weight="900" font-family="Arial, sans-serif">RED</text>
+    <text x="1482" y="143" text-anchor="middle" fill="#ffc9c9" font-size="16" font-weight="800" font-family="Arial, sans-serif">BASE</text>
+  </g>
+  <g font-family="Arial, sans-serif" font-weight="900" text-anchor="middle">
+    <rect x="235" y="112" rx="18" width="118" height="42" fill="#061019" fill-opacity=".7" stroke="#4dabf7" stroke-opacity=".35"/><text x="294" y="140" fill="#dceeff" font-size="21">EXP</text>
+    <rect x="742" y="421" rx="18" width="116" height="42" fill="#061019" fill-opacity=".72" stroke="#ffb347" stroke-opacity=".40"/><text x="800" y="449" fill="#fff1c8" font-size="21">MID</text>
+    <rect x="1247" y="739" rx="18" width="118" height="42" fill="#061019" fill-opacity=".7" stroke="#4dabf7" stroke-opacity=".35"/><text x="1306" y="767" fill="#dceeff" font-size="21">GOLD</text>
+  </g>
+  <g filter="url(#shadow)" font-family="Arial, sans-serif" text-anchor="middle" font-weight="900">
+    <circle cx="530" cy="388" r="54" fill="#ffb347" fill-opacity=".22" stroke="white" stroke-opacity=".24" stroke-width="4"/>
+    <text x="530" y="382" fill="#fff2cb" font-size="24">TURTLE</text><text x="530" y="410" fill="#d8c48b" font-size="14">OBJ</text>
+    <circle cx="1070" cy="522" r="54" fill="#ffb347" fill-opacity=".22" stroke="white" stroke-opacity=".24" stroke-width="4"/>
+    <text x="1070" y="516" fill="#fff2cb" font-size="24">LORD</text><text x="1070" y="544" fill="#d8c48b" font-size="14">OBJ</text>
+  </g>
+  <g fill="white" fill-opacity=".10">
+    <circle cx="350" cy="265" r="22"/><circle cx="420" cy="615" r="22"/><circle cx="700" cy="305" r="22"/><circle cx="900" cy="600" r="22"/><circle cx="1180" cy="310" r="22"/><circle cx="1260" cy="620" r="22"/>
+  </g>
+  <g font-family="Arial, sans-serif" font-weight="900">
+    <text x="36" y="42" fill="#ffe3a2" font-size="24" letter-spacing="4">HCI MOBA MAP SIMULATOR</text>
+    <text x="36" y="80" fill="#eef6ff" font-size="34" letter-spacing="2">MLBB LAND OF DAWN</text>
+    <text x="1564" y="42" text-anchor="end" fill="#a8bacf" font-size="18">JUNGLE / LANE / OBJECTIVE PLANNING</text>
+  </g>
+</svg>
