@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
+  <meta name="theme-color" content="#050b11" />
+  <title>HCI MOBA Map Simulator</title>
+  <meta name="description" content="HCI MOBA Map Simulator v1 - simple map marker planner for MOBA teams." />
+  <link rel="stylesheet" href="/css/draft-room.css" />
+</head>
+<body class="map-page">
+  <main class="app-shell map-shell">
+    <nav class="site-nav map-nav">
+      <a class="nav-brand" href="/" aria-label="Back to HCI MOBA Hub">
+        <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" />
+        <span>HCI MOBA Hub</span>
+      </a>
+      <div class="nav-links map-nav-links">
+        <a href="/">Home</a>
+        <a href="/#games">Draft Hub</a>
+      </div>
+    </nav>
+
+    <section class="map-hero panel">
+      <div>
+        <span class="eyebrow">Map Simulator v1</span>
+        <h1>HCI MOBA Map Simulator</h1>
+        <p>Plan rotations, objective calls, danger zones, and vision notes without mixing map tools into the active draft room.</p>
+      </div>
+      <div class="map-game-tabs" role="tablist" aria-label="Choose game map">
+        <button type="button" class="map-game-tab active" data-game="hok"><img src="/assets/hok.png" alt="" />HOK</button>
+        <button type="button" class="map-game-tab" data-game="mlbb"><img src="/assets/ml.png" alt="" />MLBB</button>
+      </div>
+    </section>
+
+    <section class="map-workspace">
+      <aside class="panel map-tools" aria-label="Map controls">
+        <span class="eyebrow">Marker Tools</span>
+        <h2>Strategy Board</h2>
+        <p class="map-small-note">Tap/click on the map to place the selected marker. Tap a marker to remove it.</p>
+        <div class="marker-palette" id="markerPalette">
+          <button type="button" class="marker-tool active" data-type="attack"><b>⚔</b><span>Attack</span></button>
+          <button type="button" class="marker-tool" data-type="defend"><b>◆</b><span>Defend</span></button>
+          <button type="button" class="marker-tool" data-type="rotate"><b>↻</b><span>Rotate</span></button>
+          <button type="button" class="marker-tool" data-type="objective"><b>★</b><span>Objective</span></button>
+          <button type="button" class="marker-tool" data-type="danger"><b>!</b><span>Danger</span></button>
+          <button type="button" class="marker-tool" data-type="vision"><b>◉</b><span>Vision</span></button>
+        </div>
+        <label class="map-note-field"><span>Plan Title</span><input id="mapTitle" type="text" maxlength="44" value="HCI Map Plan" /></label>
+        <label class="map-note-field"><span>Quick Note</span><input id="mapNote" type="text" maxlength="80" placeholder="Example: Roam cover mid before objective" /></label>
+        <div class="map-actions">
+          <button class="secondary-btn" id="undoMarkerBtn" type="button">Undo</button>
+          <button class="ghost-btn" id="clearMarkersBtn" type="button">Clear</button>
+          <button class="primary-btn" id="downloadMapBtn" type="button">Download PNG</button>
+          <button class="secondary-btn" id="copyMapBtn" type="button">Copy Summary</button>
+        </div>
+      </aside>
+
+      <section class="panel map-panel">
+        <div class="map-panel-head">
+          <div>
+            <span class="eyebrow" id="mapGameLabel">Honor of Kings</span>
+            <h2 id="mapPlanHeading">HCI Map Plan</h2>
+          </div>
+          <div class="map-counter"><strong id="markerCount">0</strong><span>markers</span></div>
+        </div>
+        <div class="map-board hok-map" id="mapBoard" aria-label="Strategy map board">
+          <div class="map-lane lane-top"></div>
+          <div class="map-lane lane-mid"></div>
+          <div class="map-lane lane-bottom"></div>
+          <div class="map-river"></div>
+          <div class="map-base blue-base">BLUE</div>
+          <div class="map-base red-base">RED</div>
+          <div class="map-objective obj-left">OBJ</div>
+          <div class="map-objective obj-right">OBJ</div>
+          <div class="map-marker-layer" id="markerLayer"></div>
+        </div>
+        <div class="map-legend">
+          <span><b class="attack-dot"></b> Attack</span>
+          <span><b class="defend-dot"></b> Defend</span>
+          <span><b class="rotate-dot"></b> Rotate</span>
+          <span><b class="objective-dot"></b> Objective</span>
+          <span><b class="danger-dot"></b> Danger</span>
+          <span><b class="vision-dot"></b> Vision</span>
+        </div>
+      </section>
+    </section>
+  </main>
+  <div class="toast" id="toast" hidden></div>
+  <script src="/js/map-simulator.js"></script>
+</body>
+</html>
