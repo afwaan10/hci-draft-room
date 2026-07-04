@@ -152,7 +152,7 @@
     if(!isConfigReady()){
       setText(els.connectionStatus, 'Firebase is not configured');
       setNotice('Firebase is not configured. Edit <strong>js/firebase-config.js</strong> to enable real-time rooms.');
-      renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); return;
+      renderRoleFilters(); renderHeroGrid(true); renderDraftSequence(); return;
     }
     try{
       if(!firebase.apps.length) firebase.initializeApp(window.HCI_FIREBASE_CONFIG);
@@ -167,7 +167,7 @@
         if(els.joinRoomBtn) els.joinRoomBtn.disabled = false;
         setHidden(els.firebaseNotice, true);
         await loadHeroesFromFirestore();
-        renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); restoreRoomIfNeeded();
+        renderRoleFilters(); renderHeroGrid(true); renderDraftSequence(); restoreRoomIfNeeded();
       });
     }catch(error){
       setText(els.connectionStatus, 'Firebase error');
@@ -220,7 +220,14 @@
     if(unsubscribeRoom) unsubscribeRoom();
     currentRoomId = roomId;
     unsubscribeRoom = db.collection('draftRooms').doc(roomId).onSnapshot((doc) => {
-      if(!doc.exists){ showToast('Room was deleted or is no longer available.'); resetLocalState(true); return; }
+      if(!doc.exists){
+        const deletedRoomId = currentRoomId || roomId;
+        resetLocalState(true);
+        try { history.replaceState({ hciDraftRoute:true, roomDeleted:true }, '', gameHomeRoute()); }
+        catch(e){ location.replace(gameHomeRoute()); }
+        showToast(`Room ${deletedRoomId || ''} was deleted or is no longer available.`.trim());
+        return;
+      }
       currentRoom = doc.data(); inferRoleFromRoom(); saveRestore(); renderRoom();
     }, (error) => showToast(error.message));
     setHidden(els.setupPanel, true); setHidden(els.roomPanel, false);
@@ -502,12 +509,26 @@
     (CONFIG.roles || ['ALL']).forEach((role) => { const btn = document.createElement('button'); btn.type = 'button'; btn.className = `role-filter ${activeLane === role ? 'active' : ''}`; btn.title = role; btn.setAttribute('aria-label', role); btn.innerHTML = roleIconHtml(role); btn.addEventListener('click', () => { activeLane = role; renderRoleFilters(); renderHeroGrid(); }); els.laneFilterButtons.appendChild(btn); });
   }
   function miniRoleIcons(lanes){ return (lanes || []).slice(0,3).map((lane) => `<span class="mini-role" title="${escapeHtml(lane)}">${roleIconHtml(lane)}</span>`).join(''); }
-  function renderHeroGrid(){
+  function renderHeroGrid(force = false){
     if(!els.heroGrid) return;
     const search = (els.heroSearch?.value || '').trim().toLowerCase();
     const selected = currentRoom?.selectedHeroIds || [];
     const step = currentRoom?.status === 'drafting' ? draftSteps(currentRoom)[currentRoom.turnIndex] : null;
     const canClick = step && currentRole === step.team;
+    const renderSignature = JSON.stringify({
+      search,
+      activeLane,
+      selected,
+      role: currentRole,
+      status: currentRoom?.status || '',
+      turnIndex: Number(currentRoom?.turnIndex || 0),
+      stepTeam: step?.team || '',
+      stepType: step?.type || '',
+      gameNumber: gameNumber(currentRoom),
+      finishedGames: currentRoom?.finishedGames || []
+    });
+    if(!force && renderHeroGrid.lastSignature === renderSignature && els.heroGrid.childElementCount) return;
+    renderHeroGrid.lastSignature = renderSignature;
     const filtered = heroes.filter((hero) => {
       const name = String(hero.name || '').toLowerCase();
       const lanes = Array.isArray(hero.lanes) ? hero.lanes : [];
@@ -740,5 +761,5 @@
     window.addEventListener('resize', () => { maybeShowRotatePrompt(); renderProDraftTopbar(); updateRoomSettingsUI(); });
     updateGameVisuals();
   }
-  bindEvents(); updateGameVisuals(); renderRoleFilters(); renderHeroGrid(); renderDraftSequence(); initFirebase();
+  bindEvents(); updateGameVisuals(); renderRoleFilters(); renderHeroGrid(true); renderDraftSequence(); initFirebase();
 })();
