@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
   <title>Draft Room by HCI - Admin</title>
   <link rel="stylesheet" href="../css/draft-room.css" />
 </head>
@@ -10,7 +12,7 @@
   <main class="app-shell">
     <nav class="site-nav">
       <a class="nav-brand" href="/" aria-label="Back to Draft Room">
-        <img src="../assets/hci-logo.png" alt="HCI Logo" />
+        <img src="../assets/brand/hci-community.jpg" alt="HCI Logo" />
         <span>Draft Room <small>Admin</small></span>
       </a>
       <div class="nav-links"><a href="/hok/">HOK</a><a href="/mlbb/">MLBB</a><a href="/">Home</a></div>
@@ -19,7 +21,7 @@
     <section class="landing">
       <div class="panel hero-card-main">
         <div class="hero-title-row">
-          <img src="../assets/hci-logo.png" alt="HCI Logo" />
+          <img src="../assets/brand/hci-community.jpg" alt="HCI Logo" />
           <div><span class="eyebrow">Admin Dashboard</span><h1>Draft Room <small>by HCI</small></h1></div>
         </div>
         <p>Create assigned rooms, review recent rooms, and add manual paid credits after payment confirmation.</p>
@@ -39,7 +41,7 @@
         <div class="card soft-card">
           <h3>Room</h3>
           <label class="series-picker"><span>Game</span><select id="adminGame"><option value="HOK">HOK</option><option value="MLBB">MLBB</option></select></label>
-          <label class="series-picker"><span>Session Length</span><select id="adminGameCount"><option value="3">3 Game Session</option><option value="5">5 Game Session</option></select></label>
+          <label class="series-picker"><span>Session Length</span><select id="adminGameCount"><option value="bo3">BO 3</option><option value="bo5">BO 5</option><option value="flat2">BO 2 Flat</option><option value="flat3">BO 3 Flat</option><option value="flat4">BO 4 Flat</option></select></label>
           <button class="primary-btn" id="adminCreateRoomBtn">Create Room</button>
           <div class="notice compact" id="adminCreatedRoom" hidden></div>
         </div>
@@ -51,9 +53,52 @@
             <input id="creditAmount" type="number" min="1" value="1" placeholder="Credits" />
             <button class="secondary-btn" id="addCreditBtn">Add Credits</button>
           </div>
-          <div class="notice compact">3 Game Session = 1 credit. 5 Game Session = 2 credits.</div>
+          <div class="notice compact">BO3 / BO2 Flat / BO3 Flat = 1 credit. BO5 / BO4 Flat = 2 credits.</div>
         </div>
       </div>
+    </section>
+
+
+
+    <section class="panel setup-panel" id="adminContentPanel" hidden>
+      <span class="eyebrow">Admin Panel v1</span>
+      <h2>Game, Hero, Sponsor & Community Tools</h2>
+      <div class="setup-grid admin-grid-v1">
+        <div class="card soft-card">
+          <h3>Game / Logo Management</h3>
+          <label class="series-picker"><span>Game</span><select id="cfgGame"><option value="HOK">HOK</option><option value="MLBB">MLBB</option></select></label>
+          <label class="series-picker"><span>Status</span><select id="cfgStatus"><option value="active">Active</option><option value="coming-soon">Coming Soon</option><option value="hidden">Hidden</option></select></label>
+          <input id="cfgLogo" placeholder="Logo path, e.g. /assets/hok.png" />
+          <input id="cfgDescription" placeholder="Short game description" />
+          <button class="secondary-btn" id="saveGameConfigBtn">Save Game Config</button>
+        </div>
+        <div class="card soft-card">
+          <h3>Hero Management</h3>
+          <label class="series-picker"><span>Game</span><select id="heroGame"><option value="HOK">HOK</option><option value="MLBB">MLBB</option></select></label>
+          <input id="heroId" placeholder="Hero ID, e.g. biron" />
+          <input id="heroName" placeholder="Hero name" />
+          <input id="heroLanes" placeholder="Roles/lanes, comma separated" />
+          <input id="heroImage" placeholder="Image path" />
+          <label class="series-picker"><span>Status</span><select id="heroActive"><option value="true">Active</option><option value="false">Hidden</option></select></label>
+          <button class="secondary-btn" id="saveHeroBtn">Save Hero</button>
+        </div>
+        <div class="card soft-card">
+          <h3>Sponsor Slot</h3>
+          <input id="sponsorSlot" placeholder="Slot ID, e.g. sponsor-1" />
+          <input id="sponsorTitle" placeholder="Sponsor title" />
+          <input id="sponsorText" placeholder="Sponsor text" />
+          <input id="sponsorUrl" placeholder="Sponsor URL / WhatsApp" />
+          <button class="secondary-btn" id="saveSponsorBtn">Save Sponsor</button>
+        </div>
+        <div class="card soft-card">
+          <h3>Community Link</h3>
+          <input id="linkId" placeholder="Link ID, e.g. whatsapp" />
+          <input id="linkLabel" placeholder="Label" />
+          <input id="linkUrl" placeholder="URL" />
+          <button class="secondary-btn" id="saveCommunityLinkBtn">Save Link</button>
+        </div>
+      </div>
+      <div class="notice compact">Data saved here is stored in Firestore as admin-managed content. Existing static pages may still need future code integration to fully consume every config field.</div>
     </section>
 
     <section class="panel setup-panel" id="recentRoomsPanel" hidden>
