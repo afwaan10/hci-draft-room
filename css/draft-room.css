@@ -815,3 +815,107 @@ body.draft-active .hero-avatar img{decoding:auto!important;}
   body.draft-active .pro-draft-topbar,
   body.draft-active .heroes-panel{box-shadow:0 10px 24px rgba(0,0,0,.26)!important;}
 }
+
+/* v24 Android landscape confirmation modal polish: keep Pick/Ban buttons visible without dragging */
+.custom-confirm{overscroll-behavior:contain!important;}
+.custom-confirm-card{max-height:calc(100dvh - max(18px, env(safe-area-inset-top)) - max(18px, env(safe-area-inset-bottom)))!important;overflow:auto!important;}
+.custom-confirm-actions{position:sticky!important;bottom:0!important;background:linear-gradient(180deg,rgba(12,25,37,0),rgba(12,25,37,.98) 22%)!important;padding-top:10px!important;margin-bottom:0!important;z-index:2!important;}
+@media (orientation:landscape) and (max-height:620px){
+  .custom-confirm{
+    place-items:center!important;
+    padding:calc(env(safe-area-inset-top) + 8px) calc(env(safe-area-inset-right) + 10px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 10px)!important;
+  }
+  .custom-confirm-card.hero-action-card{
+    width:min(620px,88vw)!important;
+    max-height:calc(100dvh - 20px)!important;
+    overflow:hidden!important;
+    padding:clamp(10px,2.5vh,16px)!important;
+    border-radius:22px!important;
+    display:grid!important;
+    grid-template-columns:minmax(74px,clamp(80px,18vh,112px)) minmax(0,1fr)!important;
+    grid-template-areas:"hero copy" "actions actions"!important;
+    column-gap:clamp(12px,2vw,18px)!important;
+    row-gap:8px!important;
+    text-align:left!important;
+    align-items:center!important;
+  }
+  .custom-confirm-card.hero-action-card .custom-confirm-hero{
+    grid-area:hero!important;
+    width:clamp(76px,18vh,108px)!important;
+    height:clamp(76px,18vh,108px)!important;
+    border-radius:22px!important;
+    margin:0!important;
+  }
+  .custom-confirm-card.hero-action-card .custom-confirm-copy{
+    grid-area:copy!important;
+    min-width:0!important;
+  }
+  .custom-confirm-card.hero-action-card .confirm-action-kicker{
+    margin-bottom:4px!important;
+    font-size:clamp(.58rem,1.6vh,.72rem)!important;
+  }
+  .custom-confirm-card.hero-action-card .custom-confirm-copy h2{
+    font-size:clamp(1.35rem,6vh,2.15rem)!important;
+    line-height:1.03!important;
+    margin:0 0 5px!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  .custom-confirm-card.hero-action-card .custom-confirm-copy p{
+    font-size:clamp(.72rem,2.25vh,.95rem)!important;
+    line-height:1.25!important;
+    margin:0!important;
+    display:-webkit-box!important;
+    -webkit-line-clamp:2!important;
+    -webkit-box-orient:vertical!important;
+    overflow:hidden!important;
+  }
+  .custom-confirm-card.hero-action-card .custom-confirm-actions{
+    grid-area:actions!important;
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:9px!important;
+    position:static!important;
+    margin-top:4px!important;
+    padding-top:8px!important;
+    background:transparent!important;
+  }
+  .custom-confirm-card.hero-action-card .custom-confirm-actions button{
+    min-height:clamp(42px,10vh,50px)!important;
+    padding:9px 12px!important;
+    border-radius:14px!important;
+    font-size:clamp(.78rem,2.2vh,.95rem)!important;
+  }
+}
+@media (orientation:landscape) and (max-height:420px){
+  .custom-confirm-card.hero-action-card{
+    width:min(700px,92vw)!important;
+    grid-template-columns:minmax(58px,76px) minmax(0,1fr) minmax(220px,300px)!important;
+    grid-template-areas:"hero copy actions"!important;
+    padding:8px 10px!important;
+  }
+  .custom-confirm-card.hero-action-card .custom-confirm-hero{
+    width:clamp(58px,17vh,76px)!important;
+    height:clamp(58px,17vh,76px)!important;
+    border-radius:18px!important;
+  }
+  .custom-confirm-card.hero-action-card .custom-confirm-actions{
+    grid-template-columns:1fr 1fr!important;
+    padding-top:0!important;
+  }
+}
+
+/* v31 BO format polish */
+.custom-series-picker .series-options.series-options-five{grid-template-columns:repeat(5,minmax(0,1fr));}
+.series-options-five .series-option{min-height:76px;padding:10px 11px;}
+.series-options-five .series-option strong{font-size:.96rem;}
+.series-options-five .series-option small{font-size:.74rem;}
+@media (max-width:1080px){.custom-series-picker .series-options.series-options-five{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media (max-width:620px){.custom-series-picker .series-options.series-options-five{grid-template-columns:1fr 1fr;}.series-options-five .series-option{min-height:64px;padding:9px}.series-options-five .series-option:last-child{grid-column:1/-1}}
+
+/* v27 basic hero meta display */
+.hero-meta-line{display:grid;gap:1px;margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.08);line-height:1.1}
+.hero-meta-line b{font-size:.72rem;color:var(--gold2);font-weight:1000}
+.hero-meta-line small{font-size:.62rem;color:rgba(217,228,239,.72);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.draft-active .hero-meta-line{margin-top:3px;padding-top:3px}.draft-active .hero-meta-line small{font-size:.56rem}
+@media (max-width:620px){.hero-meta-line b{font-size:.64rem}.hero-meta-line small{font-size:.54rem}}
