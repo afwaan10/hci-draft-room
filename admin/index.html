@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
-  <title>Draft Room by HCI - Admin</title>
-  <link rel="stylesheet" href="../css/draft-room.css" />
+  <title>HCI MOBA Hub - Admin Console</title>
+  <link rel="stylesheet" href="../css/draft-room.css?v=38" />
+  <link rel="stylesheet" href="../css/admin-dashboard.css?v=38" />
 </head>
-<body>
+<body class="admin-page">
   <main class="app-shell">
     <nav class="site-nav">
-      <a class="nav-brand" href="/" aria-label="Back to Draft Room">
+      <a class="nav-brand" href="/" aria-label="Back to HCI MOBA Hub">
         <img src="../assets/brand/hci-community.jpg" alt="HCI Logo" />
-        <span>Draft Room <small>Admin</small></span>
+        <span>HCI MOBA Hub <small>Admin</small></span>
       </a>
       <div class="nav-links"><a href="/hok/">HOK</a><a href="/mlbb/">MLBB</a><a href="/">Home</a></div>
     </nav>
@@ -22,14 +23,14 @@
       <div class="panel hero-card-main">
         <div class="hero-title-row">
           <img src="../assets/brand/hci-community.jpg" alt="HCI Logo" />
-          <div><span class="eyebrow">Admin Dashboard</span><h1>Draft Room <small>by HCI</small></h1></div>
+          <div><span class="eyebrow">Admin Console</span><h1>HCI MOBA Hub <small>Control Center</small></h1></div>
         </div>
-        <p>Create assigned rooms, review recent rooms, and add manual paid credits after payment confirmation.</p>
+        <p>Manage HCI MOBA Hub operations from one place: assigned draft rooms, access credits, game configuration, hero content, sponsors, community links, and recent room activity.</p>
         <div class="hero-actions"><button class="primary-btn" id="adminLoginBtn">Sign in with Google</button><a class="secondary-btn" href="https://wa.me/6285136864822" target="_blank" rel="noopener">Personal WhatsApp</a></div>
       </div>
       <div class="quick-info">
         <div class="panel info-card"><span class="eyebrow">Security</span><h3>Admin email only</h3><p>Allowed admin emails are controlled in <strong>js/firebase-config.js</strong>.</p></div>
-        <div class="panel info-card"><span class="eyebrow">Room Control</span><h3>No user delete</h3><p>Rooms are not deleted by host/user controls.</p></div>
+        <div class="panel info-card"><span class="eyebrow">Hub Modules</span><h3>Draft + Map</h3><p>Admin branding now follows HCI MOBA Hub, while Draft Hub and Map Simulator remain separate modules.</p></div>
         <div class="panel info-card"><span class="eyebrow">Access</span><h3>Trial + credits</h3><p>New hosts get trial credits. Admin can add paid credits manually.</p></div>
       </div>
     </section>
@@ -61,8 +62,8 @@
 
 
     <section class="panel setup-panel" id="adminContentPanel" hidden>
-      <span class="eyebrow">Admin Panel v1</span>
-      <h2>Game, Hero, Sponsor & Community Tools</h2>
+      <span class="eyebrow">HCI MOBA Hub Admin</span>
+      <h2>Content & Community Management</h2>
       <div class="setup-grid admin-grid-v1">
         <div class="card soft-card">
           <h3>Game / Logo Management</h3>
