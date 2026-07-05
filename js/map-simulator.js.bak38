@@ -224,8 +224,6 @@
   let suppressMarkerClick = false;
   let drawingRoute = false;
   let routePointerId = null;
-  let routeRenderFrame = null;
-  let pendingRoutePoint = null;
   let rolePaletteDrag = null;
   const plans = {
     hok: { markers: [], routes: [], title: 'HCI Map Plan', note: '' },
@@ -247,16 +245,10 @@
     if(points.length <= 3) return points;
     const out=[points[0]];
     for(let i=1;i<points.length-1;i++){
-      if(distancePct(points[i], out[out.length-1]) >= 1.45) out.push(points[i]);
+      if(distancePct(points[i], out[out.length-1]) >= 1.25) out.push(points[i]);
     }
     out.push(points[points.length-1]);
-    // Keep the stored path light enough for mobile editing while preserving shape.
-    if(out.length <= 42) return out;
-    const step = (out.length - 1) / 41;
-    const sampled=[];
-    for(let i=0;i<42;i++) sampled.push(out[Math.round(i*step)]);
-    sampled[sampled.length-1]=out[out.length-1];
-    return sampled;
+    return out.slice(0,180);
   }
 
   function showToast(message){
@@ -430,27 +422,18 @@
 
     if(activeMode === 'route' && selectedRouteIndex !== null){
       const route = currentPlan().routes[selectedRouteIndex];
-      if(route?.points?.length){
-        const maxHandles = 8;
-        const indexes = new Set([0, route.points.length - 1]);
-        const slots = Math.min(maxHandles, route.points.length);
-        for(let i=1;i<slots-1;i++){
-          indexes.add(Math.round((i * (route.points.length - 1)) / (slots - 1)));
-        }
-        [...indexes].sort((a,b)=>a-b).forEach((pointIndex) => {
-          const point = route.points[pointIndex];
-          const handle = document.createElement('button');
-          handle.type = 'button';
-          handle.className = 'route-point-handle';
-          handle.dataset.routeIndex = String(selectedRouteIndex);
-          handle.dataset.pointIndex = String(pointIndex);
-          handle.style.left = `${point.x}%`;
-          handle.style.top = `${point.y}%`;
-          handle.title = 'Drag route control point';
-          handle.setAttribute('aria-label', 'Drag route control point');
-          overlayLayer.appendChild(handle);
-        });
-      }
+      route?.points.forEach((point, pointIndex) => {
+        const handle = document.createElement('button');
+        handle.type = 'button';
+        handle.className = 'route-point-handle';
+        handle.dataset.routeIndex = String(selectedRouteIndex);
+        handle.dataset.pointIndex = String(pointIndex);
+        handle.style.left = `${point.x}%`;
+        handle.style.top = `${point.y}%`;
+        handle.title = 'Drag route point';
+        handle.innerHTML = `<span>${pointIndex + 1}</span>`;
+        overlayLayer.appendChild(handle);
+      });
     }
   }
 
@@ -478,19 +461,7 @@
 
   function routePath(points){
     if(!points?.length) return '';
-    if(points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-    if(points.length === 2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
-    let d = `M ${points[0].x} ${points[0].y}`;
-    for(let i=1;i<points.length-1;i++){
-      const p = points[i];
-      const n = points[i+1];
-      const mx = (p.x+n.x)/2;
-      const my = (p.y+n.y)/2;
-      d += ` Q ${p.x} ${p.y} ${mx} ${my}`;
-    }
-    const last=points[points.length-1];
-    d += ` T ${last.x} ${last.y}`;
-    return d;
+    return `M ${points.map((p) => `${p.x} ${p.y}`).join(' L ')}`;
   }
 
   function appendRouteSvg(route, index, isDraft = false){
@@ -499,7 +470,7 @@
     const path = document.createElementNS(ns, 'path');
     path.setAttribute('d', routePath(route.points));
     path.setAttribute('class', `route-path route-${route.team}${isDraft ? ' route-ghost' : ''}${selectedRouteIndex === index ? ' selected-route' : ''}`);
-    path.setAttribute('stroke-width', selectedRouteIndex === index ? '7' : (isDraft ? '6.5' : '5.5'));
+    path.setAttribute('stroke-width', selectedRouteIndex === index ? '1.55' : '1.15');
     path.setAttribute('vector-effect', 'non-scaling-stroke');
     if(route.style === 'dashed') path.setAttribute('stroke-dasharray', '2.4 1.6');
     if(route.arrow && !isDraft) path.setAttribute('marker-end', `url(#arrow-${route.team})`);
@@ -680,31 +651,17 @@
     const point = getPointFromEvent(event);
     if(!point) return;
     event.preventDefault();
-    pendingRoutePoint = point;
-    if(routeRenderFrame) return;
-    routeRenderFrame = requestAnimationFrame(() => {
-      routeRenderFrame = null;
-      const next = pendingRoutePoint;
-      pendingRoutePoint = null;
-      if(!next) return;
-      const last = routeDraft[routeDraft.length - 1];
-      if(!last || distancePct(next,last) >= 1.15){
-        routeDraft.push(next);
-        renderRoutes();
-      }
-    });
+    const last = routeDraft[routeDraft.length - 1];
+    if(!last || distancePct(point,last) >= 0.9){
+      routeDraft.push(point);
+      renderRoutes();
+    }
   }
 
   function endDirectRouteDraw(event){
     if(!drawingRoute || event.pointerId !== routePointerId) return;
     event.preventDefault();
     drawingRoute = false;
-    if(routeRenderFrame){ cancelAnimationFrame(routeRenderFrame); routeRenderFrame = null; }
-    if(pendingRoutePoint){
-      const last = routeDraft[routeDraft.length - 1];
-      if(!last || distancePct(pendingRoutePoint,last) >= .55) routeDraft.push(pendingRoutePoint);
-      pendingRoutePoint = null;
-    }
     try { board.releasePointerCapture(event.pointerId); } catch (_e) {}
     routePointerId = null;
     routeDraft = simplifyRoutePoints(routeDraft);
@@ -720,8 +677,6 @@
   function cancelDirectRouteDraw(event){
     if(!drawingRoute || event.pointerId !== routePointerId) return;
     drawingRoute = false;
-    if(routeRenderFrame){ cancelAnimationFrame(routeRenderFrame); routeRenderFrame = null; }
-    pendingRoutePoint = null;
     routePointerId = null;
     routeDraft = [];
     render();
@@ -818,7 +773,7 @@
     activeMode = 'route';
     routeDraft = [];
     render();
-    showToast(`Line ${index + 1} selected. Drag the small control points to edit.`);
+    showToast(`Line ${index + 1} selected. Drag its numbered points to edit.`);
   }
 
   function deleteRoute(index){
@@ -963,7 +918,7 @@
 
 
   function closeMobileSheets(){
-    document.body.classList.remove('sheet-tools-open','sheet-roles-open','sheet-mode-markers','sheet-mode-tools');
+    document.body.classList.remove('sheet-tools-open','sheet-roles-open');
     const backdrop = $('mobileSheetBackdrop');
     if(backdrop) backdrop.hidden = true;
   }
@@ -972,11 +927,7 @@
     closeMobileSheets();
     const backdrop = $('mobileSheetBackdrop');
     if(backdrop) backdrop.hidden = false;
-    if(kind === 'roles'){
-      document.body.classList.add('sheet-roles-open');
-    } else {
-      document.body.classList.add('sheet-tools-open', kind === 'markers' ? 'sheet-mode-markers' : 'sheet-mode-tools');
-    }
+    document.body.classList.add(kind === 'roles' ? 'sheet-roles-open' : 'sheet-tools-open');
   }
 
   function setMobileToolbarActive(action){
@@ -991,10 +942,9 @@
       routeDraft = [];
       selectedRouteIndex = null;
       closeMobileSheets();
-      document.body.classList.remove('mobile-line-mode');
       setMobileToolbarActive('move');
       render();
-      showToast('Move mode active.');
+      showToast('Move mode active. Drag markers or route points.');
       return;
     }
     if(action === 'line'){
@@ -1002,27 +952,26 @@
       routeDraft = [];
       selectedRouteIndex = null;
       closeMobileSheets();
-      document.body.classList.add('mobile-line-mode');
       setMobileToolbarActive('line');
       render();
-      showToast('Draw directly on the map.');
+      showToast('Line mode: hold and drag directly on the map.');
       return;
     }
     if(action === 'markers'){
       activeMode = 'select';
-      document.body.classList.remove('mobile-line-mode');
-      openMobileSheet('markers');
+      openMobileSheet('tools');
       setMobileToolbarActive('markers');
+      render();
+      setTimeout(() => document.querySelector('.marker-palette')?.scrollIntoView({behavior:'smooth', block:'center'}), 80);
       return;
     }
     if(action === 'roles'){
       activeMode = 'select';
-      document.body.classList.remove('mobile-line-mode');
       openMobileSheet('roles');
       setMobileToolbarActive('roles');
+      render();
       return;
     }
-    document.body.classList.remove('mobile-line-mode');
     openMobileSheet('tools');
     setMobileToolbarActive('tools');
   }
@@ -1035,28 +984,6 @@
     window.addEventListener('pointermove', moveRolePaletteDrag, {passive:true});
     window.addEventListener('pointerup', endRolePaletteDrag);
     window.addEventListener('pointercancel', endRolePaletteDrag);
-
-    document.querySelectorAll('[data-mobile-line-team]').forEach((btn) => btn.addEventListener('click', () => {
-      routeSettings.team = btn.dataset.mobileLineTeam;
-      document.querySelectorAll('[data-mobile-line-team]').forEach((b) => b.classList.toggle('active', b === btn));
-      document.querySelectorAll('.line-team-btn').forEach((b) => b.classList.toggle('active', b.dataset.team === routeSettings.team));
-      applyRouteSettingsToSelected();
-      renderRoutes();
-    }));
-    document.querySelectorAll('[data-mobile-line-style]').forEach((btn) => btn.addEventListener('click', () => {
-      routeSettings.style = btn.dataset.mobileLineStyle === 'solid' ? 'solid' : 'dashed';
-      document.querySelectorAll('[data-mobile-line-style]').forEach((b) => b.classList.toggle('active', b === btn));
-      document.querySelectorAll('.line-style-btn').forEach((b) => b.classList.toggle('active', b.dataset.style === routeSettings.style));
-      applyRouteSettingsToSelected();
-      renderRoutes();
-    }));
-    document.querySelector('[data-mobile-line-arrow]')?.addEventListener('click', (event) => {
-      routeSettings.arrow = !routeSettings.arrow;
-      event.currentTarget.classList.toggle('active', routeSettings.arrow);
-      if(lineArrowToggle) lineArrowToggle.checked = routeSettings.arrow;
-      applyRouteSettingsToSelected();
-      renderRoutes();
-    });
 
     document.querySelectorAll('.map-game-tab').forEach((btn) => btn.addEventListener('click', () => switchGame(btn.dataset.game)));
 
@@ -1075,7 +1002,6 @@
         routeDraft = [];
         selectedRouteIndex = null;
       }
-      document.body.classList.toggle('mobile-line-mode', activeMode === 'route');
       setMobileToolbarActive(activeMode === 'route' ? 'line' : 'move');
       render();
       showToast(activeMode === 'route' ? 'Line mode: hold and drag directly on the map.' : 'Select mode: tap to place markers, drag to move.');
