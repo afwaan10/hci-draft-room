@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
+  <title>Draft History · HCI MOBA Hub</title>
+  <meta name="description" content="HCI MOBA Hub draft history page." />
+  <link rel="stylesheet" href="/css/draft-room.css?v=40-home-rebuild" />
+</head>
+<body class="hub-page home-rebuild-page auth-locked">
+  <div class="app-loader" id="appLoader">
+    <div class="loader-card">
+      <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" class="loader-logo" />
+      <div class="loader-loop"><span></span></div>
+      <div class="loader-text">Loading HCI MOBA Hub</div>
+    </div>
+  </div>
+
+  <main class="history-page-shell" id="historyApp" hidden>
+    <header class="home-topbar" aria-label="HCI MOBA Hub navigation">
+      <a class="home-brand" href="/" aria-label="HCI MOBA Hub Home">
+        <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" />
+        <span>HCI MOBA Hub</span>
+      </a>
+      <nav class="home-center-nav" aria-label="Primary navigation">
+        <a href="/">Home</a>
+      </nav>
+      <div class="home-menu-wrap">
+        <button class="home-menu-btn" id="homeMenuBtn" type="button" aria-expanded="false" aria-controls="homeMenuPanel" aria-label="Open menu"><span></span><span></span><span></span></button>
+        <aside class="home-menu-panel" id="homeMenuPanel" hidden>
+          <div class="home-menu-profile" id="menuProfileBlock" hidden>
+            <img id="menuUserPhoto" alt="User profile photo" />
+            <div><strong id="menuUserName">Profile</strong><small id="menuUserEmail">Signed in</small></div>
+          </div>
+          <button class="home-menu-link profile-action" id="menuLogoutBtn" type="button" hidden>Logout</button>
+          <a class="home-menu-link" href="/draft-history/">Draft History</a>
+          <a class="home-menu-link is-hidden-tool" href="/team-center/" hidden>Team Center</a>
+          <a class="home-menu-link" href="https://www.instagram.com/hci.official/" target="_blank" rel="noopener">Instagram</a>
+          <a class="home-menu-link" href="https://chat.whatsapp.com/FToo6p7GnfkDeWtHrXoPKG" target="_blank" rel="noopener">WhatsApp</a>
+        </aside>
+      </div>
+    </header>
+
+    <section class="home-hero-clean history-page-panel" aria-labelledby="historyTitle">
+      <div class="home-hero-copy">
+        <span class="eyebrow">HCI MOBA Hub</span>
+        <h1 id="historyTitle">Draft History</h1>
+        <p class="home-lead">Saved draft results connected to your Google account will appear here after a draft is completed.</p>
+        <div class="history-page-actions">
+          <a class="secondary-btn" href="/">Back to Home</a>
+        </div>
+      </div>
+      <div class="home-hero-logo" aria-hidden="true"><img src="/assets/brand/hci-community.jpg" alt="" /></div>
+    </section>
+
+    <section class="panel history-page-panel">
+      <div class="section-heading">
+        <span class="eyebrow">History</span>
+        <h2>Your recent draft sessions</h2>
+        <p>History is saved per Google account, room code, and game after a draft session reaches final result.</p>
+      </div>
+      <div class="history-list" id="historyList">
+        <div class="history-empty-state">Connect with Google to view your draft history.</div>
+      </div>
+    </section>
+  </main>
+
+  <section class="login-gate" id="loginGate" aria-labelledby="loginGateTitle" aria-modal="true" role="dialog" hidden>
+    <div class="login-gate-card">
+      <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" />
+      <span class="eyebrow">Login Required</span>
+      <h2 id="loginGateTitle">HCI MOBA Hub</h2>
+      <p>Connect with Google to access your draft history.</p>
+      <button class="primary-btn login-gate-btn" id="googleLoginBtn" type="button">Connect with Google</button>
+      <small id="loginGateStatus">Google login is required to continue.</small>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/draft-history.js?v=40-home-rebuild"></script>
+</body>
+</html>
