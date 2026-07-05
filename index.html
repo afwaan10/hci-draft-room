@@ -6,12 +6,12 @@
   <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
   <title>HCI MOBA Hub</title>
-  <meta name="description" content="HCI MOBA Hub - modular MOBA tools for draft, map strategy, meta analysis, and team practice." />
-  <link rel="stylesheet" href="/css/draft-room.css?v=38" />
-  <link rel="stylesheet" href="/css/hub-map.css?v=38" />
+  <meta name="description" content="HCI MOBA Hub - MOBA draft, map strategy, and community tools for competitive play." />
+  <link rel="stylesheet" href="/css/draft-room.css?v=40-home-rebuild" />
+  <link rel="stylesheet" href="/css/hub-map.css?v=40-home-rebuild" />
 </head>
-<body class="hub-page">
-  <div class="app-loader" id="appLoader">
+<body class="hub-page home-rebuild-page auth-locked">
+  <div class="app-loader" id="appLoader" aria-label="Loading HCI MOBA Hub">
     <div class="loader-card">
       <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" class="loader-logo" />
       <div class="loader-loop"><span></span></div>
@@ -19,158 +19,116 @@
     </div>
   </div>
 
-  <main class="hub-shell" id="hubApp" hidden>
-    <header class="hub-topbar">
-      <a class="hub-brand" href="/" aria-label="HCI MOBA Draft Hub">
+  <main class="hub-shell home-shell" id="hubApp" hidden>
+    <header class="home-topbar" aria-label="HCI MOBA Hub navigation">
+      <a class="home-brand" href="/" aria-label="HCI MOBA Hub Home">
         <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" />
         <span>HCI MOBA Hub</span>
       </a>
-      <div class="hub-user-card profile-compact" id="userCard" hidden>
-        <img id="userPhoto" alt="User" />
-        <div><strong id="userName">Profile</strong><small id="userEmail">Signed in</small></div>
-        <button class="ghost-btn" id="logoutBtn" type="button">Logout</button>
+
+      <nav class="home-center-nav" aria-label="Primary navigation">
+        <a href="/" aria-current="page">Home</a>
+      </nav>
+
+      <div class="home-menu-wrap">
+        <button class="home-menu-btn" id="homeMenuBtn" type="button" aria-expanded="false" aria-controls="homeMenuPanel" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
+        <aside class="home-menu-panel" id="homeMenuPanel" hidden>
+          <div class="home-menu-profile" id="menuProfileBlock" hidden>
+            <img id="menuUserPhoto" alt="User profile photo" />
+            <div>
+              <strong id="menuUserName">Profile</strong>
+              <small id="menuUserEmail">Signed in</small>
+            </div>
+          </div>
+          <button class="home-menu-link profile-action" id="menuLogoutBtn" type="button" hidden>Logout</button>
+          <a class="home-menu-link" href="/draft-history/">Draft History</a>
+          <a class="home-menu-link is-hidden-tool" href="/team-center/" hidden>Team Center</a>
+          <a class="home-menu-link" href="https://www.instagram.com/hci.official/" target="_blank" rel="noopener">Instagram</a>
+          <a class="home-menu-link" href="https://chat.whatsapp.com/FToo6p7GnfkDeWtHrXoPKG" target="_blank" rel="noopener">WhatsApp</a>
+        </aside>
       </div>
-      <div class="social-links" aria-label="HCI social links">
-  <a class="icon-link ig" href="https://www.instagram.com/hci.official/" target="_blank" rel="noopener" aria-label="Instagram HCI Official"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 4.2A3.8 3.8 0 1 1 12 15.8 3.8 3.8 0 0 1 12 8.2Zm0 2A1.8 1.8 0 1 0 12 13.8 1.8 1.8 0 0 0 12 10.2ZM17.5 6.4a1.1 1.1 0 1 1-1.1 1.1 1.1 1.1 0 0 1 1.1-1.1Z"/></svg></a>
-  <a class="icon-link wa" href="https://chat.whatsapp.com/FToo6p7GnfkDeWtHrXoPKG" target="_blank" rel="noopener" aria-label="WhatsApp Group HCI"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2A9.86 9.86 0 0 0 2.2 11.84c0 1.73.45 3.42 1.31 4.91L2 22l5.39-1.42a9.84 9.84 0 0 0 4.65 1.18h.01A9.87 9.87 0 0 0 21.9 11.9 9.86 9.86 0 0 0 12.04 2Zm0 17.95h-.01a8.03 8.03 0 0 1-4.09-1.12l-.29-.17-3.2.84.85-3.12-.19-.32a8.02 8.02 0 1 1 6.93 3.89Zm4.41-6.01c-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.19-.46-.39-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.51.58.18 1.1.16 1.51.1.46-.07 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/></svg></a>
-</div>
     </header>
 
-    <section class="ads-area" aria-label="HCI advertising slots">
-  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Slot Iklan 1</strong><small>Pasang iklan HCI</small></span><b>WA</b></a>
-  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Slot Iklan 2</strong><small>Hubungi +6285136864822</small></span><b>WA</b></a>
-  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Slot Iklan 3</strong><small>Promosi komunitas/esports</small></span><b>WA</b></a>
-  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Slot Iklan 4</strong><small>Booking banner via WhatsApp</small></span><b>WA</b></a>
-</section>
-
-    <section class="hub-hero">
-      <div class="hub-copy">
-        <h1>HCI MOBA Hub</h1>
-        <p class="hub-lead">All-in-one MOBA tools for draft, map strategy, meta reference, and team practice. Draft Hub stays as the first active module, while Map Simulator is now available as an advanced strategy planner with real game maps, role markers, and route lines.</p>
-        <div class="hub-actions" id="signedOutActions">
-          <button class="primary-btn" id="googleLoginBtn" type="button">Login with Google</button>
-          <span class="hub-note">Login is required before entering any draft simulator.</span>
-        </div>
-        <div class="hub-actions" id="signedInActions" hidden>
-          <a class="primary-btn" href="#modules">Choose Module</a>
-          <a class="secondary-btn" href="#history">Draft History</a>
-        </div>
+    <section class="home-hero-clean" aria-labelledby="homeTitle">
+      <div class="home-hero-copy">
+        <span class="eyebrow">HCI Competitive Tools</span>
+        <h1 id="homeTitle">HCI MOBA Hub</h1>
+        <p class="home-lead">Choose your game, enter the tool ecosystem, then run draft rooms, map plans, and future competitive utilities from one clean hub.</p>
       </div>
-      <div class="hub-emblem" aria-hidden="true">
+      <div class="home-hero-logo" aria-hidden="true">
         <img src="/assets/brand/hci-community.jpg" alt="" />
       </div>
     </section>
 
-    <section class="hub-status-strip">
-      <div><strong>Active</strong><span>Draft Hub + Advanced Map Simulator</span></div>
-      <div><strong>Draft</strong><span>BO3 / BO5 / Flat formats</span></div>
-      <div><strong>Map</strong><span>Markers, routes, objective notes</span></div>
-      <div><strong>Output</strong><span>Draft PNG + map plan PNG</span></div>
-    </section>
-
-
-    <section class="hub-modules" id="modules" aria-labelledby="modulesTitle">
-      <div class="section-heading center">
-        <span class="eyebrow">HCI MOBA Hub Modules</span>
-        <h2 id="modulesTitle">Choose your MOBA tool</h2>
-        <p>Draft Hub remains the main active tool. Map Simulator is separated as its own advanced module so draft rooms stay clean and focused.</p>
+    <section class="home-games" aria-labelledby="gamesTitle">
+      <div class="section-heading center compact-heading">
+        <span class="eyebrow">Game Selection</span>
+        <h2 id="gamesTitle">Select Game</h2>
+        <p>HOK is available now. MLBB and AOV are prepared as coming soon game ecosystems.</p>
       </div>
-      <div class="module-card-grid">
-        <a class="module-card module-active" href="#games">
-          <span class="module-icon">⚔</span>
-          <b>Draft Hub</b>
-          <small>Realtime pick-ban room for HOK and MLBB.</small>
-          <em>Active</em>
-        </a>
-        <a class="module-card module-active map-module" href="/map/">
-          <span class="module-icon">⌖</span>
-          <b>Map Simulator</b>
-          <small>Place markers for attack, defend, rotate, objective, danger, and vision.</small>
-          <em>Route Planner Active</em>
-        </a>
-        <article class="module-card module-soon">
-          <span class="module-icon">%</span>
-          <b>Meta Stats</b>
-          <small>WR, Pick Rate, Ban Rate, Tier, and weekly trend.</small>
-          <em>Coming Soon</em>
-        </article>
-        <article class="module-card module-soon">
-          <span class="module-icon">◎</span>
-          <b>Team Practice</b>
-          <small>Team profiles, draft history, scrim prep, and saved plans.</small>
-          <em>Coming Soon</em>
-        </article>
-        <article class="module-card module-soon">
-          <span class="module-icon">♛</span>
-          <b>Tournament Tools</b>
-          <small>Match rooms, BO flow, bracket support, and result tools.</small>
-          <em>Coming Soon</em>
-        </article>
-      </div>
-    </section>
-
-    <section class="hub-games" id="games" aria-labelledby="gamesTitle">
-      <div class="section-heading center">
-        <span class="eyebrow">Draft Hub</span>
-        <h2 id="gamesTitle">Select your draft simulator</h2>
-        <p>Each card follows the visual identity of its game. HOK and MLBB are ready for the first launch, while the other MOBA titles are prepared as coming soon modules.</p>
-      </div>
-      <div class="game-card-grid">
-        <a class="moba-card active hok-theme" href="/hok/" data-requires-login="true">
+      <div class="home-game-grid">
+        <a class="home-game-card is-active hok-theme" href="/games/hok/" data-requires-login="true" aria-label="Start Honor of Kings tools">
+          <span class="status-pill ready">Start</span>
           <img src="/assets/hok.png" alt="Honor of Kings Logo" />
-          <span class="status-pill ready">Active</span>
           <strong>Honor of Kings</strong>
-          <small>Global Ban Pick draft simulator</small>
-          <span class="game-card-action" data-start-label="Join / Start" data-login-label="Login Required">Login Required</span>
+          <small>Draft Hub and strategy tools</small>
+          <span class="home-game-action" data-start-label="Start" data-login-label="Login Required">Login Required</span>
         </a>
-        <a class="moba-card active mlbb-theme" href="/mlbb/" data-requires-login="true">
+        <article class="home-game-card is-coming mlbb-theme" aria-disabled="true">
+          <span class="status-pill soon">Coming Soon</span>
           <img src="/assets/ml.png" alt="Mobile Legends: Bang Bang Logo" />
-          <span class="status-pill ready">Active</span>
           <strong>Mobile Legends</strong>
-          <small>Competitive pick-ban simulator</small>
-          <span class="game-card-action" data-start-label="Join / Start" data-login-label="Login Required">Login Required</span>
-        </a>
-        <article class="moba-card locked aov-theme" aria-disabled="true">
-          <img src="/assets/game/cards/aov-pro.svg" alt="Arena of Valor" />
+          <small>Draft and map ecosystem</small>
+          <span class="home-game-action disabled">Coming Soon</span>
+        </article>
+        <article class="home-game-card is-coming aov-theme" aria-disabled="true">
           <span class="status-pill soon">Coming Soon</span>
+          <img src="/assets/game/cards/aov-pro.svg" alt="Arena of Valor Logo" />
           <strong>Arena of Valor</strong>
-          <small>Draft module prepared for future launch</small>
-          <span class="game-card-action disabled">Coming Soon</span>
-        </article>
-        <article class="moba-card locked dota-theme" aria-disabled="true">
-          <img src="/assets/game/cards/dota2-pro.svg" alt="Dota 2" />
-          <span class="status-pill soon">Coming Soon</span>
-          <strong>Dota 2</strong>
-          <small>Draft module prepared for future launch</small>
-          <span class="game-card-action disabled">Coming Soon</span>
-        </article>
-        <article class="moba-card locked lol-theme" aria-disabled="true">
-          <img src="/assets/game/cards/lol-pro.svg" alt="League of Legends" />
-          <span class="status-pill soon">Coming Soon</span>
-          <strong>League of Legends</strong>
-          <small>Draft module prepared for future launch</small>
-          <span class="game-card-action disabled">Coming Soon</span>
+          <small>Draft and map ecosystem</small>
+          <span class="home-game-action disabled">Coming Soon</span>
         </article>
       </div>
     </section>
 
-    <section class="panel hub-history" id="history">
-      <div class="section-heading">
-        <span class="eyebrow">Draft History</span>
-        <h2>Your recent draft sessions</h2>
-        <p>History is saved per Google account, room code, and game after a draft is completed.</p>
+    <section class="home-ad-section" aria-label="HCI banner information">
+      <div class="home-ad-info">
+        <div>
+          <span class="eyebrow">Information</span>
+          <strong>Partnership, banner, and community promotion.</strong>
+          <small>Contact HCI MOBA Hub directly for banner placement or community collaboration.</small>
+        </div>
+        <a class="home-wa-cta" href="https://wa.me/6285136864822" target="_blank" rel="noopener" aria-label="Contact HCI via WhatsApp">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2A9.86 9.86 0 0 0 2.2 11.84c0 1.73.45 3.42 1.31 4.91L2 22l5.39-1.42a9.84 9.84 0 0 0 4.65 1.18h.01A9.87 9.87 0 0 0 21.9 11.9 9.86 9.86 0 0 0 12.04 2Zm0 17.95h-.01a8.03 8.03 0 0 1-4.09-1.12l-.29-.17-3.2.84.85-3.12-.19-.32a8.02 8.02 0 1 1 6.93 3.89Zm4.41-6.01c-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.19-.46-.39-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.51.58.18 1.1.16 1.51.1.46-.07 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/></svg>
+        </a>
       </div>
-      <div class="history-list" id="historyList">
-        <div class="notice compact">Login with Google to view your draft history.</div>
+      <div class="home-banner-grid">
+        <a class="home-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Banner 1</strong><small>HCI promotion slot</small></span></a>
+        <a class="home-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Banner 2</strong><small>Community campaign</small></span></a>
+        <a class="home-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Banner 3</strong><small>Esports partner</small></span></a>
+        <a class="home-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Banner 4</strong><small>Booking available</small></span></a>
       </div>
     </section>
   </main>
+
+  <section class="login-gate" id="loginGate" aria-labelledby="loginGateTitle" aria-modal="true" role="dialog" hidden>
+    <div class="login-gate-card">
+      <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" />
+      <span class="eyebrow">Login Required</span>
+      <h2 id="loginGateTitle">Welcome to HCI MOBA Hub</h2>
+      <p>Connect with Google to access the HCI MOBA Hub homepage, game tools, draft history, and future team features.</p>
+      <button class="primary-btn login-gate-btn" id="googleLoginBtn" type="button">Connect with Google</button>
+      <small id="loginGateStatus">Google login is required to continue.</small>
+    </div>
+  </section>
 
   <div class="toast" id="toast" hidden></div>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="/js/firebase-config.js"></script>
-  <script src="/js/hub-home.js"></script>
+  <script src="/js/hub-home.js?v=40-home-rebuild"></script>
 </body>
 </html>
