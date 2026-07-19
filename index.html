@@ -3,21 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
-  <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
+  <!-- Menggunakan path lokal asli -->
+  <link rel="icon" type="image/png" href="assets/brand/hci-icon.png" />
+  <link rel="apple-touch-icon" href="assets/brand/hci-icon-192.png" />
   <title>MOBA HUB - Main Interface</title>
   <meta name="description" content="MOBA HUB - Advanced MOBA draft simulator, map strategy planner, and team management tools for competitive play." />
-  <!-- Pastikan path CSS ini benar sesuai folder Anda -->
-  <link rel="stylesheet" href="/css/draft-room.css?v=42-moba-hub" />
-  <link rel="stylesheet" href="/css/hub-map.css?v=42-moba-hub" />
+  
+  <!-- CSS Paths diperbaiki agar sesuai folder asli -->
+  <link rel="stylesheet" href="css/draft-room.css?v=42-moba-hub" />
+  <link rel="stylesheet" href="css/hub-map.css?v=42-moba-hub" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="hub-page home-rebuild-page auth-locked">
   
-  <!-- Loading Screen (Akan hilang otomatis saat hub-home.js aktif) -->
+  <!-- Loading Screen -->
   <div class="app-loader" id="appLoader" aria-label="Loading MOBA Hub">
     <div class="loader-card">
-      <img src="/assets/brand/hci-community.jpg" alt="MOBA HUB Logo" class="loader-logo" />
+      <img src="assets/brand/hci-community.jpg" alt="MOBA HUB Logo" class="loader-logo" />
       <div class="loader-loop"><span></span></div>
       <div class="loader-text">Initializing Ecosystem...</div>
     </div>
@@ -27,16 +29,16 @@
   <main class="hub-shell home-shell" id="hubApp" hidden>
     
     <header class="home-topbar" aria-label="MOBA Hub navigation">
-      <a class="home-brand" href="/" aria-label="MOBA Hub Home">
-        <img src="/assets/brand/hci-community.jpg" alt="MOBA HUB Logo" />
+      <a class="home-brand" href="index.html" aria-label="MOBA Hub Home">
+        <img src="assets/brand/hci-community.jpg" alt="MOBA HUB Logo" />
         <span>MOBA HUB</span>
       </a>
 
       <nav class="home-center-nav" aria-label="Primary navigation">
-        <a href="/" aria-current="page">Home</a>
-        <a href="/team-center/">Team Center</a>
-        <a href="/heroes/">Heroes</a>
-        <a href="/items/">Items</a>
+        <a href="index.html" aria-current="page">Home</a>
+        <a href="team-center.html">Team Center</a>
+        <a href="heroes.html">Heroes</a>
+        <a href="items.html">Items</a>
       </nav>
 
       <div class="home-menu-wrap">
@@ -52,9 +54,9 @@
             </div>
           </div>
           <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-          <a class="home-menu-link" href="/games/hok/"><i class="fas fa-gamepad"></i> Draft Simulator</a>
-          <a class="home-menu-link" href="/map/"><i class="fas fa-map"></i> Map Planner</a>
-          <a class="home-menu-link" href="/team-center/"><i class="fas fa-users"></i> Team Center</a>
+          <a class="home-menu-link" href="games/hok/index.html"><i class="fas fa-gamepad"></i> Draft Simulator</a>
+          <a class="home-menu-link" href="map.html"><i class="fas fa-map"></i> Map Planner</a>
+          <a class="home-menu-link" href="team-center.html"><i class="fas fa-users"></i> Team Center</a>
           <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
           <button class="home-menu-link profile-action" id="menuLogoutBtn" type="button" style="color: #ff4d4d; font-weight: bold;">Logout Account</button>
         </aside>
@@ -71,7 +73,7 @@
 
     <section class="home-games">
       <div class="home-game-grid">
-        <a class="home-game-card is-active hok-theme" href="/games/hok/">
+        <a class="home-game-card is-active hok-theme" href="games/hok/index.html">
           <span class="status-pill ready">Operational</span>
           <strong>Honor of Kings</strong>
           <small>Draft Simulator & Map Planner</small>
@@ -83,24 +85,27 @@
 
   <!-- Login Gate -->
   <section class="login-gate" id="loginGate" hidden>
-    <div class="login-gate-card">
-      <h2 id="loginGateTitle">Access MOBA HUB</h2>
-      <button class="primary-btn login-gate-btn" id="googleLoginBtn" type="button">Continue with Google</button>
-      <form id="emailLoginForm">
-        <input type="email" id="loginEmail" required placeholder="Email">
-        <input type="password" id="loginPassword" required placeholder="Password">
-        <button type="submit" class="primary-btn">Log In</button>
-      </form>
-      <a href="#" id="showRegisterForm">Create New Account</a>
-      <small id="loginGateStatus"></small>
+    <div class="login-gate-card" style="max-width: 450px; text-align: left; padding: 30px;">
+        <h2 id="loginGateTitle" style="text-align: center;">Access MOBA HUB</h2>
+        
+        <button class="primary-btn login-gate-btn" id="googleLoginBtn" type="button" style="width: 100%; margin-bottom: 20px;">Continue with Google</button>
+        
+        <form id="emailLoginForm" style="display: flex; flex-direction: column; gap: 15px;">
+            <input type="email" id="loginEmail" required placeholder="Email" style="padding: 10px;">
+            <input type="password" id="loginPassword" required placeholder="Password" style="padding: 10px;">
+            <button type="submit" class="primary-btn" style="padding: 10px;">Log In</button>
+        </form>
+        
+        <a href="#" id="showRegisterForm" style="display: block; text-align: center; margin-top: 15px;">Create New Account</a>
+        <small id="loginGateStatus" style="display: block; text-align: center; color: red;"></small>
     </div>
   </section>
 
-  <!-- Firebase Scripts (DITAMBAHKAN "defer" AGAR TIDAK MENGHAMBAT LOADING) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js" defer></script>
-  <script src="/js/firebase-config.js" defer></script>
-  <script src="/js/hub-home.js?v=42-moba-hub" defer></script>
+  <!-- Script Paths diperbaiki -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/hub-home.js?v=42-moba-hub"></script>
 </body>
 </html>
