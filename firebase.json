@@ -1,0 +1,25 @@
+{
+  "firestore": {
+    "rules": "firebase.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "cleanUrls": false,
+    "trailingSlash": true,
+    "rewrites": [
+      {
+        "source": "/draft/hok/**",
+        "destination": "/hok/index.html"
+      },
+      {
+        "source": "/draft/mlbb/**",
+        "destination": "/mlbb/index.html"
+      }
+    ]
+  }
+}
