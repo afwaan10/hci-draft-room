@@ -4,7 +4,7 @@
 .map42-mobile-bar{display:none;position:fixed;left:8px;right:8px;bottom:8px;z-index:1200;padding:7px;border:1px solid var(--line);border-radius:16px;background:rgba(17,23,32,.96);box-shadow:var(--shadow);grid-template-columns:repeat(5,1fr);gap:6px}.map42-mobile-bar button{min-height:50px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-size:11px}.map42-mobile-bar button b{display:block;color:var(--text);font-size:18px}.map42-mobile-bar button.active{background:rgba(227,183,73,.12);color:var(--gold-2)}
 @media(max-width:900px){.map42-main{padding:14px 12px 88px}.map42-head{align-items:flex-start;flex-direction:column}.map42-layout{grid-template-columns:1fr;min-height:auto}.map42-tools{position:fixed;left:10px;right:10px;bottom:74px;top:auto;z-index:1150;max-height:68vh;display:none;box-shadow:var(--shadow)}.map42-tools.open{display:block}.map42-stage-panel{height:calc(100vh - 190px);min-height:520px}.map42-viewport{min-height:0}.map42-mobile-bar{display:grid}.map42-stage-toolbar .desktop-only{display:none}}
 @media(max-width:520px){.map42-head p{font-size:13px}.map42-game-tabs{width:100%}.map42-game-tabs button{flex:1}.map42-stage-panel{height:calc(100vh - 230px);min-height:450px}.map42-stage-toolbar{gap:5px}.map42-stage-toolbar .mh-btn{padding:8px 10px}.map42-marker{min-width:44px;min-height:44px}.tool-grid{grid-template-columns:repeat(3,1fr)}}
-/* Interaction hardening */
+/* v42 interaction hardening */
 .map42-routes{pointer-events:none}
 .map42-route{pointer-events:stroke;cursor:pointer}
 .map42-route.selected{filter:drop-shadow(0 0 7px rgba(255,217,121,.95));stroke-width:10}
