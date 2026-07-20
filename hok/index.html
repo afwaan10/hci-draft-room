@@ -1,47 +1,47 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
-  <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
+  <link rel="icon" type="image/png" href="../assets/brand/moba-hub-icon.png" />
+  <link rel="apple-touch-icon" href="../assets/brand/moba-hub-icon.png" />
   <meta name="theme-color" content="#050b11" />
-  <title>HCI MOBA Draft Hub</title>
-  <meta name="description" content="HCI MOBA Draft Hub - real-time MOBA draft simulator." />
-  <link rel="stylesheet" href="/css/draft-room.css" />
+  <title>MOBA HUB Draft Simulator</title>
+  <meta name="description" content="MOBA HUB Draft Simulator - real-time MOBA draft simulator." />
+  <link rel="stylesheet" href="../css/draft-room.css" />
+  <link rel="stylesheet" href="../css/moba-hub.css" />
+  
+  <script src="../js/path-config.js"></script>
 </head>
-<body class="draft-game-page">
+<body class="draft-game-page" data-auth="protected" data-game="HOK">
   <main class="app-shell">
     <nav class="site-nav" id="siteNav">
-      <a class="nav-brand" href="/" aria-label="Back to HCI MOBA Draft Hub">
-        <img src="/assets/brand/hci-community.jpg" alt="HCI Community Indonesia Logo" />
-        <span>HCI MOBA Draft Hub</span>
-      </a>
+      <a class="nav-brand" href="../" aria-label="Back to MOBA HUB"><picture><source media="(max-width:640px)" srcset="../assets/brand/moba-hub-icon.png"><img class="nav-brand-logo" src="../assets/brand/moba-hub-logo-horizontal.png" alt="MOBA HUB"></picture></a>
       <button class="nav-toggle" id="navToggle" type="button" aria-expanded="false" aria-label="Open navigation">☰</button>
       <div class="nav-links" id="navLinks">
         <a href="#create-room">Create Room</a>
         <a href="#join-room">Join Room</a>
-        <a href="/">Change Game</a><a href="/map/">Map Simulator</a>
+        <a href="../">Home</a><a href="../map/?game=hok">Map Planner</a><a href="../heroes/">Heroes</a><a href="../items/">Items</a><a href="../games/aov/">Arena of Valor</a><a href="../team-center/">Team Center</a><a href="../profile/">Profile</a><button class="nav-logout" type="button" data-logout>Logout</button>
       </div>
-      <div class="nav-socials"><span class="mini-auth" id="signedUserMini">Checking login...</span><div class="social-links" aria-label="HCI social links">
-  <a class="icon-link ig" href="https://www.instagram.com/hci.official/" target="_blank" rel="noopener" aria-label="Instagram HCI Official"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 4.2A3.8 3.8 0 1 1 12 15.8 3.8 3.8 0 0 1 12 8.2Zm0 2A1.8 1.8 0 1 0 12 13.8 1.8 1.8 0 0 0 12 10.2ZM17.5 6.4a1.1 1.1 0 1 1-1.1 1.1 1.1 1.1 0 0 1 1.1-1.1Z"/></svg></a>
-  <a class="icon-link wa" href="https://chat.whatsapp.com/FToo6p7GnfkDeWtHrXoPKG" target="_blank" rel="noopener" aria-label="WhatsApp Group HCI"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2A9.86 9.86 0 0 0 2.2 11.84c0 1.73.45 3.42 1.31 4.91L2 22l5.39-1.42a9.84 9.84 0 0 0 4.65 1.18h.01A9.87 9.87 0 0 0 21.9 11.9 9.86 9.86 0 0 0 12.04 2Zm0 17.95h-.01a8.03 8.03 0 0 1-4.09-1.12l-.29-.17-3.2.84.85-3.12-.19-.32a8.02 8.02 0 1 1 6.93 3.89Zm4.41-6.01c-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.19-.46-.39-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.51.58.18 1.1.16 1.51.1.46-.07 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/></svg></a>
+      <div class="nav-socials"><span class="mini-auth" id="signedUserMini">Checking login...</span><div class="social-links" role="group" aria-label="Community links">
+  <a class="icon-link ig" href="https://www.instagram.com/hci.official/" target="_blank" rel="noopener" aria-label="Instagram Community Official"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 4.2A3.8 3.8 0 1 1 12 15.8 3.8 3.8 0 0 1 12 8.2Zm0 2A1.8 1.8 0 1 0 12 13.8 1.8 1.8 0 0 0 12 10.2ZM17.5 6.4a1.1 1.1 0 1 1-1.1 1.1 1.1 1.1 0 0 1 1.1-1.1Z"/></svg></a>
+  <a class="icon-link wa" href="https://chat.whatsapp.com/FToo6p7GnfkDeWtHrXoPKG" target="_blank" rel="noopener" aria-label="Community WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2A9.86 9.86 0 0 0 2.2 11.84c0 1.73.45 3.42 1.31 4.91L2 22l5.39-1.42a9.84 9.84 0 0 0 4.65 1.18h.01A9.87 9.87 0 0 0 21.9 11.9 9.86 9.86 0 0 0 12.04 2Zm0 17.95h-.01a8.03 8.03 0 0 1-4.09-1.12l-.29-.17-3.2.84.85-3.12-.19-.32a8.02 8.02 0 1 1 6.93 3.89Zm4.41-6.01c-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.19-.46-.39-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.51.58.18 1.1.16 1.51.1.46-.07 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/></svg></a>
 </div></div>
     </nav>
 
-    <section class="ads-area" aria-label="HCI advertising slots">
-  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Slot Iklan 1</strong><small>Pasang iklan HCI</small></span><b>WA</b></a>
-  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Slot Iklan 2</strong><small>Hubungi +6285136864822</small></span><b>WA</b></a>
-  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Slot Iklan 3</strong><small>Promosi komunitas/esports</small></span><b>WA</b></a>
-  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Slot Iklan 4</strong><small>Booking banner via WhatsApp</small></span><b>WA</b></a>
+    <section class="ads-area" aria-label="Community advertising slots">
+  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Advertising Slot 1</strong><small>Community partner placement</small></span><b>WA</b></a>
+  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Advertising Slot 2</strong><small>Contact +6285136864822</small></span><b>WA</b></a>
+  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Advertising Slot 3</strong><small>Community and esports promotion</small></span><b>WA</b></a>
+  <a class="ad-banner" href="https://wa.me/6285136864822" target="_blank" rel="noopener"><span><strong>Advertising Slot 4</strong><small>Book a banner through WhatsApp</small></span><b>WA</b></a>
 </section>
 
     <section class="landing">
       <div class="panel hero-card-main">
         <div class="hero-title-row">
-          <img data-game-logo src="/assets/hok.png" alt="Game Logo" />
+          <img data-game-logo src="../assets/hok.png" alt="Game Logo" />
           <div>
-            <span class="eyebrow">HCI MOBA Draft Hub</span>
+            <span class="eyebrow">MOBA HUB Draft Simulator</span>
             <h1><span data-game-full>Honor of Kings</span> Draft Simulator</h1>
           </div>
         </div>
@@ -62,22 +62,22 @@
       <div>
         <span class="eyebrow"><span data-game-short>HOK</span> Simulator</span>
         <h2>Start Draft</h2>
-        <p>Create a room as host, or join with a Room Code from the host. Google login is required for Team A, Team B, and Spectator.</p>
+        <p>Create a room as host, or join with a Room Code from the host. A signed-in MOBA HUB account is required for Team A, Team B, and Spectator.</p>
       </div>
       <div class="setup-grid">
         <div class="card soft-card">
           <h3>Create Room</h3>
           <p>The creator becomes the host and Team A by default. Team names can be edited in the lobby.</p>
-          <label class="series-picker" for="roomNameInput"><span>Room Name</span><input id="roomNameInput" type="text" maxlength="36" placeholder="Example: HCI Scrim Draft" value="HCI Practice Room" /></label>
+          <label class="series-picker" for="roomNameInput"><span>Room Name</span><input id="roomNameInput" type="text" maxlength="36" placeholder="Example: MOBA HUB Scrim" value="MOBA HUB Practice Room" /></label>
           <div class="series-picker custom-series-picker"><span>Match Format</span><input id="seriesFormat" type="hidden" value="bo3" /><div class="series-options series-options-five" role="radiogroup" aria-label="Match format"><button type="button" class="series-option active" data-series="bo3" aria-checked="true"><strong>BO 3</strong><small>Standard series</small></button><button type="button" class="series-option" data-series="bo5" aria-checked="false"><strong>BO 5</strong><small>Long series</small></button><button type="button" class="series-option" data-series="flat2" aria-checked="false"><strong>BO 2 Flat</strong><small>Exact 2 games</small></button><button type="button" class="series-option" data-series="flat3" aria-checked="false"><strong>BO 3 Flat</strong><small>Exact 3 games</small></button><button type="button" class="series-option" data-series="flat4" aria-checked="false"><strong>BO 4 Flat</strong><small>Exact 4 games</small></button></div></div>
           <div class="team-name-seed"><input id="teamANameSeed" type="text" maxlength="24" placeholder="Team A name" value="Team A" /><input id="teamBNameSeed" type="text" maxlength="24" placeholder="Team B name" value="Team B" /></div>
-          <button class="primary-btn" id="createRoomBtn" disabled>Create Room</button>
+          <button type="button" class="primary-btn" id="createRoomBtn" disabled>Create Room</button>
         </div>
         <div class="card soft-card" id="join-room">
           <h3>Enter Room Code</h3>
           <p>Join as Team A, Team B, or Spectator after the room opens.</p>
-          <div class="join-row"><input id="roomIdInput" type="text" placeholder="Example: HOK-4821" autocomplete="off" /><button class="secondary-btn" id="joinRoomBtn" disabled>Join</button></div>
-          <div class="notice compact">All users must login through Google from the homepage before entering a simulator.</div>
+          <div class="join-row"><input id="roomIdInput" type="text" placeholder="Example: HOK-4821" autocomplete="off" /><button type="button" class="secondary-btn" id="joinRoomBtn" disabled>Join</button></div>
+          <div class="notice compact">All users must sign in with Google or Email/Password before entering a simulator.</div>
         </div>
       </div>
       <div class="notice warning" id="firebaseNotice" hidden>Firebase is not configured. Edit <strong>js/firebase-config.js</strong> to enable real-time rooms.</div>
@@ -86,22 +86,22 @@
 
     <section class="room-layout" id="roomPanel" hidden>
       <aside class="panel room-sidebar">
-        <div class="room-meta"><span class="eyebrow">Room</span><strong id="roomNameDisplay">-</strong><div class="room-code-row"><strong id="roomCodeDisplay">-</strong><button class="tiny-btn" id="copyRoomBtn">Copy</button></div></div>
+        <div class="room-meta"><span class="eyebrow">Room</span><strong id="roomNameDisplay">-</strong><div class="room-code-row"><strong id="roomCodeDisplay">-</strong><button type="button" class="tiny-btn" id="copyRoomBtn">Copy</button></div></div>
         <div class="room-meta"><span class="eyebrow">Status</span><strong id="roomStatusDisplay">Lobby</strong></div>
         <div class="team-edit-box">
           <label><span>Team A</span><input id="teamANameInput" type="text" maxlength="24" value="Team A" /></label>
           <label><span>Team B</span><input id="teamBNameInput" type="text" maxlength="24" value="Team B" /></label>
         </div>
-        <div class="side-picker" id="sidePicker"><button class="side-btn" data-side="A">Join Team A</button><button class="side-btn" data-side="B">Join Team B</button><button class="side-btn ghost" data-side="SPECTATOR">Spectator</button></div>
+        <div class="side-picker" id="sidePicker"><button type="button" class="side-btn" data-side="A">Join Team A</button><button type="button" class="side-btn" data-side="B">Join Team B</button><button type="button" class="side-btn ghost" data-side="SPECTATOR">Spectator</button></div>
         <div class="current-turn-card"><span class="eyebrow">Current Turn</span><h2 id="currentTurnText">Waiting for draft to start</h2><p id="currentTurnHelp">The host can start after both teams are filled.</p><div class="timer-wrap"><div class="timer-value" id="timerValue">--</div><div class="timer-label">turn timer</div></div></div>
-        <div class="action-stack"><button class="primary-btn" id="startDraftBtn" hidden>Start Draft</button><button class="secondary-btn" id="copyResultBtn" hidden>Copy Result</button><button class="secondary-btn" id="downloadResultTopBtn" hidden>Download PNG</button><button class="danger-btn" id="deleteRoomBtn" hidden>Delete Room</button><button class="ghost-btn" id="leaveRoomBtn">Leave Match</button></div>
+        <div class="action-stack"><button type="button" class="primary-btn" id="startDraftBtn" hidden>Start Draft</button><button type="button" class="secondary-btn" id="copyResultBtn" hidden>Copy Result</button><button type="button" class="secondary-btn" id="downloadResultTopBtn" hidden>Download PNG</button><button type="button" class="danger-btn" id="deleteRoomBtn" hidden>Delete Room</button><button type="button" class="ghost-btn" id="leaveRoomBtn">Leave Match</button></div>
         <div class="notice compact"><strong>Side switch:</strong> Team A starts Blue in Game 1, then sides switch automatically every next game.</div>
       </aside>
 
       <section class="draft-stage" id="draftStage" hidden>
         <div class="draft-focus-header" id="draftFocusHeader">
           <div><span class="eyebrow" id="focusRoomText">-</span><h1 id="gameHeadline">Game 1 / Best of 3</h1></div>
-          <div class="focus-actions"><button class="tiny-btn" id="copyRoomTopBtn">Copy ID</button><button class="secondary-btn" id="downloadResultTopBtn2" hidden>Download Result</button><button class="danger-btn" id="deleteRoomTopBtn" hidden>Delete Room</button></div>
+          <div class="focus-actions"><button type="button" class="tiny-btn" id="copyRoomTopBtn">Copy ID</button><button type="button" class="secondary-btn" id="downloadResultTopBtn2" hidden>Download Result</button><button type="button" class="danger-btn" id="deleteRoomTopBtn" hidden>Delete Room</button></div>
         </div>
         <div class="teams-grid" id="draftBoard">
           <div class="team-card team-a"><div class="team-head"><div><span class="eyebrow" id="teamASideLabel">Blue Side</span><h2 id="teamATitle">Team A</h2></div><span class="team-state" id="teamAState">Empty</span></div><div class="slot-section"><h3>Ban</h3><div class="slot-grid ban-grid" id="teamABans"></div></div><div class="slot-section"><h3>Pick</h3><div class="slot-grid pick-grid" id="teamAPicks"></div></div></div>
@@ -114,7 +114,7 @@
         </section>
 
         <div class="panel heroes-panel" id="heroPanel">
-          <div class="heroes-toolbar"><div><span class="eyebrow">Hero Database</span><h2>Select Hero</h2></div><div class="toolbar-actions"><input id="heroSearch" type="search" placeholder="Search hero..." /><div class="role-filters" id="laneFilterButtons" aria-label="Hero role filter"></div></div></div>
+          <div class="heroes-toolbar"><div><span class="eyebrow">Hero Database</span><h2>Select Hero</h2></div><div class="toolbar-actions"><input id="heroSearch" type="search" placeholder="Search hero..." /><div class="role-filters" id="laneFilterButtons" role="group" aria-label="Hero role filter"></div></div></div>
           <div class="draft-sequence" id="draftSequence"></div><div class="hero-grid" id="heroGrid"></div>
         </div>
       </section>
@@ -122,7 +122,7 @@
   </main>
 
   <div class="session-modal" id="sessionModal" hidden>
-    <div class="session-modal-card"><span class="eyebrow">Draft Complete</span><h2 id="sessionModalTitle">Game complete</h2><p>Draft result, estimated win chance, and action controls are shown below.</p><div class="modal-actions"><button class="primary-btn" id="nextGameBtn">Next Game</button><button class="secondary-btn" id="backLobbyBtn">Leave Match</button><button class="danger-btn" id="downloadResultBtn">Download Result</button></div></div>
+    <div class="session-modal-card"><span class="eyebrow">Draft Complete</span><h2 id="sessionModalTitle">Game complete</h2><p>Draft result, composition analysis, and action controls are shown below.</p><div class="modal-actions"><button type="button" class="primary-btn" id="nextGameBtn">Next Game</button><button type="button" class="secondary-btn" id="backLobbyBtn">Leave Match</button><button type="button" class="danger-btn" id="downloadResultBtn">Download Result</button></div></div>
   </div>
   <div class="toast" id="toast" hidden></div>
 
@@ -131,13 +131,12 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script>
     (function () {
-      const path = location.pathname.toLowerCase();
-      const isMlbb = path.includes('/mlbb') || path.endsWith('mlbb.html');
+      const isMlbb = document.body.dataset.game === 'MLBB';
       const info = isMlbb
-        ? { key: 'MLBB', full: 'Mobile Legends: Bang Bang', prefix: 'MLBB', logo: '/assets/ml.png', placeholder: 'Example: MLBB-4821', roles: ['ALL','EXP Lane','Jungle','Mid Lane','Gold Lane','Roam'], bansPerTeam: 5, turnSeconds: 45, description: 'A real-time Mobile Legends draft simulator for competitive pick-ban practice, team preparation, and coach or analyst review.' }
-        : { key: 'HOK', full: 'Honor of Kings', prefix: 'HOK', logo: '/assets/hok.png', placeholder: 'Example: HOK-4821', roles: ['ALL','Clash Lane','Jungle','Mid','Farm','Roam'], bansPerTeam: 4, turnSeconds: 45, description: 'A real-time Honor of Kings draft simulator with Global Ban Pick flow for team preparation, coach review, and community practice.' };
-      window.HCI_GAME_CONFIG = { gameKey: info.key, gameName: info.full + ' Draft Simulator', roomPrefix: info.prefix, roles: info.roles, bansPerTeam: info.bansPerTeam, turnSeconds: info.turnSeconds };
-      document.title = 'HCI MOBA Draft Hub - ' + info.key;
+        ? { key: 'MLBB', full: 'Mobile Legends: Bang Bang', prefix: 'MLBB', logo: window.MOBA_HUB_PATHS.url('assets/ml.png'), placeholder: 'Example: MLBB-4821', roles: ['ALL','EXP Lane','Jungle','Mid Lane','Gold Lane','Roam'], bansPerTeam: 5, turnSeconds: 45, description: 'A real-time Mobile Legends draft simulator for competitive pick-ban practice, team preparation, and coach or analyst review.' }
+        : { key: 'HOK', full: 'Honor of Kings', prefix: 'HOK', logo: window.MOBA_HUB_PATHS.url('assets/hok.png'), placeholder: 'Example: HOK-4821', roles: ['ALL','Clash Lane','Jungle','Mid','Farm','Roam'], bansPerTeam: 4, turnSeconds: 30, description: 'A real-time Honor of Kings draft simulator with Global Ban Pick flow for team preparation, coach review, and community practice.' };
+      window.MOBA_HUB_GAME_CONFIG = { gameKey: info.key, gameName: info.full + ' Draft Simulator', roomPrefix: info.prefix, roles: info.roles, bansPerTeam: info.bansPerTeam, turnSeconds: info.turnSeconds }; window.HCI_GAME_CONFIG = window.MOBA_HUB_GAME_CONFIG;
+      document.title = info.full + ' Draft Simulator · MOBA HUB';
       window.addEventListener('DOMContentLoaded', function(){
         document.querySelectorAll('[data-game-short]').forEach(function(el){ el.textContent = info.key; });
         document.querySelectorAll('[data-game-full]').forEach(function(el){ el.textContent = info.full; });
@@ -147,8 +146,9 @@
       });
     })();
   </script>
-  <script src="/js/firebase-config.js"></script>
-  <script>document.write('<script src="/js/heroes-' + (window.HCI_GAME_CONFIG.gameKey === 'MLBB' ? 'mlbb' : 'hok') + '.js"><\/script>');</script>
-  <script src="/js/draft-room.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/app-core.js"></script>
+  <script src="../js/heroes-hok.js"></script>
+  <script src="../js/draft-room.js"></script>
 </body>
 </html>
