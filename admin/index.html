@@ -1,36 +1,46 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" type="image/png" href="/assets/brand/hci-icon.png" />
-  <link rel="apple-touch-icon" href="/assets/brand/hci-icon-192.png" />
-  <title>HCI MOBA Hub - Admin Console</title>
-  <link rel="stylesheet" href="../css/draft-room.css?v=38" />
-  <link rel="stylesheet" href="../css/admin-dashboard.css?v=38" />
-</head>
-<body class="admin-page">
+  <link rel="icon" type="image/png" href="../assets/brand/moba-hub-favicon-32.png" />
+  <link rel="apple-touch-icon" href="../assets/brand/moba-hub-favicon-32.png" />
+  <title>MOBA HUB - Admin Console</title>
+  <link rel="stylesheet" href="../css/draft-room.css" />
+  <link rel="stylesheet" href="../css/admin-dashboard.css" />
+  <link rel="stylesheet" href="../css/moba-hub.css" />
+  <script src="../js/path-config.js"></script>
+<script>window.setTimeout(function(){document.body?.classList.add('auth-ready');var l=document.querySelector('.mh-loader');if(l){l.classList.add('is-done');window.setTimeout(function(){l.remove();},280);}},6000);</script></head>
+<body class="admin-page" data-auth="protected">
+  <div class="mh-loader">
+    <div class="mh-loader-card">
+      <div class="mh-loader-mark"><img src="../assets/brand/moba-hub-icon.png" alt="MOBA HUB" /></div>
+      <div class="mh-spinner"></div>
+      <small>Loading Admin Console</small>
+    </div>
+  </div>
+  <div class="mh-app">
   <main class="app-shell">
     <nav class="site-nav">
-      <a class="nav-brand" href="/" aria-label="Back to HCI MOBA Hub">
-        <img src="../assets/brand/hci-community.jpg" alt="HCI Logo" />
-        <span>HCI MOBA Hub <small>Admin</small></span>
+      <a class="nav-brand" href="../" aria-label="Back to MOBA HUB">
+        <img src="../assets/brand/moba-hub-icon.png" alt="MOBA HUB" />
+        <span>MOBA HUB <small>Admin</small></span>
       </a>
-      <div class="nav-links"><a href="/hok/">HOK</a><a href="/mlbb/">MLBB</a><a href="/">Home</a></div>
+      <div class="nav-links"><a href="../hok/">HOK</a><a href="../mlbb/">MLBB</a><a href="../">Home</a></div>
     </nav>
 
     <section class="landing">
       <div class="panel hero-card-main">
         <div class="hero-title-row">
-          <img src="../assets/brand/hci-community.jpg" alt="HCI Logo" />
-          <div><span class="eyebrow">Admin Console</span><h1>HCI MOBA Hub <small>Control Center</small></h1></div>
+          <img src="../assets/brand/moba-hub-icon.png" alt="MOBA HUB" />
+          <div><span class="eyebrow">Admin Console</span><h1>MOBA HUB <small>Control Center</small></h1></div>
         </div>
-        <p>Manage HCI MOBA Hub operations from one place: assigned draft rooms, access credits, game configuration, hero content, sponsors, community links, and recent room activity.</p>
-        <div class="hero-actions"><button class="primary-btn" id="adminLoginBtn">Sign in with Google</button><a class="secondary-btn" href="https://wa.me/6285136864822" target="_blank" rel="noopener">Personal WhatsApp</a></div>
+        <p>Manage MOBA HUB operations from one place: assigned draft rooms, access credits, game configuration, hero content, sponsors, community links, and recent room activity.</p>
+        <div class="hero-actions"><a class="primary-btn" href="../profile/">Signed-in Profile</a><button class="secondary-btn" type="button" data-logout>Logout</button></div><div class="notice compact" id="adminAccessNotice">Checking administrator access…</div>
       </div>
       <div class="quick-info">
         <div class="panel info-card"><span class="eyebrow">Security</span><h3>Admin email only</h3><p>Allowed admin emails are controlled in <strong>js/firebase-config.js</strong>.</p></div>
-        <div class="panel info-card"><span class="eyebrow">Hub Modules</span><h3>Draft + Map</h3><p>Admin branding now follows HCI MOBA Hub, while Draft Hub and Map Simulator remain separate modules.</p></div>
+        <div class="panel info-card"><span class="eyebrow">Hub Modules</span><h3>Draft + Map</h3><p>Admin branding now follows MOBA HUB, while Draft Hub and Map Simulator remain separate modules.</p></div>
         <div class="panel info-card"><span class="eyebrow">Access</span><h3>Trial + credits</h3><p>New hosts get trial credits. Admin can add paid credits manually.</p></div>
       </div>
     </section>
@@ -43,16 +53,16 @@
           <h3>Room</h3>
           <label class="series-picker"><span>Game</span><select id="adminGame"><option value="HOK">HOK</option><option value="MLBB">MLBB</option></select></label>
           <label class="series-picker"><span>Session Length</span><select id="adminGameCount"><option value="bo3">BO 3</option><option value="bo5">BO 5</option><option value="flat2">BO 2 Flat</option><option value="flat3">BO 3 Flat</option><option value="flat4">BO 4 Flat</option></select></label>
-          <button class="primary-btn" id="adminCreateRoomBtn">Create Room</button>
+          <button type="button" class="primary-btn" id="adminCreateRoomBtn">Create Room</button>
           <div class="notice compact" id="adminCreatedRoom" hidden></div>
         </div>
         <div class="card soft-card">
           <h3>Add Paid Credits</h3>
           <p>Use the host UID from a room or userAccess document.</p>
           <div class="join-stack">
-            <input id="creditUid" placeholder="User UID" />
+            <input type="text" id="creditUid" placeholder="User UID" />
             <input id="creditAmount" type="number" min="1" value="1" placeholder="Credits" />
-            <button class="secondary-btn" id="addCreditBtn">Add Credits</button>
+            <button type="button" class="secondary-btn" id="addCreditBtn">Add Credits</button>
           </div>
           <div class="notice compact">BO3 / BO2 Flat / BO3 Flat = 1 credit. BO5 / BO4 Flat = 2 credits.</div>
         </div>
@@ -62,41 +72,60 @@
 
 
     <section class="panel setup-panel" id="adminContentPanel" hidden>
-      <span class="eyebrow">HCI MOBA Hub Admin</span>
-      <h2>Content & Community Management</h2>
+      <span class="eyebrow">MOBA HUB Admin</span>
+      <h2>Content &amp; Community Management</h2>
       <div class="setup-grid admin-grid-v1">
         <div class="card soft-card">
           <h3>Game / Logo Management</h3>
           <label class="series-picker"><span>Game</span><select id="cfgGame"><option value="HOK">HOK</option><option value="MLBB">MLBB</option></select></label>
           <label class="series-picker"><span>Status</span><select id="cfgStatus"><option value="active">Active</option><option value="coming-soon">Coming Soon</option><option value="hidden">Hidden</option></select></label>
-          <input id="cfgLogo" placeholder="Logo path, e.g. /assets/hok.png" />
-          <input id="cfgDescription" placeholder="Short game description" />
-          <button class="secondary-btn" id="saveGameConfigBtn">Save Game Config</button>
+          <input type="text" id="cfgLogo" placeholder="Logo path, e.g. /assets/hok.png" />
+          <input type="text" id="cfgDescription" placeholder="Short game description" />
+          <button type="button" class="secondary-btn" id="saveGameConfigBtn">Save Game Config</button>
         </div>
         <div class="card soft-card">
           <h3>Hero Management</h3>
           <label class="series-picker"><span>Game</span><select id="heroGame"><option value="HOK">HOK</option><option value="MLBB">MLBB</option></select></label>
-          <input id="heroId" placeholder="Hero ID, e.g. biron" />
-          <input id="heroName" placeholder="Hero name" />
-          <input id="heroLanes" placeholder="Roles/lanes, comma separated" />
-          <input id="heroImage" placeholder="Image path" />
+          <input type="text" id="heroId" placeholder="Hero ID, e.g. biron" />
+          <input type="text" id="heroName" placeholder="Hero name" />
+          <input type="text" id="heroLanes" placeholder="Roles/lanes, comma separated" />
+          <input type="text" id="heroImage" placeholder="2D image path" />
+          <input type="text" id="heroModel" placeholder="Licensed 3D model URL (.glb), optional" />
+          <input type="text" id="heroPatch" placeholder="Patch version" />
+          <textarea id="heroDescription" placeholder="Hero overview"></textarea>
+          <textarea id="heroSkills" placeholder='Skills JSON array, e.g. [{"name":"Passive","type":"Passive","cooldown":"Passive","description":"..."}]'></textarea>
           <label class="series-picker"><span>Status</span><select id="heroActive"><option value="true">Active</option><option value="false">Hidden</option></select></label>
-          <button class="secondary-btn" id="saveHeroBtn">Save Hero</button>
+          <button type="button" class="secondary-btn" id="saveHeroBtn">Save Hero</button>
+        </div>
+        <div class="card soft-card">
+          <h3>Item Management</h3>
+          <input type="text" id="itemId" placeholder="Item ID, e.g. sages-sanctuary" />
+          <input type="text" id="itemName" placeholder="Item name" />
+          <input type="text" id="itemCategory" placeholder="Category, e.g. Defense" />
+          <input type="text" id="itemTier" placeholder="Tier, e.g. Advanced" />
+          <input id="itemPrice" type="number" min="0" placeholder="Price" />
+          <input type="text" id="itemImage" placeholder="Item image path, optional" />
+          <input type="text" id="itemPatch" placeholder="Patch version" />
+          <textarea id="itemDescription" placeholder="Item description"></textarea>
+          <textarea id="itemAttributes" placeholder='Attributes JSON, e.g. [["Physical Defense","+140"]]'></textarea>
+          <textarea id="itemPassives" placeholder='Passives JSON, e.g. [["Resurrection","Revives the hero..."]]'></textarea>
+          <input type="text" id="itemRoles" placeholder="Recommended roles, comma separated" />
+          <button type="button" class="secondary-btn" id="saveItemBtn">Save Item</button>
         </div>
         <div class="card soft-card">
           <h3>Sponsor Slot</h3>
-          <input id="sponsorSlot" placeholder="Slot ID, e.g. sponsor-1" />
-          <input id="sponsorTitle" placeholder="Sponsor title" />
-          <input id="sponsorText" placeholder="Sponsor text" />
-          <input id="sponsorUrl" placeholder="Sponsor URL / WhatsApp" />
-          <button class="secondary-btn" id="saveSponsorBtn">Save Sponsor</button>
+          <input type="text" id="sponsorSlot" placeholder="Slot ID, e.g. sponsor-1" />
+          <input type="text" id="sponsorTitle" placeholder="Sponsor title" />
+          <input type="text" id="sponsorText" placeholder="Sponsor text" />
+          <input type="text" id="sponsorUrl" placeholder="Sponsor URL / WhatsApp" />
+          <button type="button" class="secondary-btn" id="saveSponsorBtn">Save Sponsor</button>
         </div>
         <div class="card soft-card">
           <h3>Community Link</h3>
-          <input id="linkId" placeholder="Link ID, e.g. whatsapp" />
-          <input id="linkLabel" placeholder="Label" />
-          <input id="linkUrl" placeholder="URL" />
-          <button class="secondary-btn" id="saveCommunityLinkBtn">Save Link</button>
+          <input type="text" id="linkId" placeholder="Link ID, e.g. whatsapp" />
+          <input type="text" id="linkLabel" placeholder="Label" />
+          <input type="text" id="linkUrl" placeholder="URL" />
+          <button type="button" class="secondary-btn" id="saveCommunityLinkBtn">Save Link</button>
         </div>
       </div>
       <div class="notice compact">Data saved here is stored in Firestore as admin-managed content. Existing static pages may still need future code integration to fully consume every config field.</div>
@@ -109,10 +138,12 @@
     </section>
   </main>
   <div class="toast" id="toast" hidden></div>
+  </div>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="../js/firebase-config.js"></script>
+  <script src="../js/app-core.js"></script>
   <script src="../js/admin-dashboard.js"></script>
 </body>
 </html>
