@@ -1,5 +1,6 @@
 (() => {
-  const CONFIG = window.HCI_GAME_CONFIG || { gameKey: 'HOK', gameName: 'Honor of Kings', roomPrefix: 'HOK', roles: ['ALL'], bansPerTeam: 4, turnSeconds: 45 };
+  const assetUrl = (path) => window.MOBAHub?.url(path) || window.MOBA_HUB_PATHS?.url(path) || path;
+  const CONFIG = window.MOBA_HUB_GAME_CONFIG || window.HCI_GAME_CONFIG || { gameKey: 'HOK', gameName: 'Honor of Kings', roomPrefix: 'HOK', roles: ['ALL'], bansPerTeam: 4, turnSeconds: 30 };
   const PREPARE_SECONDS = 5;
   const DEFAULT_BEST_OF = 3;
   const SERIES_FORMATS = {
@@ -51,12 +52,13 @@
   };
 
   let db = null, auth = null, currentUser = null, currentRoomId = null, currentRoom = null, currentRole = 'SPECTATOR';
-  let unsubscribeRoom = null, timerInterval = null, prepareTransitionTimer = null, activeLane = 'ALL', lastAutoScrollTurnKey = '', lastFinishedModalKey = '', autoResolveBusy = false, historySaving = false;
-  let heroes = Array.isArray(window.HCI_HEROES) ? [...window.HCI_HEROES] : [];
+  let unsubscribeRoom = null, timerInterval = null, prepareTransitionTimer = null, intermissionTransitionTimer = null, activeLane = 'ALL', lastAutoScrollTurnKey = '', lastFinishedModalKey = '', autoResolveBusy = false, historySaving = false;
+  let pendingPickIds = [], pendingPickContext = '';
+  let heroes = Array.isArray(window.MOBA_HUB_HEROES) ? [...window.MOBA_HUB_HEROES] : (Array.isArray(window.HCI_HEROES) ? [...window.HCI_HEROES] : []);
 
   const ROLE_ICON_PATHS = {
-    HOK: { ALL:'/assets/role-icons/hok/all.png', 'Clash Lane':'/assets/role-icons/hok/clash.png', Farm:'/assets/role-icons/hok/farm.png', Mid:'/assets/role-icons/hok/mid.png', Jungle:'/assets/role-icons/hok/jungle.png', Roam:'/assets/role-icons/hok/roam.png' },
-    MLBB: { ALL:'/assets/role-icons/mlbb/all.png', 'EXP Lane':'/assets/role-icons/mlbb/exp.png', Jungle:'/assets/role-icons/mlbb/jungle.png', 'Mid Lane':'/assets/role-icons/mlbb/mid.png', 'Gold Lane':'/assets/role-icons/mlbb/gold.png', Roam:'/assets/role-icons/mlbb/roam.png' }
+    HOK: { ALL:assetUrl('assets/role-icons/hok/all.png'), 'Clash Lane':assetUrl('assets/role-icons/hok/clash.png'), Farm:assetUrl('assets/role-icons/hok/farm.png'), Mid:assetUrl('assets/role-icons/hok/mid.png'), Jungle:assetUrl('assets/role-icons/hok/jungle.png'), Roam:assetUrl('assets/role-icons/hok/roam.png') },
+    MLBB: { ALL:assetUrl('assets/role-icons/mlbb/all.png'), 'EXP Lane':assetUrl('assets/role-icons/mlbb/exp.png'), Jungle:assetUrl('assets/role-icons/mlbb/jungle.png'), 'Mid Lane':assetUrl('assets/role-icons/mlbb/mid.png'), 'Gold Lane':assetUrl('assets/role-icons/mlbb/gold.png'), Roam:assetUrl('assets/role-icons/mlbb/roam.png') }
   };
   const FALLBACK_ROLE_ICON = '<svg viewBox="0 0 24 24"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4Z"/><path d="M12 7v10M8 9l8 6M16 9l-8 6"/></svg>';
 
@@ -69,40 +71,51 @@
   }
   function showToast(message){ if(!els.toast) return; els.toast.textContent = message; els.toast.hidden = false; clearTimeout(showToast.timer); showToast.timer = setTimeout(() => { els.toast.hidden = true; }, 2800); }
   function uppercaseRoomCodeInput(){ if(!els.roomIdInput) return; const start = els.roomIdInput.selectionStart; const end = els.roomIdInput.selectionEnd; const next = els.roomIdInput.value.toUpperCase(); if(els.roomIdInput.value !== next){ els.roomIdInput.value = next; try{ els.roomIdInput.setSelectionRange(start, end); }catch(e){} } }
-  function gameLogoPath(){ const key = String(CONFIG.gameKey || 'HOK').toUpperCase(); if(key === 'MLBB') return '/assets/ml.png'; if(key === 'HOK') return '/assets/hok.png'; return '/assets/brand/hci-community.jpg'; }
-  function safeHeroImage(hero){ return hero?.image || ''; }
+  function gameLogoPath(){ const key = String(CONFIG.gameKey || 'HOK').toUpperCase(); if(key === 'MLBB') return assetUrl('assets/ml.png'); if(key === 'HOK') return assetUrl('assets/hok.png'); return assetUrl('assets/brand/moba-hub-icon.png'); }
+  function safeHeroImage(hero){ const image = hero?.image || ''; return image && !/^(?:https?:|data:|blob:)/i.test(image) ? assetUrl(image) : image; }
   function heroAvatarHtml(hero, className, fallbackText){
     const name = hero?.name || fallbackText || '?'; const initials = heroInitials(name); const image = safeHeroImage(hero);
     return image ? `<span class="${className}"><img src="${escapeHtml(image)}" alt="${escapeHtml(name)}" loading="lazy" onerror="this.parentElement.textContent='${initials}'"></span>` : `<span class="${className}">${initials}</span>`;
   }
   function updateGameVisuals(){
     const logo = gameLogoPath();
-    document.querySelectorAll('[data-game-logo]').forEach((img) => { img.src = logo; img.alt = `${CONFIG.gameKey || 'HCI'} Logo`; });
-    const landingLogo = document.querySelector('.hero-title-row img'); if(landingLogo){ landingLogo.src = logo; landingLogo.alt = `${CONFIG.gameKey || 'HCI'} Logo`; landingLogo.setAttribute('data-game-logo',''); }
+    document.querySelectorAll('[data-game-logo]').forEach((img) => { img.src = logo; img.alt = `${CONFIG.gameKey || 'MOBA HUB'} Logo`; });
+    const landingLogo = document.querySelector('.hero-title-row img'); if(landingLogo){ landingLogo.src = logo; landingLogo.alt = `${CONFIG.gameKey || 'MOBA HUB'} Logo`; landingLogo.setAttribute('data-game-logo',''); }
   }
-  function isConfigReady(){ const cfg = window.HCI_FIREBASE_CONFIG; return Boolean(cfg && cfg.apiKey && cfg.projectId && !String(cfg.apiKey).includes('PASTE')); }
+  function isConfigReady(){ const cfg = window.MOBA_HUB_FIREBASE_CONFIG || window.HCI_FIREBASE_CONFIG; return Boolean(cfg && cfg.apiKey && cfg.projectId && !String(cfg.apiKey).includes('PASTE')); }
   function roleIconHtml(role){ const gameKey = String(CONFIG.gameKey || 'HOK').toUpperCase(); const src = (ROLE_ICON_PATHS[gameKey] || ROLE_ICON_PATHS.HOK)[role] || (ROLE_ICON_PATHS[gameKey] || ROLE_ICON_PATHS.HOK).ALL; return src ? `<img src="${escapeHtml(src)}" alt="${escapeHtml(role)}" loading="lazy">` : FALLBACK_ROLE_ICON; }
   function heroById(id){ return heroes.find((hero) => hero.id === id) || null; }
   function heroLabel(id){ const hero = heroById(id); return hero ? hero.name : id || '-'; }
-  function hashHeroValue(seed){ let h=0; const text=String(seed||'HCI'); for(let i=0;i<text.length;i++) h=(h*31+text.charCodeAt(i))>>>0; return h; }
   function heroMeta(hero){
-    const data = hero?.meta || hero?.stats || {};
-    const h = hashHeroValue(`${CONFIG.gameKey}:${hero?.id || hero?.name}`);
-    const wr = Number(data.winRate ?? data.wr ?? (47 + (h % 110) / 10));
-    const pr = Number(data.pickRate ?? data.pr ?? (4 + ((h >> 4) % 230) / 10));
-    const br = Number(data.banRate ?? data.br ?? (((h >> 9) % 160) / 10));
-    const tier = String(data.tier || (wr >= 54 || br >= 12 ? 'S' : wr >= 51 ? 'A' : wr >= 49 ? 'B' : 'C'));
-    return { wr: Math.max(38, Math.min(62, wr)).toFixed(1), pr: Math.max(0, Math.min(45, pr)).toFixed(1), br: Math.max(0, Math.min(45, br)).toFixed(1), tier, updated: data.updated || data.lastUpdated || 'Sample HCI Meta' };
+    const data = hero?.meta || hero?.stats || null;
+    if(!data) return null;
+    const wr = Number(data.winRate ?? data.wr);
+    const pr = Number(data.pickRate ?? data.pr);
+    const br = Number(data.banRate ?? data.br);
+    if(!Number.isFinite(wr) && !Number.isFinite(pr) && !Number.isFinite(br)) return null;
+    return {
+      wr: Number.isFinite(wr) ? Math.max(0, Math.min(100, wr)).toFixed(1) : null,
+      pr: Number.isFinite(pr) ? Math.max(0, Math.min(100, pr)).toFixed(1) : null,
+      br: Number.isFinite(br) ? Math.max(0, Math.min(100, br)).toFixed(1) : null,
+      tier: data.tier ? String(data.tier) : '',
+      updated: data.updated || data.lastUpdated || ''
+    };
   }
-  function metaBadgeHtml(hero){ const meta = heroMeta(hero); return `<span class="hero-meta-line"><b>WR ${escapeHtml(meta.wr)}%</b><small>PR ${escapeHtml(meta.pr)} · BR ${escapeHtml(meta.br)} · ${escapeHtml(meta.tier)}</small></span>`; }
+  function metaBadgeHtml(hero){
+    const meta = heroMeta(hero);
+    if(!meta) return '';
+    const primary = meta.wr ? `<b>WR ${escapeHtml(meta.wr)}%</b>` : '<b>Verified meta</b>';
+    const details = [meta.pr ? `PR ${meta.pr}%` : '', meta.br ? `BR ${meta.br}%` : '', meta.tier].filter(Boolean).join(' · ');
+    return `<span class="hero-meta-line">${primary}${details ? `<small>${escapeHtml(details)}</small>` : ''}</span>`;
+  }
   function heroInitials(name){ return String(name || '?').split(/\s+|\.|-/).filter(Boolean).slice(0,2).map((p) => p[0]?.toUpperCase()).join('') || '?'; }
   function gameSlug(){ return String(CONFIG.gameKey || 'HOK').toLowerCase() === 'mlbb' ? 'mlbb' : 'hok'; }
-  function gameHomeRoute(){ return `/${gameSlug()}/`; }
-  function isDraftRoute(){ return location.pathname.split('/').filter(Boolean).includes('draft'); }
-  function getRouteRoomId(){ const parts = location.pathname.split('/').filter(Boolean); const draftIndex = parts.indexOf('draft'); if(draftIndex >= 0 && parts[draftIndex + 2]) return decodeURIComponent(parts[draftIndex + 2]).toUpperCase(); return ''; }
-  function draftRouteForRoom(roomId){ return `/draft/${gameSlug()}/${encodeURIComponent(roomId)}`; }
+  function gameHomeRoute(){ return window.MOBAHub?.url(`${gameSlug()}/`) || window.MOBA_HUB_PATHS.url(`${gameSlug()}/`); }
+  function isDraftRoute(){ const params = new URLSearchParams(location.search); return params.get('route') === 'draft' || Boolean(params.get('room')); }
+  function getRouteRoomId(){ const params = new URLSearchParams(location.search); const queryRoom = params.get('room'); if(queryRoom) return decodeURIComponent(queryRoom).toUpperCase(); const parts = location.pathname.split('/').filter(Boolean); const draftIndex = parts.indexOf('draft'); if(draftIndex >= 0 && parts[draftIndex + 2]) return decodeURIComponent(parts[draftIndex + 2]).toUpperCase(); return ''; }
+  function draftRouteForRoom(roomId){ return `${gameHomeRoute()}?room=${encodeURIComponent(roomId)}&route=draft`; }
   function lobbyRouteForRoom(roomId){ return roomId ? `${gameHomeRoute()}?room=${encodeURIComponent(roomId)}` : gameHomeRoute(); }
-  function pushRoute(path){ if(location.pathname + location.search !== path) history.pushState({ hciDraftRoute:true }, '', path); }
+  function pushRoute(path){ const current = location.href; if(current !== path) history.pushState({ mobaHubDraftRoute:true }, '', path); }
   function goToDraftRoute(roomId){ pushRoute(draftRouteForRoom(roomId)); }
   function goToLobbyRoute(roomId){ pushRoute(lobbyRouteForRoom(roomId)); }
   function gameNumber(room = currentRoom){ return Number(room?.gameNumber || 1); }
@@ -126,8 +139,48 @@
   function teamState(team, room = currentRoom){ return uidForTeam(team, room) ? (currentRole === team ? 'You' : 'Filled') : 'Empty'; }
   function updateSeriesButtons(){ const value = normalizeSeriesKey(els.seriesFormat?.value || 'bo3'); if(els.seriesFormat) els.seriesFormat.value = value; document.querySelectorAll('[data-series]').forEach((btn) => { const active = normalizeSeriesKey(btn.dataset.series) === value; btn.classList.toggle('active', active); btn.setAttribute('aria-checked', active ? 'true' : 'false'); }); }
   function getBansPerTeam(){ return Number(CONFIG.bansPerTeam || (CONFIG.gameKey === 'MLBB' ? 5 : 4)); }
-  function getTurnSeconds(){ return Number(CONFIG.turnSeconds || 45); }
-  function generateRoomId(){ return `${CONFIG.roomPrefix || CONFIG.gameKey || 'HCI'}-${Math.floor(1000 + Math.random() * 90000)}`; }
+  function getTurnSeconds(){ return Number(CONFIG.turnSeconds || (String(CONFIG.gameKey).toUpperCase() === 'HOK' ? 30 : 45)); }
+  const HOK_ROUND_BY_STEP = ['B1','R1','B2','R2','BP1','RP12','RP12','BP23','BP23','RP3','RB3','BB3','RB4','BB4','RP4','BP45','BP45','RP5'];
+  function roundKeyForStep(step){
+    if(!step) return '';
+    if(String(CONFIG.gameKey).toUpperCase() !== 'HOK') return `STEP-${Number(step.index)}`;
+    return HOK_ROUND_BY_STEP[Number(step.index)] || `HOK-${Number(step.index)}`;
+  }
+  function sameDraftRound(first, second){ return Boolean(first && second && roundKeyForStep(first) === roundKeyForStep(second)); }
+  function activeRoundSteps(room = currentRoom){
+    if(!room || room.status !== 'drafting') return [];
+    const steps = draftSteps(room); const start = Number(room.turnIndex || 0); const first = steps[start];
+    if(!first) return [];
+    const key = roundKeyForStep(first); const group = [];
+    for(let i = start; i < steps.length; i += 1){
+      const step = steps[i];
+      if(roundKeyForStep(step) !== key || step.team !== first.team || step.type !== first.type) break;
+      group.push(step);
+    }
+    return group;
+  }
+  function isDoublePickRound(room = currentRoom){
+    const group = activeRoundSteps(room);
+    return String(CONFIG.gameKey || '').toUpperCase() === 'HOK' && group.length > 1 && group.every((step) => step.type === 'pick');
+  }
+  function activePickContext(room = currentRoom){
+    if(!isDoublePickRound(room)) return '';
+    const first = activeRoundSteps(room)[0];
+    return `${room?.id || currentRoomId || ''}:${gameNumber(room)}:${Number(room?.turnIndex || 0)}:${roundKeyForStep(first)}:${first?.team || ''}`;
+  }
+  function syncPendingPicks(room = currentRoom){
+    const nextContext = activePickContext(room);
+    if(nextContext !== pendingPickContext){ pendingPickContext = nextContext; pendingPickIds = []; }
+    if(!nextContext && pendingPickIds.length) pendingPickIds = [];
+  }
+  function clearPendingPicks(){ pendingPickIds = []; pendingPickContext = activePickContext(currentRoom); renderPendingPickPanel(); renderHeroGrid(true); }
+  function turnSecondsForStep(step){
+    if(!step) return getTurnSeconds();
+    if(String(CONFIG.gameKey).toUpperCase() === 'HOK') return Number(step.index) >= 14 ? 45 : 30;
+    return getTurnSeconds();
+  }
+  function activeTurnSeconds(room = currentRoom){ const step = room ? draftSteps(room)[Number(room.turnIndex || 0)] : null; return Number(room?.currentTurnSeconds || turnSecondsForStep(step)); }
+  function generateRoomId(){ return `${CONFIG.roomPrefix || CONFIG.gameKey || 'MH'}-${Math.floor(1000 + Math.random() * 90000)}`; }
   function blueTeamForGame(number = gameNumber()){ return Number(number) % 2 === 1 ? 'A' : 'B'; }
   function redTeamForGame(number = gameNumber()){ return blueTeamForGame(number) === 'A' ? 'B' : 'A'; }
   function sideForTeam(team, number = gameNumber()){ return blueTeamForGame(number) === team ? 'Blue Side' : 'Red Side'; }
@@ -162,16 +215,17 @@
   function enterDraftFocus(){ document.body.classList.add('draft-active', 'route-draft-page'); }
   function leaveDraftFocus(){ document.body.classList.remove('draft-active', 'route-draft-page'); }
   function setNotice(message, isWarning = true){ if(!els.firebaseNotice) return; els.firebaseNotice.innerHTML = message; els.firebaseNotice.classList.toggle('warning', isWarning); els.firebaseNotice.hidden = false; }
-  function saveRestore(){ if(currentRoomId) sessionStorage.setItem(`hciDraftRestore:${CONFIG.gameKey}`, JSON.stringify({ roomId: currentRoomId })); }
-  function clearRestore(){ sessionStorage.removeItem(`hciDraftRestore:${CONFIG.gameKey}`); }
-  function redirectToLogin(){ const next = encodeURIComponent(location.pathname + location.search + location.hash); location.href = `/?next=${next}`; }
+  function saveRestore(){ if(currentRoomId) sessionStorage.setItem(`mobaHubDraftRestore:${CONFIG.gameKey}`, JSON.stringify({ roomId: currentRoomId })); }
+  function clearRestore(){ sessionStorage.removeItem(`mobaHubDraftRestore:${CONFIG.gameKey}`); }
+  function redirectToLogin(){ const next = encodeURIComponent(location.pathname + location.search + location.hash); const login = window.MOBA_HUB_PATHS?.url('auth/login/') || '../auth/login/'; location.replace(`${login}?next=${next}`); }
 
   async function loadHeroesFromFirestore(){
     if(!db || CONFIG.gameKey !== 'HOK') return;
     try{
       const snapshot = await db.collection('heroes').orderBy('name').get();
       if(!snapshot.empty){
-        heroes = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })).map((hero) => ({ ...hero, image: hero.image || `/assets/game/hok/${hero.id}.png` }));
+        const remote = new Map(snapshot.docs.map((doc) => [doc.id, { id:doc.id, ...doc.data() }]));
+        heroes = heroes.map((hero) => remote.has(hero.id) ? { ...hero, ...remote.get(hero.id), meta:hero.meta, tacticalProfile:hero.tacticalProfile, skills:hero.skills, image:remote.get(hero.id).image || hero.image || assetUrl(`assets/game/hok/${hero.id}.png`) } : hero);
       }
     }catch(error){ console.warn('Using local hero database:', error.message); }
   }
@@ -183,13 +237,13 @@
       renderRoleFilters(); renderHeroGrid(true); renderDraftSequence(); return;
     }
     try{
-      if(!firebase.apps.length) firebase.initializeApp(window.HCI_FIREBASE_CONFIG);
+      if(!firebase.apps.length) firebase.initializeApp(window.MOBA_HUB_FIREBASE_CONFIG || window.HCI_FIREBASE_CONFIG);
       auth = firebase.auth(); db = firebase.firestore();
       await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       auth.onAuthStateChanged(async (user) => {
         if(!user || user.isAnonymous){ redirectToLogin(); return; }
         currentUser = user;
-        if(els.signedUserMini){ const photo = user.photoURL ? `<img src="${escapeHtml(user.photoURL)}" alt="">` : '<span class="mini-avatar-fallback">HCI</span>'; els.signedUserMini.innerHTML = `${photo}<span>${escapeHtml(user.displayName || 'Profile')}</span>`; }
+        if(els.signedUserMini){ const photo = user.photoURL ? `<img src="${escapeHtml(user.photoURL)}" alt="">` : '<span class="mini-avatar-fallback">MH</span>'; els.signedUserMini.innerHTML = `${photo}<span>${escapeHtml(user.displayName || 'Profile')}</span>`; }
         setText(els.connectionStatus, 'Realtime ready');
         if(els.createRoomBtn) els.createRoomBtn.disabled = false;
         if(els.joinRoomBtn) els.joinRoomBtn.disabled = false;
@@ -207,7 +261,7 @@
   }
 
   function baseRoomData(roomId){
-    const roomName = (els.roomNameInput?.value || 'HCI Practice Room').trim().slice(0,36) || 'HCI Practice Room';
+    const roomName = (els.roomNameInput?.value || 'MOBA HUB Practice Room').trim().slice(0,36) || 'MOBA HUB Practice Room';
     const teamAName = (els.teamANameSeed?.value || 'Team A').trim().slice(0,24) || 'Team A';
     const teamBName = (els.teamBNameSeed?.value || 'Team B').trim().slice(0,24) || 'Team B';
     const series = getSelectedSeries();
@@ -215,7 +269,7 @@
       id: roomId, roomName, game: CONFIG.gameKey, bestOf: series.games, seriesGames: series.games, seriesMode: series.mode, seriesKey: series.key, seriesLabel: series.title, flatSeries: series.mode === 'flat', gameNumber: 1, status:'lobby',
       hostUid: currentUser.uid, hostName: currentUser.displayName || 'Host', hostEmail: currentUser.email || '',
       teamAUid: currentUser.uid, teamBUid:'', teamAName, teamBName, spectatorUids: [],
-      turnIndex:0, turnSeconds:getTurnSeconds(), prepareSeconds: PREPARE_SECONDS, bansPerTeam:getBansPerTeam(),
+      turnIndex:0, turnSeconds:getTurnSeconds(), currentTurnSeconds:turnSecondsForStep(draftSteps({gameNumber:1})[0]), prepareSeconds: PREPARE_SECONDS, bansPerTeam:getBansPerTeam(),
       bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[], currentTurnStartedAt:null, prepareEndsAt:null,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), finishedGames: []
     };
@@ -223,7 +277,7 @@
   function restoreRoomIfNeeded(){ const params = new URLSearchParams(location.search); const roomParam = params.get('room') || getRouteRoomId(); if(roomParam) listenRoom(String(roomParam).toUpperCase()); }
 
   async function createRoom(){
-    if(!db || !currentUser) return showToast('Please login with Google first.');
+    if(!db || !currentUser) return showToast('Please sign in to MOBA HUB first.');
     try{
       if(els.createRoomBtn) els.createRoomBtn.disabled = true;
       let roomId = generateRoomId(); let ref = db.collection('draftRooms').doc(roomId); let doc = await ref.get(); let tries = 0;
@@ -235,7 +289,7 @@
     finally{ if(els.createRoomBtn) els.createRoomBtn.disabled = false; }
   }
   async function joinRoom(){
-    if(!db || !currentUser) return showToast('Please login with Google first.');
+    if(!db || !currentUser) return showToast('Please sign in to MOBA HUB first.');
     const roomId = (els.roomIdInput?.value || '').trim().toUpperCase(); if(!roomId) return showToast('Enter a Room Code first.');
     try{
       const doc = await db.collection('draftRooms').doc(roomId).get();
@@ -252,7 +306,7 @@
       if(!doc.exists){
         const deletedRoomId = currentRoomId || roomId;
         resetLocalState(true);
-        try { history.replaceState({ hciDraftRoute:true, roomDeleted:true }, '', gameHomeRoute()); }
+        try { history.replaceState({ mobaHubDraftRoute:true, roomDeleted:true }, '', gameHomeRoute()); }
         catch(e){ location.replace(gameHomeRoute()); }
         showToast(`Room ${deletedRoomId || ''} was deleted or is no longer available.`.trim());
         return;
@@ -271,8 +325,15 @@
     if(!currentRoom || !currentRoomId || !currentUser) return;
     if((currentRoom.status || 'lobby') !== 'lobby') return showToast('Team slots can only be changed in lobby.');
     if(side === 'SPECTATOR'){
-      try{ await db.collection('draftRooms').doc(currentRoomId).update({ spectatorUids: firebase.firestore.FieldValue.arrayUnion(currentUser.uid), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }catch(e){}
-      currentRole = 'SPECTATOR'; renderRoom(); return showToast('You are viewing as Spectator.');
+      try{
+        const updates = { spectatorUids: firebase.firestore.FieldValue.arrayUnion(currentUser.uid), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        if(currentRoom.teamAUid === currentUser.uid) updates.teamAUid = '';
+        if(currentRoom.teamBUid === currentUser.uid) updates.teamBUid = '';
+        await db.collection('draftRooms').doc(currentRoomId).update(updates);
+        currentRole = 'SPECTATOR';
+        renderRoom();
+        return showToast('You are viewing as Spectator.');
+      }catch(error){ return showToast(error.message); }
     }
     const targetField = side === 'A' ? 'teamAUid' : 'teamBUid';
     const otherField = side === 'A' ? 'teamBUid' : 'teamAUid';
@@ -287,6 +348,7 @@
   function hasBothTeams(room = currentRoom){ return Boolean(room && room.teamAUid && room.teamBUid); }
   async function updateTeamNames(){
     if(!currentRoom || !currentRoomId || !currentUser) return;
+    if(!isHost()) return showToast('Only the host can update team names.');
     const a = (els.teamANameInput?.value || 'Team A').trim().slice(0,24) || 'Team A';
     const b = (els.teamBNameInput?.value || 'Team B').trim().slice(0,24) || 'Team B';
     try{ await db.collection('draftRooms').doc(currentRoomId).update({ teamAName:a, teamBName:b, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); showToast('Team names updated.'); }catch(error){ showToast(error.message); }
@@ -297,8 +359,56 @@
     if(!hasBothTeams()) return showToast('Both Team A and Team B must be filled first.');
     try{
       const prepareEndsAt = firebase.firestore.Timestamp.fromDate(new Date(Date.now() + PREPARE_SECONDS * 1000));
-      await db.collection('draftRooms').doc(currentRoomId).update({ status:'preparing', turnIndex:0, bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[], currentTurnStartedAt:null, prepareEndsAt, turnSeconds:getTurnSeconds(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      await db.collection('draftRooms').doc(currentRoomId).update({ status:'preparing', turnIndex:0, bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[], currentTurnStartedAt:null, prepareEndsAt, turnSeconds:getTurnSeconds(), currentTurnSeconds:turnSecondsForStep(draftSteps(currentRoom)[0]), updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
       goToDraftRoute(currentRoomId);
+    }catch(error){ showToast(error.message); }
+  }
+  function togglePendingPick(hero){
+    if(!currentRoom || !hero || !isDoublePickRound(currentRoom)) return;
+    syncPendingPicks(currentRoom);
+    const group = activeRoundSteps(currentRoom); const required = group.length;
+    const index = pendingPickIds.indexOf(hero.id);
+    if(index >= 0) pendingPickIds.splice(index, 1);
+    else if(pendingPickIds.length < required) pendingPickIds.push(hero.id);
+    else return showToast(`Select exactly ${required} heroes, or remove one pending pick first.`);
+    renderPendingPickPanel(); renderHeroGrid(true);
+  }
+  async function lockPendingPicks(){
+    if(!currentRoom || !currentRoomId || !isDoublePickRound(currentRoom)) return;
+    syncPendingPicks(currentRoom);
+    const group = activeRoundSteps(currentRoom); const required = group.length;
+    if(currentRole !== group[0]?.team) return showToast(`It is ${teamName(group[0]?.team)}'s turn.`);
+    if(pendingPickIds.length !== required) return showToast(`Select ${required} heroes before locking this round.`);
+    const chosenIds = [...pendingPickIds]; const chosenNames = chosenIds.map(heroLabel).join(' + ');
+    const ok = await confirmDialog({ title:`Lock ${required} Picks?`, message:`${teamName(group[0].team)} will lock ${chosenNames} together. The round timer will not reset between selections.`, confirmText:'Lock Picks', cancelText:'Review' });
+    if(!ok) return;
+    const ref = db.collection('draftRooms').doc(currentRoomId);
+    try{
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref); if(!snap.exists) throw new Error('Room not found.');
+        const room = snap.data(); const liveGroup = activeRoundSteps(room);
+        if(liveGroup.length !== required || !liveGroup.every((step) => step.type === 'pick' && step.team === currentRole)) throw new Error('The active draft round changed. Please select again.');
+        const uniqueIds = [...new Set(chosenIds)];
+        if(uniqueIds.length !== required) throw new Error('Each pending pick must be a different hero.');
+        for(const heroId of uniqueIds){
+          const hero = heroById(heroId); if(!hero || hero.active === false) throw new Error('One selected hero is unavailable.');
+          const unavailable = heroUnavailableReason(room, liveGroup[0], heroId);
+          if(unavailable === 'selected') throw new Error(`${hero.name} has already been selected or banned.`);
+          if(unavailable === 'gbp-used') throw new Error(`${hero.name} was already used by ${teamName(liveGroup[0].team, room)} and cannot be picked again.`);
+        }
+        const field = fieldForStep(liveGroup[0]); const roomSteps = draftSteps(room);
+        const nextTurnIndex = Number(room.turnIndex || 0) + liveGroup.length;
+        const nextStatus = nextTurnIndex >= roomSteps.length ? 'finished' : 'drafting'; const nextStep = nextStatus === 'drafting' ? roomSteps[nextTurnIndex] : null;
+        tx.update(ref, {
+          [field]: [...(Array.isArray(room[field]) ? room[field] : []), ...uniqueIds],
+          selectedHeroIds: [...(Array.isArray(room.selectedHeroIds) ? room.selectedHeroIds : []), ...uniqueIds],
+          turnIndex: nextTurnIndex, status: nextStatus,
+          currentTurnSeconds: nextStep ? turnSecondsForStep(nextStep) : null,
+          currentTurnStartedAt: nextStatus === 'drafting' ? firebase.firestore.FieldValue.serverTimestamp() : null,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+      pendingPickIds = []; pendingPickContext = ''; renderPendingPickPanel(); renderHeroGrid(true); setTimeout(scrollToDraftBoard, 180);
     }catch(error){ showToast(error.message); }
   }
   async function selectHero(hero){
@@ -311,16 +421,9 @@
     const unavailable = heroUnavailableReason(currentRoom, step, hero.id);
     if(unavailable === 'selected') return showToast('This hero has already been selected or banned.');
     if(unavailable === 'gbp-used') return showToast(`${hero.name} was already used by ${teamName(step.team)} in a previous game and cannot be picked again.`);
+    if(isDoublePickRound(currentRoom)) return togglePendingPick(hero);
     const action = step.type === 'ban' ? 'Ban' : 'Pick';
-    const ok = await confirmDialog({
-      title: `${action} ${hero.name}?`,
-      message: `${teamName(step.team)} · ${step.side === 'BLUE' ? 'Blue Side' : 'Red Side'} · ${gameTitle(currentRoom)}`,
-      confirmText: action,
-      cancelText: 'Cancel',
-      danger: step.type === 'ban',
-      hero,
-      actionType: step.type
-    });
+    const ok = await confirmDialog({ title:`${action} ${hero.name}?`, message:`${teamName(step.team)} · ${step.side === 'BLUE' ? 'Blue Side' : 'Red Side'} · ${gameTitle(currentRoom)}`, confirmText:action, cancelText:'Cancel', danger:step.type === 'ban', hero, actionType:step.type });
     if(!ok) return;
     const ref = db.collection('draftRooms').doc(currentRoomId);
     try{
@@ -329,11 +432,13 @@
         const room = snap.data(); const liveStep = draftSteps(room)[room.turnIndex];
         if(!liveStep) throw new Error('The draft is complete.');
         if(liveStep.team !== currentRole) throw new Error(`It is ${teamName(liveStep.team, room)}'s turn.`);
+        if(isDoublePickRound(room)) throw new Error('This round requires two pending heroes before locking.');
         const liveUnavailable = heroUnavailableReason(room, liveStep, hero.id);
         if(liveUnavailable === 'selected') throw new Error('This hero has already been selected or banned.');
         if(liveUnavailable === 'gbp-used') throw new Error(`${hero.name} was already used by ${teamName(liveStep.team, room)} and cannot be picked again.`);
-        const field = fieldForStep(liveStep); const nextTurnIndex = Number(room.turnIndex || 0) + 1; const nextStatus = nextTurnIndex >= draftSteps(room).length ? 'finished' : 'drafting';
-        tx.update(ref, { [field]: firebase.firestore.FieldValue.arrayUnion(hero.id), selectedHeroIds: firebase.firestore.FieldValue.arrayUnion(hero.id), turnIndex: nextTurnIndex, status: nextStatus, currentTurnStartedAt: nextStatus === 'drafting' ? firebase.firestore.FieldValue.serverTimestamp() : null, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        const field = fieldForStep(liveStep); const roomSteps = draftSteps(room); const nextTurnIndex = Number(room.turnIndex || 0) + 1;
+        const nextStatus = nextTurnIndex >= roomSteps.length ? 'finished' : 'drafting'; const nextStep = nextStatus === 'drafting' ? roomSteps[nextTurnIndex] : null;
+        tx.update(ref, { [field]:firebase.firestore.FieldValue.arrayUnion(hero.id), selectedHeroIds:firebase.firestore.FieldValue.arrayUnion(hero.id), turnIndex:nextTurnIndex, status:nextStatus, currentTurnSeconds:nextStep ? turnSecondsForStep(nextStep) : null, currentTurnStartedAt:nextStatus === 'drafting' ? firebase.firestore.FieldValue.serverTimestamp() : null, updatedAt:firebase.firestore.FieldValue.serverTimestamp() });
       });
       setTimeout(scrollToDraftBoard, 180);
     }catch(error){ showToast(error.message); }
@@ -342,24 +447,14 @@
     if(!currentRoom || !currentRoomId) return;
     if(!isHost()) return showToast('Only the host can continue to the next game.');
     const next = gameNumber() + 1; if(next > bestOf()) return showToast(`${seriesLabel()} is complete.`);
+    if(els.nextGameBtn) els.nextGameBtn.disabled = true;
     const boardTeams = displayTeams(currentRoom);
-    const summary = {
-      gameNumber: gameNumber(),
-      blueTeamKey: boardTeams.blue,
-      redTeamKey: boardTeams.red,
-      bansA: currentRoom.bansA || [], bansB: currentRoom.bansB || [],
-      picksA: currentRoom.picksA || [], picksB: currentRoom.picksB || [],
-      blueBans: valuesForTeam(boardTeams.blue, 'ban'), redBans: valuesForTeam(boardTeams.red, 'ban'),
-      bluePicks: valuesForTeam(boardTeams.blue, 'pick'), redPicks: valuesForTeam(boardTeams.red, 'pick'),
-      savedAtMillis: Date.now()
-    };
+    const summary = { gameNumber:gameNumber(), blueTeamKey:boardTeams.blue, redTeamKey:boardTeams.red, bansA:currentRoom.bansA||[], bansB:currentRoom.bansB||[], picksA:currentRoom.picksA||[], picksB:currentRoom.picksB||[], blueBans:valuesForTeam(boardTeams.blue,'ban'), redBans:valuesForTeam(boardTeams.red,'ban'), bluePicks:valuesForTeam(boardTeams.blue,'pick'), redPicks:valuesForTeam(boardTeams.red,'pick'), savedAtMillis:Date.now() };
     try{
-      await db.collection('draftRooms').doc(currentRoomId).update({
-        finishedGames: firebase.firestore.FieldValue.arrayUnion(summary),
-        gameNumber: next, status:'lobby', turnIndex:0, bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[], currentTurnStartedAt:null, prepareEndsAt:null, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      hideSessionModal(); goToLobbyRoute(currentRoomId);
-    }catch(error){ showToast(error.message); }
+      const nextGameStartsAt = firebase.firestore.Timestamp.fromDate(new Date(Date.now() + 10000));
+      await db.collection('draftRooms').doc(currentRoomId).update({ finishedGames:firebase.firestore.FieldValue.arrayUnion(summary), gameNumber:next, status:'intermission', nextGameStartsAt, turnIndex:0, bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[], currentTurnStartedAt:null, currentTurnSeconds:turnSecondsForStep(draftSteps({...currentRoom,gameNumber:next})[0]), prepareEndsAt:null, updatedAt:firebase.firestore.FieldValue.serverTimestamp() });
+      goToDraftRoute(currentRoomId);
+    }catch(error){ if(els.nextGameBtn) els.nextGameBtn.disabled=false; showToast(error.message); }
   }
   async function backToLobby(){
     if(!currentRoom || !currentRoomId) return resetLocalState(true);
@@ -374,22 +469,23 @@
   }
   async function leaveRoom(){ resetLocalState(true); location.href = gameHomeRoute(); }
   function resetLocalState(clearStorage = true){
-    if(unsubscribeRoom) unsubscribeRoom(); unsubscribeRoom = null; currentRoomId = null; currentRoom = null; currentRole = 'SPECTATOR';
+    if(unsubscribeRoom) unsubscribeRoom(); unsubscribeRoom = null; currentRoomId = null; currentRoom = null; currentRole = 'SPECTATOR'; pendingPickIds = []; pendingPickContext = '';
     setHidden(els.setupPanel, false); setHidden(els.roomPanel, true); setHidden(els.draftStage, true); if(els.roomIdInput) els.roomIdInput.value = '';
-    clearInterval(timerInterval); clearTimeout(prepareTransitionTimer); timerInterval = null; prepareTransitionTimer = null; hideSessionModal(); leaveDraftFocus(); document.body.classList.remove('room-lobby','room-preparing','room-drafting','room-finished'); if(clearStorage) clearRestore();
+    clearInterval(timerInterval); clearTimeout(prepareTransitionTimer); clearTimeout(intermissionTransitionTimer); timerInterval=null; prepareTransitionTimer=null; intermissionTransitionTimer=null; hideSessionModal(); leaveDraftFocus(); document.body.classList.remove('room-lobby','room-intermission','room-preparing','room-drafting','room-finished'); if(clearStorage) clearRestore();
   }
 
   function renderRoom(){
     if(!currentRoom) return;
+    syncPendingPicks(currentRoom);
     const status = currentRoom.status || 'lobby';
-    if((status === 'preparing' || status === 'drafting') && !isDraftRoute()) goToDraftRoute(currentRoom.id || currentRoomId);
+    if((status === 'intermission' || status === 'preparing' || status === 'drafting') && !isDraftRoute()) goToDraftRoute(currentRoom.id || currentRoomId);
     if(status === 'lobby' && isDraftRoute()){ hideSessionModal(); goToLobbyRoute(currentRoom.id || currentRoomId); }
-    const isLobby = status === 'lobby', isPreparing = status === 'preparing', isDrafting = status === 'drafting', isFinished = status === 'finished';
-    document.body.classList.toggle('room-lobby', isLobby); document.body.classList.toggle('room-preparing', isPreparing); document.body.classList.toggle('room-drafting', isDrafting); document.body.classList.toggle('room-finished', isFinished);
+    const isLobby = status === 'lobby', isIntermission=status==='intermission', isPreparing = status === 'preparing', isDrafting = status === 'drafting', isFinished = status === 'finished';
+    document.body.classList.toggle('room-lobby', isLobby); document.body.classList.toggle('room-intermission',isIntermission); document.body.classList.toggle('room-preparing', isPreparing); document.body.classList.toggle('room-drafting', isDrafting); document.body.classList.toggle('room-finished', isFinished);
     if(isLobby){ leaveDraftFocus(); hideSessionModal(); lastFinishedModalKey = ''; } else { enterDraftFocus(); }
     setHidden(els.setupPanel, true); setHidden(els.roomPanel, false); setHidden(els.draftStage, isLobby);
     setText(els.roomNameDisplay, currentRoom.roomName || 'Draft Room'); setText(els.roomCodeDisplay, currentRoom.id || currentRoomId);
-    setText(els.roomStatusDisplay, isPreparing ? 'Starting Soon' : isDrafting ? 'Drafting' : isFinished ? 'Finished' : 'Lobby');
+    setText(els.roomStatusDisplay, isIntermission ? 'Next Game' : isPreparing ? 'Starting Soon' : isDrafting ? 'Drafting' : isFinished ? 'Finished' : 'Lobby');
     if(els.teamANameInput && els.teamANameInput !== document.activeElement) els.teamANameInput.value = teamName('A');
     if(els.teamBNameInput && els.teamBNameInput !== document.activeElement) els.teamBNameInput.value = teamName('B');
     const boardTeams = displayTeams(currentRoom); const leftTeam = boardTeams.left; const rightTeam = boardTeams.right;
@@ -401,7 +497,7 @@
     setHidden(els.sidePicker, !isLobby); setHidden(els.startDraftBtn, !(isLobby && isHost())); if(els.startDraftBtn) els.startDraftBtn.disabled = !hasBothTeams();
     setHidden(els.copyResultBtn, !isFinished); setHidden(els.downloadResultTopBtn, !isFinished || !isLobby); setHidden(els.downloadResultTopBtn2, true); setHidden(els.deleteRoomBtn, !isHost() || !isLobby); setHidden(els.deleteRoomTopBtn, true);
     const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); renderSlots(els.teamABans, valuesForTeam(leftTeam, 'ban'), banCount, 'Ban'); renderSlots(els.teamBBans, valuesForTeam(rightTeam, 'ban'), banCount, 'Ban'); renderSlots(els.teamAPicks, valuesForTeam(leftTeam, 'pick'), 5, 'Pick'); renderSlots(els.teamBPicks, valuesForTeam(rightTeam, 'pick'), 5, 'Pick');
-    renderDraftResult(); renderCurrentTurn(); renderProDraftTopbar(); renderDraftSequence(); renderHeroGrid(); ensurePrepareTransition(); startTimerRenderer(); maybeShowRotatePrompt(); maybeShowFinishedModal(); maybeSaveHistory();
+    renderDraftResult(); renderCurrentTurn(); renderProDraftTopbar(); renderDraftSequence(); renderHeroGrid(); ensurePrepareTransition(); ensureIntermissionTransition(); startTimerRenderer(); if(isIntermission) showIntermissionModal(); else if(!isFinished) hideSessionModal(); maybeShowRotatePrompt(); maybeShowFinishedModal(); maybeSaveHistory();
   }
   function renderSlots(container, values, count, prefix){
     if(!container) return; container.innerHTML = '';
@@ -413,7 +509,7 @@
       div.innerHTML = `<span class="slot-media">${avatar}<span class="slot-copy"><strong class="slot-name">${escapeHtml(name)}</strong><small>${prefix} ${i+1}</small></span></span>`; container.appendChild(div);
     }
   }
-  function isDraftActiveStatus(room = currentRoom){ return ['preparing','drafting'].includes(room?.status || ''); }
+  function isDraftActiveStatus(room = currentRoom){ return ['intermission','preparing','drafting'].includes(room?.status || ''); }
   function activeRoomLink(){ return currentRoomId ? `${location.origin}${draftRouteForRoom(currentRoomId)}` : location.href; }
   async function copyRoomLink(){ if(!currentRoomId) return; await navigator.clipboard.writeText(activeRoomLink()); showToast('Room link copied.'); }
   function ensureRoomSettingsUI(){
@@ -441,7 +537,7 @@
     if(!overlay) return;
     setText(document.getElementById('roomSettingsTitle'), currentRoom?.roomName || 'Draft Room');
     setText(document.getElementById('roomSettingsCode'), currentRoom?.id || currentRoomId || '-');
-    setText(document.getElementById('roomSettingsSub'), currentRoom ? `${CONFIG.gameKey || 'HCI'} · ${gameTitle(currentRoom)} · ${currentRoom.status || 'lobby'}` : '-');
+    setText(document.getElementById('roomSettingsSub'), currentRoom ? `${CONFIG.gameKey || 'MOBA HUB'} · ${gameTitle(currentRoom)} · ${currentRoom.status || 'lobby'}` : '-');
     setHidden(document.getElementById('roomSettingsDownload'), currentRoom?.status !== 'finished');
     setHidden(document.getElementById('roomSettingsDelete'), !isHost());
   }
@@ -449,7 +545,7 @@
     if(!els.draftStage || document.getElementById('proDraftTopbar')) return;
     const topbar = document.createElement('section'); topbar.id = 'proDraftTopbar'; topbar.className = 'pro-draft-topbar';
     topbar.innerHTML = `
-      <div class="pro-game-badge"><img data-game-logo src="${escapeHtml(gameLogoPath())}" alt="${escapeHtml(CONFIG.gameKey || 'HCI')} Logo"><span>${escapeHtml(CONFIG.gameKey || 'HCI')}</span></div>
+      <div class="pro-game-badge"><img data-game-logo src="${escapeHtml(gameLogoPath())}" alt="${escapeHtml(CONFIG.gameKey || 'MOBA HUB')} Logo"><span>${escapeHtml(CONFIG.gameKey || 'MOBA HUB')}</span></div>
       <div class="pro-ban-row pro-blue" id="proBlueBans" aria-label="Blue ban slots"></div>
       <div class="pro-turn-box"><span id="proTurnPhase">WAITING</span><strong id="proTimerValue">--</strong><small id="proTurnTeam">Draft Lobby</small><div class="pro-timer-line"><i id="proTimerFill"></i></div></div>
       <div class="pro-ban-row pro-red" id="proRedBans" aria-label="Red ban slots"></div>
@@ -477,10 +573,11 @@
     renderCompactSlots('proBluePicks', valuesForTeam(board.blue, 'pick'), 5, 'pick');
     renderCompactSlots('proRedPicks', valuesForTeam(board.red, 'pick'), 5, 'pick');
     const phase = document.getElementById('proTurnPhase'); const team = document.getElementById('proTurnTeam'); const fill = document.getElementById('proTimerFill');
-    let phaseText = currentRoom.status === 'preparing' ? 'PREPARE' : currentRoom.status === 'finished' ? 'COMPLETE' : 'LOBBY'; let teamText = gameTitle(currentRoom); let pct = 0;
+    let phaseText = currentRoom.status === 'intermission' ? 'NEXT GAME' : currentRoom.status === 'preparing' ? 'PREPARE' : currentRoom.status === 'finished' ? 'COMPLETE' : 'LOBBY'; let teamText = gameTitle(currentRoom); let pct = 0;
     if(currentRoom.status === 'drafting'){
       const step = draftSteps(currentRoom)[currentRoom.turnIndex];
-      if(step){ phaseText = `${step.side === 'BLUE' ? 'BLUE' : 'RED'} | ${step.type.toUpperCase()}`; teamText = teamName(step.team, currentRoom); const remaining = draftRemainingMs(currentRoom); setTimerValue(`${Math.max(0, Math.ceil(remaining / 1000))}s`); pct = Math.max(0, Math.min(100, (remaining / (Number(currentRoom.turnSeconds || getTurnSeconds()) * 1000)) * 100)); }
+      if(step){ phaseText = `${step.side === 'BLUE' ? 'BLUE' : 'RED'} | ${isDoublePickRound(currentRoom) ? 'DOUBLE PICK' : step.type.toUpperCase()}`; teamText = teamName(step.team, currentRoom); const remaining = draftRemainingMs(currentRoom); setTimerValue(`${Math.max(0, Math.ceil(remaining / 1000))}s`); pct = Math.max(0, Math.min(100, (remaining / (activeTurnSeconds(currentRoom) * 1000)) * 100)); }
+    } else if(currentRoom.status === 'intermission'){ const remaining=intermissionRemainingMs(); setTimerValue(`${Math.max(0,Math.ceil(remaining/1000))}s`); pct=Math.max(0,Math.min(100,(remaining/10000)*100));
     } else if(currentRoom.status === 'preparing'){
       const remaining = prepareRemainingMs(); setTimerValue(`${Math.max(0, Math.ceil(remaining / 1000))}s`); pct = Math.max(0, Math.min(100, (remaining / (PREPARE_SECONDS * 1000)) * 100));
     } else if(currentRoom.status === 'finished'){ setTimerValue('Done'); pct = 100; }
@@ -492,8 +589,9 @@
     if(!fill) return;
     let pct = 0;
     if(currentRoom.status === 'drafting'){
-      const total = Number(currentRoom.turnSeconds || getTurnSeconds()) * 1000;
+      const total = activeTurnSeconds(currentRoom) * 1000;
       pct = total ? Math.max(0, Math.min(100, (draftRemainingMs(currentRoom) / total) * 100)) : 0;
+    } else if(currentRoom.status === 'intermission'){ pct=Math.max(0,Math.min(100,(intermissionRemainingMs()/10000)*100));
     } else if(currentRoom.status === 'preparing'){
       pct = Math.max(0, Math.min(100, (prepareRemainingMs() / (PREPARE_SECONDS * 1000)) * 100));
     } else if(currentRoom.status === 'finished'){
@@ -523,21 +621,50 @@
       const sideText = hasBothTeams() ? `${teamName('A')} is ${sideForTeam('A')} · ${teamName('B')} is ${sideForTeam('B')}.` : 'Share the Room Code and wait until both teams are filled.';
       setText(els.currentTurnText, `${gameTitle()} Lobby`); setText(els.currentTurnHelp, sideText); setTimerValue( '--'); return;
     }
+    if(currentRoom.status === 'intermission'){ const remaining=Math.max(0,Math.ceil(intermissionRemainingMs()/1000)); setText(els.currentTurnText, `Next game starts in ${remaining}s`); setText(els.currentTurnHelp, 'Teams switch sides automatically and stay inside the same room.'); setTimerValue(`${remaining}s`); return; }
     if(currentRoom.status === 'preparing'){ setText(els.currentTurnText, 'Draft starting soon'); setText(els.currentTurnHelp, 'All devices are entering the draft stage before the first turn starts.'); return; }
     if(currentRoom.status === 'finished'){ setText(els.currentTurnText, 'Draft complete'); setText(els.currentTurnHelp, isHost() ? 'Continue to the next game or download the result.' : 'Waiting for the host to continue.'); setTimerValue( 'Done'); return; }
     const step = draftSteps(currentRoom)[currentRoom.turnIndex]; if(!step) return;
-    setText(els.currentTurnText, `${teamName(step.team)} ${step.type.toUpperCase()}`);
-    setText(els.currentTurnHelp, currentRole === step.team ? 'Your turn. Select a hero before the timer ends. If time runs out, the system will auto-random.' : `Waiting for ${teamName(step.team)}. If the timer ends, the system will auto-random.`);
+    const doublePick = isDoublePickRound(currentRoom); const required = activeRoundSteps(currentRoom).length;
+    setText(els.currentTurnText, `${teamName(step.team)} ${doublePick ? `DOUBLE PICK · ${required} HEROES` : step.type.toUpperCase()}`);
+    if(doublePick) setText(els.currentTurnHelp, currentRole === step.team ? `Select ${required} heroes, then lock both together. The timer is shared for the entire round and does not reset.` : `Waiting for ${teamName(step.team)} to select and lock ${required} heroes in one round.`);
+    else setText(els.currentTurnHelp, currentRole === step.team ? 'Your turn. Select a hero before the timer ends. If time runs out, the system will auto-random.' : `Waiting for ${teamName(step.team)}. If the timer ends, the system will auto-random.`);
   }
   function renderDraftSequence(){
     if(!els.draftSequence) return; const steps = draftSteps(currentRoom); els.draftSequence.innerHTML = '';
-    steps.forEach((step, i) => { const chip = document.createElement('span'); chip.className = 'step-chip'; if(currentRoom){ if(i < currentRoom.turnIndex) chip.classList.add('done'); if(i === currentRoom.turnIndex && currentRoom.status === 'drafting') chip.classList.add('active'); } chip.textContent = `${step.side === 'BLUE' ? 'Blue' : 'Red'} · ${teamName(step.team)} ${step.type === 'ban' ? 'Ban' : 'Pick'}`; els.draftSequence.appendChild(chip); });
+    const activeGroupLength = currentRoom?.status === 'drafting' ? activeRoundSteps(currentRoom).length : 0;
+    steps.forEach((step, i) => { const chip = document.createElement('span'); chip.className = 'step-chip'; if(currentRoom){ if(i < currentRoom.turnIndex) chip.classList.add('done'); if(currentRoom.status === 'drafting' && i >= currentRoom.turnIndex && i < Number(currentRoom.turnIndex || 0) + activeGroupLength) chip.classList.add('active'); } chip.textContent = `${step.side === 'BLUE' ? 'Blue' : 'Red'} · ${teamName(step.team)} ${step.type === 'ban' ? 'Ban' : 'Pick'}`; els.draftSequence.appendChild(chip); });
   }
   function renderRoleFilters(){
     if(!els.laneFilterButtons) return; els.laneFilterButtons.innerHTML = '';
     (CONFIG.roles || ['ALL']).forEach((role) => { const btn = document.createElement('button'); btn.type = 'button'; btn.className = `role-filter ${activeLane === role ? 'active' : ''}`; btn.title = role; btn.setAttribute('aria-label', role); btn.innerHTML = roleIconHtml(role); btn.addEventListener('click', () => { activeLane = role; renderRoleFilters(); renderHeroGrid(); }); els.laneFilterButtons.appendChild(btn); });
   }
   function miniRoleIcons(lanes){ return (lanes || []).slice(0,3).map((lane) => `<span class="mini-role" title="${escapeHtml(lane)}">${roleIconHtml(lane)}</span>`).join(''); }
+  function ensurePendingPickPanel(){
+    if(!els.heroPanel || document.getElementById('pendingPickPanel')) return;
+    const panel = document.createElement('section'); panel.id = 'pendingPickPanel'; panel.className = 'pending-pick-panel'; panel.hidden = true;
+    panel.innerHTML = `<div class="pending-pick-copy"><span class="eyebrow">Tournament Double Pick</span><strong id="pendingPickTitle">Select two heroes</strong><small id="pendingPickHelp">Both heroes lock together. The round timer does not reset.</small></div><div class="pending-pick-slots" id="pendingPickSlots"></div><div class="pending-pick-actions"><button type="button" class="ghost-btn" id="clearPendingPicks">Clear</button><button type="button" class="primary-btn" id="lockPendingPicks" disabled>Lock Picks</button></div>`;
+    els.draftSequence?.insertAdjacentElement('afterend', panel);
+    panel.querySelector('#clearPendingPicks')?.addEventListener('click', clearPendingPicks);
+    panel.querySelector('#lockPendingPicks')?.addEventListener('click', lockPendingPicks);
+  }
+  function renderPendingPickPanel(){
+    ensurePendingPickPanel(); const panel = document.getElementById('pendingPickPanel'); if(!panel) return;
+    syncPendingPicks(currentRoom); const group = activeRoundSteps(currentRoom); const visible = isDoublePickRound(currentRoom); panel.hidden = !visible;
+    if(!visible) return;
+    const required = group.length; const canControl = currentRole === group[0]?.team;
+    setText(document.getElementById('pendingPickTitle'), canControl ? `Select ${required} heroes before locking` : `${teamName(group[0]?.team)} is selecting ${required} heroes`);
+    setText(document.getElementById('pendingPickHelp'), canControl ? 'Tap a pending hero again to remove it. Both picks are submitted in one real-time transaction.' : 'Pending selections stay private until the team locks the complete round.');
+    const slots = document.getElementById('pendingPickSlots');
+    if(slots) slots.innerHTML = Array.from({length:required}, (_, index) => {
+      const heroId = pendingPickIds[index]; const hero = heroById(heroId);
+      if(!hero) return `<span class="pending-pick-slot empty"><b>${index + 1}</b><small>Pending</small></span>`;
+      return `<button type="button" class="pending-pick-slot filled" data-pending-id="${escapeHtml(hero.id)}" ${canControl ? '' : 'disabled'}>${heroAvatarHtml(hero, 'pending-pick-avatar', hero.name)}<span><b>${escapeHtml(hero.name)}</b><small>Tap to remove</small></span></button>`;
+    }).join('');
+    slots?.querySelectorAll('[data-pending-id]').forEach((button) => button.addEventListener('click', () => { const hero = heroById(button.dataset.pendingId); if(hero) togglePendingPick(hero); }));
+    const lock = document.getElementById('lockPendingPicks'); if(lock) lock.disabled = !canControl || pendingPickIds.length !== required;
+    const clear = document.getElementById('clearPendingPicks'); if(clear) clear.disabled = !canControl || !pendingPickIds.length;
+  }
   function renderHeroGrid(force = false){
     if(!els.heroGrid) return;
     const search = (els.heroSearch?.value || '').trim().toLowerCase();
@@ -554,7 +681,8 @@
       stepTeam: step?.team || '',
       stepType: step?.type || '',
       gameNumber: gameNumber(currentRoom),
-      finishedGames: currentRoom?.finishedGames || []
+      finishedGames: currentRoom?.finishedGames || [],
+      pendingPickIds
     });
     if(!force && renderHeroGrid.lastSignature === renderSignature && els.heroGrid.childElementCount) return;
     renderHeroGrid.lastSignature = renderSignature;
@@ -573,10 +701,11 @@
     const frag = document.createDocumentFragment();
     for(const hero of filtered){
       const locked = selected.includes(hero.id);
+      const pending = pendingPickIds.includes(hero.id);
       const gbpLocked = Boolean(step && isPreviousPickLockedForStep(currentRoom, step, hero.id));
       const disabledHero = hero.active === false;
       const btn = document.createElement('button');
-      btn.className = `hero-card ${locked ? 'locked' : ''} ${gbpLocked ? 'gbp-locked' : ''} ${disabledHero ? 'disabled-hero' : ''}`;
+      btn.className = `hero-card ${locked ? 'locked' : ''} ${pending ? 'pending-selected' : ''} ${gbpLocked ? 'gbp-locked' : ''} ${disabledHero ? 'disabled-hero' : ''}`;
       btn.disabled = locked || gbpLocked || disabledHero || !canClick;
       const avatar = heroAvatarHtml(hero, 'hero-avatar', hero.name);
       const lockNote = gbpLocked ? '<span class="hero-lock-note">Used by your team</span>' : locked ? '<span class="hero-lock-note">Selected / Banned</span>' : '';
@@ -585,23 +714,59 @@
       frag.appendChild(btn);
     }
     els.heroGrid.appendChild(frag);
+    renderPendingPickPanel();
   }
   function timestampToMillis(value){ return value && value.toDate ? value.toDate().getTime() : 0; }
   async function beginDraftAfterPreparing(){
     if(!db || !currentRoomId) return;
-    try{ const ref = db.collection('draftRooms').doc(currentRoomId); await db.runTransaction(async (tx) => { const snap = await tx.get(ref); if(!snap.exists) return; const room = snap.data(); if(room.status !== 'preparing') return; tx.update(ref, { status:'drafting', currentTurnStartedAt: firebase.firestore.FieldValue.serverTimestamp(), prepareEndsAt:null, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }); }catch(error){ console.warn(error.message); }
+    try{ const ref = db.collection('draftRooms').doc(currentRoomId); await db.runTransaction(async (tx) => { const snap = await tx.get(ref); if(!snap.exists) return; const room = snap.data(); if(room.status !== 'preparing') return; tx.update(ref, { status:'drafting', currentTurnStartedAt: firebase.firestore.FieldValue.serverTimestamp(), currentTurnSeconds:turnSecondsForStep(draftSteps(room)[Number(room.turnIndex || 0)]), prepareEndsAt:null, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }); }catch(error){ console.warn(error.message); }
   }
   function prepareRemainingMs(){ if(!currentRoom || currentRoom.status !== 'preparing') return 0; const endsAt = timestampToMillis(currentRoom.prepareEndsAt); if(!endsAt) return PREPARE_SECONDS * 1000; return Math.max(0, endsAt - Date.now()); }
   function ensurePrepareTransition(){ clearTimeout(prepareTransitionTimer); prepareTransitionTimer = null; if(!currentRoom || currentRoom.status !== 'preparing') return; prepareTransitionTimer = setTimeout(beginDraftAfterPreparing, prepareRemainingMs() + 200); }
-  function draftRemainingMs(room = currentRoom){ if(!room || room.status !== 'drafting' || !room.currentTurnStartedAt) return 0; const startedAt = timestampToMillis(room.currentTurnStartedAt) || 0; const duration = Number(room.turnSeconds || getTurnSeconds()) * 1000; return Math.max(0, (startedAt + duration) - Date.now()); }
+  function intermissionRemainingMs(room = currentRoom){ if(!room || room.status !== 'intermission') return 0; const endsAt=timestampToMillis(room.nextGameStartsAt); return endsAt ? Math.max(0, endsAt-Date.now()) : 10000; }
+  async function beginNextGameAfterIntermission(){
+    if(!db || !currentRoomId) return;
+    try{ const ref=db.collection('draftRooms').doc(currentRoomId); await db.runTransaction(async tx=>{ const snap=await tx.get(ref); if(!snap.exists) return; const room=snap.data(); if(room.status!=='intermission'||intermissionRemainingMs(room)>0) return; const firstStep=draftSteps(room)[0]; tx.update(ref,{status:'drafting',turnIndex:0,currentTurnSeconds:turnSecondsForStep(firstStep),currentTurnStartedAt:firebase.firestore.FieldValue.serverTimestamp(),nextGameStartsAt:null,updatedAt:firebase.firestore.FieldValue.serverTimestamp()}); }); }catch(error){ console.warn(error.message); }
+  }
+  function ensureIntermissionTransition(){ clearTimeout(intermissionTransitionTimer); intermissionTransitionTimer=null; if(!currentRoom||currentRoom.status!=='intermission') return; intermissionTransitionTimer=setTimeout(beginNextGameAfterIntermission,intermissionRemainingMs()+180); }
+  function showIntermissionModal(){ if(!els.sessionModal||!currentRoom||currentRoom.status!=='intermission') return; const remaining=Math.max(0,Math.ceil(intermissionRemainingMs()/1000)); setText(els.sessionModalTitle,`Game ${gameNumber()} begins in ${remaining}`); const card=els.sessionModal.querySelector('.session-modal-card'); const info=card?.querySelector('p'); if(info) info.textContent=`Teams have switched sides automatically. The next draft starts in ${remaining} seconds without returning to the lobby.`; let body=card?.querySelector('.session-result-body'); if(body) body.innerHTML=`<div class="next-game-countdown"><strong>${remaining}</strong><span>seconds</span></div>`; if(els.nextGameBtn) setHidden(els.nextGameBtn,true); if(els.backLobbyBtn) setHidden(els.backLobbyBtn,true); if(els.downloadResultBtn) setHidden(els.downloadResultBtn,true); setHidden(els.sessionModal,false); }
+  function draftRemainingMs(room = currentRoom){ if(!room || room.status !== 'drafting' || !room.currentTurnStartedAt) return 0; const startedAt = timestampToMillis(room.currentTurnStartedAt) || 0; const duration = activeTurnSeconds(room) * 1000; return Math.max(0, (startedAt + duration) - Date.now()); }
   async function tryAutoResolveTurn(){
-    if(autoResolveBusy || !db || !currentRoomId || !currentRoom || currentRoom.status !== 'drafting') return; if(draftRemainingMs(currentRoom) > 0) return; autoResolveBusy = true;
-    try{ const ref = db.collection('draftRooms').doc(currentRoomId); await db.runTransaction(async (tx) => { const snap = await tx.get(ref); if(!snap.exists) return; const room = snap.data(); if(room.status !== 'drafting' || !room.currentTurnStartedAt) return; if(draftRemainingMs(room) > 0) return; const liveStep = draftSteps(room)[room.turnIndex]; if(!liveStep) return; const pool = availableHeroPool(room, liveStep); if(!pool.length) return; const randomHero = pool[Math.floor(Math.random() * pool.length)]; const field = fieldForStep(liveStep); const nextTurnIndex = Number(room.turnIndex || 0) + 1; const nextStatus = nextTurnIndex >= draftSteps(room).length ? 'finished' : 'drafting'; tx.update(ref, { [field]: firebase.firestore.FieldValue.arrayUnion(randomHero.id), selectedHeroIds: firebase.firestore.FieldValue.arrayUnion(randomHero.id), turnIndex: nextTurnIndex, status: nextStatus, currentTurnStartedAt: nextStatus === 'drafting' ? firebase.firestore.FieldValue.serverTimestamp() : null, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }); }catch(error){ console.warn('Auto random turn failed:', error.message); } finally { autoResolveBusy = false; }
+    if(autoResolveBusy || !db || !currentRoomId || !currentRoom || currentRoom.status !== 'drafting') return;
+    if(draftRemainingMs(currentRoom) > 0) return;
+    autoResolveBusy = true;
+    try{
+      const ref = db.collection('draftRooms').doc(currentRoomId);
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref); if(!snap.exists) return;
+        const room = snap.data(); if(room.status !== 'drafting' || !room.currentTurnStartedAt || draftRemainingMs(room) > 0) return;
+        const liveGroup = activeRoundSteps(room); const liveStep = liveGroup[0]; if(!liveStep) return;
+        const required = isDoublePickRound(room) ? liveGroup.length : 1; const pool = availableHeroPool(room, liveStep); if(pool.length < required) return;
+        const poolIds = new Set(pool.map((hero) => hero.id));
+        const localPending = currentRole === liveStep.team && activePickContext(room) === pendingPickContext
+          ? pendingPickIds.filter((heroId) => poolIds.has(heroId)).slice(0, required)
+          : [];
+        const remainingPool = pool.filter((hero) => !localPending.includes(hero.id)).sort(() => Math.random() - 0.5);
+        const randomIds = [...localPending, ...remainingPool.slice(0, required - localPending.length).map((hero) => hero.id)];
+        const field = fieldForStep(liveStep); const roomSteps = draftSteps(room); const nextTurnIndex = Number(room.turnIndex || 0) + required;
+        const nextStatus = nextTurnIndex >= roomSteps.length ? 'finished' : 'drafting'; const nextStep = nextStatus === 'drafting' ? roomSteps[nextTurnIndex] : null;
+        tx.update(ref, {
+          [field]: [...(Array.isArray(room[field]) ? room[field] : []), ...randomIds],
+          selectedHeroIds: [...(Array.isArray(room.selectedHeroIds) ? room.selectedHeroIds : []), ...randomIds],
+          turnIndex: nextTurnIndex, status: nextStatus,
+          currentTurnSeconds: nextStep ? turnSecondsForStep(nextStep) : null,
+          currentTurnStartedAt: nextStatus === 'drafting' ? firebase.firestore.FieldValue.serverTimestamp() : null,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+    }catch(error){ console.warn('Auto random turn failed:', error.message); }
+    finally { autoResolveBusy = false; }
   }
   function startTimerRenderer(){
-    clearInterval(timerInterval); if(!currentRoom || (currentRoom.status !== 'drafting' && currentRoom.status !== 'preparing')) return;
+    clearInterval(timerInterval); if(!currentRoom || !['drafting','preparing','intermission'].includes(currentRoom.status)) return;
     timerInterval = setInterval(() => {
       if(!currentRoom) return;
+      if(currentRoom.status === 'intermission'){ const remainingMs=intermissionRemainingMs(); const remaining=Math.ceil(remainingMs/1000); setTimerValue(`${Math.max(0,remaining)}s`); showIntermissionModal(); updateProTimerProgress(); if(remainingMs<=0) beginNextGameAfterIntermission(); return; }
       if(currentRoom.status === 'preparing'){
         const remaining = Math.ceil(prepareRemainingMs()/1000);
         setTimerValue(`${Math.max(0, remaining)}s`);
@@ -620,11 +785,11 @@
   function isPortraitDraftScreen(){ return window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches; }
   function maybeShowRotatePrompt(){
     if(!currentRoom || !['preparing','drafting'].includes(currentRoom.status)) return;
-    const key = `hciPortraitDraftOk:${CONFIG.gameKey}`; let overlay = document.getElementById('rotateDeviceOverlay');
+    const key = `mobaHubPortraitDraftOk:${CONFIG.gameKey}`; let overlay = document.getElementById('rotateDeviceOverlay');
     if(!isPortraitDraftScreen() || sessionStorage.getItem(key) === '1'){ if(overlay) overlay.remove(); return; }
     if(overlay) return;
     overlay = document.createElement('div'); overlay.id = 'rotateDeviceOverlay'; overlay.className = 'rotate-device-overlay';
-    overlay.innerHTML = `<div class="rotate-device-card" role="dialog" aria-modal="true"><div class="rotate-device-icon" aria-hidden="true"><span></span></div><h2>ROTATE YOUR DEVICE</h2><p>Draft simulator lebih nyaman di landscape mode, tapi kamu tetap bisa lanjut portrait.</p><button class="secondary-btn" data-continue>Continue in portrait anyway</button></div>`;
+    overlay.innerHTML = `<div class="rotate-device-card" role="dialog" aria-modal="true"><div class="rotate-device-icon" aria-hidden="true"><span></span></div><h2>ROTATE YOUR DEVICE</h2><p>Landscape mode provides the best draft view, but portrait mode remains fully available.</p><button class="secondary-btn" data-continue>Continue in portrait anyway</button></div>`;
     document.body.appendChild(overlay);
     overlay.querySelector('[data-continue]').addEventListener('click', () => { sessionStorage.setItem(key, '1'); overlay.remove(); });
   }
@@ -633,79 +798,110 @@
     if(!els.sessionModal) return;
     setText(els.sessionModalTitle, `${gameTitle()} Complete Result`);
     const card = els.sessionModal.querySelector('.session-modal-card');
-    if(card){ let badge = card.querySelector('.session-game-logo'); if(!badge){ badge = document.createElement('div'); badge.className = 'session-game-logo'; card.prepend(badge); } badge.innerHTML = `<img src="${escapeHtml(gameLogoPath())}" alt="${escapeHtml(CONFIG.gameKey || 'HCI')} Logo"><span>${escapeHtml(CONFIG.gameKey || 'HCI')}</span>`; }
-    const info = card?.querySelector('p'); if(info) info.textContent = 'Draft result, estimated win chance, and action controls are shown below.';
+    if(card){ let badge = card.querySelector('.session-game-logo'); if(!badge){ badge = document.createElement('div'); badge.className = 'session-game-logo'; card.prepend(badge); } badge.innerHTML = `<img src="${escapeHtml(gameLogoPath())}" alt="${escapeHtml(CONFIG.gameKey || 'MOBA HUB')} Logo"><span>${escapeHtml(CONFIG.gameKey || 'MOBA HUB')}</span>`; }
+    const info = card?.querySelector('p'); if(info) info.textContent = 'Draft result, draft composition analysis, and action controls are shown below.';
     let body = card?.querySelector('.session-result-body');
     if(card && !body){ body = document.createElement('div'); body.className = 'session-result-body'; const actions = card.querySelector('.modal-actions'); card.insertBefore(body, actions || null); }
     if(body) body.innerHTML = buildResultModalHtml(currentRoom);
-    if(els.nextGameBtn) els.nextGameBtn.disabled = gameNumber() >= bestOf() || !isHost();
-    if(els.backLobbyBtn){ els.backLobbyBtn.disabled = false; els.backLobbyBtn.textContent = 'Leave Match'; }
-    if(els.downloadResultBtn) els.downloadResultBtn.textContent = 'Download Result';
+    if(els.nextGameBtn){ setHidden(els.nextGameBtn,false); els.nextGameBtn.disabled = gameNumber() >= bestOf() || !isHost(); }
+    if(els.backLobbyBtn){ setHidden(els.backLobbyBtn,false); els.backLobbyBtn.disabled = false; els.backLobbyBtn.textContent = 'Leave Match'; }
+    if(els.downloadResultBtn){ setHidden(els.downloadResultBtn,false); els.downloadResultBtn.textContent = 'Download Result'; }
     setHidden(els.sessionModal, false);
   }
   function hideSessionModal(){ setHidden(els.sessionModal, true); }
   function roleTagsForHero(hero){
     const lanes = Array.isArray(hero?.lanes) ? hero.lanes : [];
+    const roles = Array.isArray(hero?.roles) ? hero.roles : [];
     const tags = new Set();
-    lanes.forEach((lane) => {
-      const v = String(lane).toLowerCase();
-      if(v.includes('jungle')) tags.add('jungle');
-      if(v.includes('mid')) tags.add('mid');
-      if(v.includes('roam')) tags.add('roam');
-      if(v.includes('farm') || v.includes('gold')) tags.add('carry');
-      if(v.includes('clash') || v.includes('exp')) tags.add('frontline');
+    [...lanes, ...roles].forEach((value) => {
+      const v = String(value).toLowerCase();
+      if(v.includes('jungle') || v.includes('assassin')) tags.add('jungle');
+      if(v.includes('mid') || v.includes('mage')) tags.add('mid');
+      if(v.includes('roam') || v.includes('support')) tags.add('roam');
+      if(v.includes('farm') || v.includes('gold') || v.includes('marksman')) tags.add('carry');
+      if(v.includes('clash') || v.includes('exp') || v.includes('tank') || v.includes('fighter')) tags.add('frontline');
     });
     if(!tags.size) tags.add('flex');
     return tags;
   }
+  function tacticalTagsForHero(hero){ return new Set((hero?.tacticalProfile?.tags || []).map((tag) => String(tag).toLowerCase())); }
+  function hasAnyTag(tags, list){ return list.some((tag) => tags.has(tag)); }
+  function heroMetaWinRate(hero){ const value = Number(hero?.meta?.winRate ?? hero?.meta?.wr); return Number.isFinite(value) ? value : null; }
   function draftFeatureScore(heroIds){
     const picked = (heroIds || []).map(heroById).filter(Boolean);
     const counts = { carry:0, jungle:0, mid:0, roam:0, frontline:0, flex:0 };
-    picked.forEach((hero) => roleTagsForHero(hero).forEach((tag) => { counts[tag] = (counts[tag] || 0) + 1; }));
+    const features = { hardCC:0, softCC:0, engage:0, disengage:0, sustain:0, protection:0, objective:0, wave:0, mobility:0, poke:0, burst:0, physical:0, magical:0, trueDamage:0 };
+    const metaValues = [];
+    picked.forEach((hero) => {
+      roleTagsForHero(hero).forEach((tag) => { counts[tag] = (counts[tag] || 0) + 1; });
+      const tags = tacticalTagsForHero(hero);
+      if(hasAnyTag(tags,['stun','area-stun','targeted-stun','repeated-stun','suppress','fear','petrify','freeze','taunt','immobilize','airborne','launch'])) features.hardCC += 1;
+      if(hasAnyTag(tags,['slow','area-slow','silence','blind','displacement','knockback','pull','hook','crowd-control','delayed-control'])) features.softCC += 1;
+      if(hasAnyTag(tags,['engage','jump','leap','gap-close','dash','blink','global-teleport','teamfight'])) features.engage += 1;
+      if(hasAnyTag(tags,['peel','self-peel','anti-dive','disengage','knockback','cleanse','team-cleanse','projectile-block'])) features.disengage += 1;
+      if(hasAnyTag(tags,['heal','area-heal','team-sustain','sustain','lifesteal','recovery','heal-over-time'])) features.sustain += 1;
+      if(hasAnyTag(tags,['shield','ally-shield','damage-mitigation','damage-reduction','defense-buff','invulnerability','invincibility'])) features.protection += 1;
+      if(hasAnyTag(tags,['objective-control','jungle-clear','structure-damage','tower-disable','tower-utility'])) features.objective += 1;
+      if(hasAnyTag(tags,['area-damage','lane-pressure','large-area','chain-damage','multi-target','zone-control'])) features.wave += 1;
+      if(hasAnyTag(tags,['mobility','dash','blink','jump','leap','movement-speed','global-mobility'])) features.mobility += 1;
+      if(hasAnyTag(tags,['poke','long-range','global-range','projectile','line-damage'])) features.poke += 1;
+      if(hasAnyTag(tags,['burst','single-target-burst','delayed-burst','execute'])) features.burst += 1;
+      if(hasAnyTag(tags,['physical-damage','physical-attack','basic-attack'])) features.physical += 1;
+      if(hasAnyTag(tags,['magic-damage','magic-scaling'])) features.magical += 1;
+      if(tags.has('true-damage')) features.trueDamage += 1;
+      const wr = heroMetaWinRate(hero); if(wr !== null) metaValues.push(wr);
+    });
     const covered = ['carry','jungle','mid','roam','frontline'].filter((tag) => counts[tag] > 0).length;
-    let score = 36 + covered * 7 + Math.min(10, picked.length * 2);
-    if(counts.jungle && counts.roam) score += 4;
-    if(counts.carry && counts.mid && counts.jungle) score += 4;
-    if(counts.frontline && counts.roam) score += 3;
-    ['carry','jungle','mid','roam'].forEach((tag) => { if(!counts[tag]) score -= 5; });
-    const overload = Math.max(...Object.values(counts)); if(overload >= 4) score -= 7; else if(overload >= 3) score -= 3;
-    return { score, counts, covered, picked };
+    const roleScore = covered * 4.2 + (counts.jungle && counts.roam ? 2.5 : 0) + (counts.carry && counts.mid ? 2 : 0);
+    const controlScore = Math.min(12, features.hardCC * 3 + features.softCC * 1.2);
+    const setupScore = Math.min(10, features.engage * 2 + features.disengage * 1.5);
+    const resilienceScore = Math.min(10, counts.frontline * 1.8 + features.sustain * 1.7 + features.protection * 1.6);
+    const tempoScore = Math.min(9, features.objective * 2.2 + features.wave * 1.2);
+    const reachScore = Math.min(7, features.mobility * 1.1 + features.poke * 1.2);
+    const damageTypes = [features.physical > 0, features.magical > 0, features.trueDamage > 0].filter(Boolean).length;
+    const damageScore = Math.min(8, damageTypes * 2.2 + Math.min(3, features.burst));
+    const avgMeta = metaValues.length ? metaValues.reduce((sum,value)=>sum+value,0)/metaValues.length : 50;
+    const metaScore = Math.max(-4, Math.min(4, (avgMeta - 50) * .8));
+    const overload = Math.max(...Object.values(counts)); const overlapPenalty = overload >= 4 ? 7 : overload >= 3 ? 3 : 0;
+    const missingPenalty = ['carry','jungle','mid','roam'].filter((tag)=>!counts[tag]).length * 4;
+    const completeness = picked.length / 5;
+    const score = 24 + roleScore + controlScore + setupScore + resilienceScore + tempoScore + reachScore + damageScore + metaScore - overlapPenalty - missingPenalty;
+    return { score, counts, features, covered, picked, avgMeta, metaCount:metaValues.length, completeness };
   }
   function analyzeDraftResult(room = currentRoom){
-    const board = displayTeams(room);
-    const bluePicks = valuesForTeam(board.blue, 'pick', room); const redPicks = valuesForTeam(board.red, 'pick', room);
-    const blue = draftFeatureScore(bluePicks); const red = draftFeatureScore(redPicks);
-    const firstPickBoost = board.blue === blueTeamForGame(gameNumber(room)) ? 1 : 0;
-    const diff = (blue.score + firstPickBoost) - red.score;
-    const bluePct = Math.max(38, Math.min(62, Math.round(50 + diff * 0.85)));
-    const redPct = 100 - bluePct;
-    const leader = bluePct >= redPct ? 'blue' : 'red';
-    const leaderName = leader === 'blue' ? teamName(board.blue, room) : teamName(board.red, room);
+    const board = displayTeams(room); const blue = draftFeatureScore(valuesForTeam(board.blue,'pick',room)); const red = draftFeatureScore(valuesForTeam(board.red,'pick',room));
+    const firstPickBoost = 1.2; const diff = (blue.score + firstPickBoost) - red.score;
+    const bluePct = Math.max(35, Math.min(65, Math.round(50 + diff * .42))); const redPct = 100 - bluePct;
+    const leader = bluePct >= redPct ? 'blue' : 'red'; const leaderName = leader === 'blue' ? teamName(board.blue,room) : teamName(board.red,room);
+    const completedPicks = Math.min(blue.picked.length, red.picked.length); const metaCoverage = (blue.metaCount + red.metaCount) / Math.max(1, blue.picked.length + red.picked.length);
+    const confidence = completedPicks >= 5 && metaCoverage >= .8 ? 'High' : completedPicks >= 3 ? 'Medium' : 'Low';
     const explainFor = (label, data, pct) => {
       const notes = [];
-      if(data.covered >= 5) notes.push(`${label} has complete role coverage.`);
-      else notes.push(`${label} covers ${data.covered}/5 core role groups.`);
-      if(data.counts.jungle && data.counts.roam) notes.push('Jungle + Roam gives stronger tempo/setup.');
-      if(data.counts.carry && data.counts.mid && data.counts.jungle) notes.push('Damage threats are spread across carry, mid, and jungle.');
-      if(!data.counts.roam) notes.push('Draft lacks clear roam/utility protection.');
-      if(!data.counts.jungle) notes.push('Draft lacks clear jungle tempo.');
-      if(Math.max(...Object.values(data.counts)) >= 3) notes.push('Several heroes overlap roles, so execution risk is higher.');
-      notes.push(`Estimated chance: ${pct}%.`);
+      if(data.features.hardCC >= 3) notes.push('Strong crowd-control chain for coordinated team fights.');
+      else if(data.features.hardCC === 0) notes.push('Limited reliable hard crowd control.');
+      if(data.features.engage >= 2) notes.push('Multiple engage tools create reliable initiation options.');
+      if(data.features.disengage >= 2) notes.push('Good peel and disengage against enemy dives.');
+      if(data.counts.frontline >= 2 || data.features.protection >= 2) notes.push('Stable frontline and protection for damage dealers.');
+      else if(!data.counts.frontline) notes.push('Fragile frontline may make objective setups difficult.');
+      if(data.features.objective >= 2) notes.push('Strong objective-control and jungle-tempo profile.');
+      if(data.features.sustain >= 2) notes.push('Sustain and shielding improve extended fights.');
+      const damageTypes = [data.features.physical>0,data.features.magical>0,data.features.trueDamage>0].filter(Boolean).length;
+      if(damageTypes >= 2) notes.push('Mixed damage profile is harder to itemize against.');
+      else if(data.picked.length >= 4) notes.push('Damage profile is predictable and easier to itemize against.');
+      if(data.covered < 5) notes.push(`${label} currently covers ${data.covered}/5 core role groups.`);
+      notes.push(`Estimated composition score: ${pct}/100.`);
       return notes;
     };
     return {
-      bluePct, redPct, leader, leaderName,
-      blueName: teamName(board.blue, room), redName: teamName(board.red, room),
-      blueTeamKey: board.blue, redTeamKey: board.red,
-      blueNotes: explainFor(teamName(board.blue, room), blue, bluePct), redNotes: explainFor(teamName(board.red, room), red, redPct),
-      summary: `${leaderName} has the stronger estimated draft edge from role coverage, tempo setup, and composition balance. This is a simulator estimate, not official statistics.`
+      bluePct, redPct, leader, leaderName, confidence,
+      blueName:teamName(board.blue,room), redName:teamName(board.red,room), blueTeamKey:board.blue, redTeamKey:board.red,
+      blueNotes:explainFor(teamName(board.blue,room),blue,bluePct), redNotes:explainFor(teamName(board.red,room),red,redPct),
+      summary:`${leaderName} has the current draft edge from role coverage, crowd control, engage options, protection, objective pressure, damage profile, and patch-specific hero statistics.`
     };
   }
   function buildSimulationHtml(room, compact = false){
-    const sim = analyzeDraftResult(room);
-    const blueNotes = sim.blueNotes.slice(0, compact ? 2 : 4).map((n) => `<li>${escapeHtml(n)}</li>`).join('');
-    const redNotes = sim.redNotes.slice(0, compact ? 2 : 4).map((n) => `<li>${escapeHtml(n)}</li>`).join('');
-    return `<div class="sim-head"><span class="eyebrow">Estimated Draft Win Rate</span><strong>${escapeHtml(sim.blueName)} ${sim.bluePct}%</strong><b>vs</b><strong>${escapeHtml(sim.redName)} ${sim.redPct}%</strong></div><p>${escapeHtml(sim.summary)}</p><div class="sim-notes"><div><b>${escapeHtml(sim.blueName)}</b><ul>${blueNotes}</ul></div><div><b>${escapeHtml(sim.redName)}</b><ul>${redNotes}</ul></div></div><small class="sim-disclaimer">Simulation estimate only. It is not official win-rate data.</small>`;
+    const sim = analyzeDraftResult(room); const blueNotes = sim.blueNotes.slice(0, compact ? 2 : 5).map((n)=>`<li>${escapeHtml(n)}</li>`).join(''); const redNotes = sim.redNotes.slice(0, compact ? 2 : 5).map((n)=>`<li>${escapeHtml(n)}</li>`).join('');
+    return `<div class="sim-head"><span class="eyebrow">Estimated Draft Advantage</span><strong>${escapeHtml(sim.blueName)} ${sim.bluePct}%</strong><b>vs</b><strong>${escapeHtml(sim.redName)} ${sim.redPct}%</strong><span class="sim-confidence">Confidence: ${escapeHtml(sim.confidence)}</span></div><p>${escapeHtml(sim.summary)}</p><div class="sim-notes"><div><b>${escapeHtml(sim.blueName)}</b><ul>${blueNotes}</ul></div><div><b>${escapeHtml(sim.redName)}</b><ul>${redNotes}</ul></div></div><small class="sim-disclaimer">MOBA HUB composition estimate. It is not an official match probability and does not account for player skill, execution, or in-game decisions.</small>`;
   }
   function resultListHtml(ids, type){ return (ids || []).map((id, index) => `<span><b>${type} ${index+1}</b>${escapeHtml(heroLabel(id))}</span>`).join('') || '<span>-</span>'; }
   function buildResultModalHtml(room){
@@ -716,12 +912,12 @@
   }
   async function maybeSaveHistory(){
     if(historySaving || !db || !currentRoom || currentRoom.status !== 'finished' || !isHost()) return;
-    const historyId = `${currentRoom.id || currentRoomId}_${gameNumber()}`; if(sessionStorage.getItem(`hciHistorySaved:${historyId}`)) return; historySaving = true;
-    try{ const ref = db.collection('draftHistory').doc(historyId); const snap = await ref.get(); if(!snap.exists){ const boardTeams = displayTeams(currentRoom); await ref.set({ id: historyId, roomId: currentRoom.id || currentRoomId, roomName: currentRoom.roomName || 'Draft Room', game: CONFIG.gameKey, gameNumber: gameNumber(), bestOf: bestOf(), seriesKey: currentRoom.seriesKey || seriesInfo(currentRoom).key, seriesMode: currentRoom.seriesMode || seriesInfo(currentRoom).mode, seriesLabel: seriesLabel(), teamAName: teamName('A'), teamBName: teamName('B'), teamASide: sideForTeam('A'), teamBSide: sideForTeam('B'), blueTeamKey: boardTeams.blue, redTeamKey: boardTeams.red, blueTeamName: teamName(boardTeams.blue), redTeamName: teamName(boardTeams.red), bansA: currentRoom.bansA || [], bansB: currentRoom.bansB || [], picksA: currentRoom.picksA || [], picksB: currentRoom.picksB || [], blueBans: valuesForTeam(boardTeams.blue, 'ban'), redBans: valuesForTeam(boardTeams.red, 'ban'), bluePicks: valuesForTeam(boardTeams.blue, 'pick'), redPicks: valuesForTeam(boardTeams.red, 'pick'), participantUids: [currentRoom.teamAUid, currentRoom.teamBUid, currentRoom.hostUid].filter(Boolean), hostUid: currentRoom.hostUid, simulation: analyzeDraftResult(currentRoom), finishedAtMillis: Date.now(), createdAt: firebase.firestore.FieldValue.serverTimestamp() }); } sessionStorage.setItem(`hciHistorySaved:${historyId}`, '1'); }catch(error){ console.warn('History save failed:', error.message); }finally{ historySaving = false; }
+    const historyId = `${currentRoom.id || currentRoomId}_${gameNumber()}`; if(sessionStorage.getItem(`mobaHubHistorySaved:${historyId}`)) return; historySaving = true;
+    try{ const ref = db.collection('draftHistory').doc(historyId); const snap = await ref.get(); if(!snap.exists){ const boardTeams = displayTeams(currentRoom); await ref.set({ id: historyId, roomId: currentRoom.id || currentRoomId, roomName: currentRoom.roomName || 'Draft Room', game: CONFIG.gameKey, gameNumber: gameNumber(), bestOf: bestOf(), seriesKey: currentRoom.seriesKey || seriesInfo(currentRoom).key, seriesMode: currentRoom.seriesMode || seriesInfo(currentRoom).mode, seriesLabel: seriesLabel(), teamAName: teamName('A'), teamBName: teamName('B'), teamASide: sideForTeam('A'), teamBSide: sideForTeam('B'), blueTeamKey: boardTeams.blue, redTeamKey: boardTeams.red, blueTeamName: teamName(boardTeams.blue), redTeamName: teamName(boardTeams.red), bansA: currentRoom.bansA || [], bansB: currentRoom.bansB || [], picksA: currentRoom.picksA || [], picksB: currentRoom.picksB || [], blueBans: valuesForTeam(boardTeams.blue, 'ban'), redBans: valuesForTeam(boardTeams.red, 'ban'), bluePicks: valuesForTeam(boardTeams.blue, 'pick'), redPicks: valuesForTeam(boardTeams.red, 'pick'), participantUids: [currentRoom.teamAUid, currentRoom.teamBUid, currentRoom.hostUid].filter(Boolean), hostUid: currentRoom.hostUid, simulation: analyzeDraftResult(currentRoom), finishedAtMillis: Date.now(), createdAt: firebase.firestore.FieldValue.serverTimestamp() }); } sessionStorage.setItem(`mobaHubHistorySaved:${historyId}`, '1'); }catch(error){ console.warn('History save failed:', error.message); }finally{ historySaving = false; }
   }
 
   async function copyRoomId(){ if(!currentRoomId) return; await navigator.clipboard.writeText(currentRoomId); showToast('Room Code copied.'); }
-  async function copyResult(){ if(!currentRoom) return; const result = [`HCI MOBA Draft Hub - ${CONFIG.gameKey} - ${currentRoom.id}`, currentRoom.roomName || 'Draft Room', gameTitle(), `${teamName('A')} (${sideForTeam('A')}) Ban: ${(currentRoom.bansA || []).map(heroLabel).join(', ') || '-'}`, `${teamName('A')} Pick: ${(currentRoom.picksA || []).map(heroLabel).join(', ') || '-'}`, '', `${teamName('B')} (${sideForTeam('B')}) Ban: ${(currentRoom.bansB || []).map(heroLabel).join(', ') || '-'}`, `${teamName('B')} Pick: ${(currentRoom.picksB || []).map(heroLabel).join(', ') || '-'}`, '', `Estimated WR: ${analyzeDraftResult(currentRoom).blueName} ${analyzeDraftResult(currentRoom).bluePct}% vs ${analyzeDraftResult(currentRoom).redName} ${analyzeDraftResult(currentRoom).redPct}%`, analyzeDraftResult(currentRoom).summary].join('\n'); await navigator.clipboard.writeText(result); showToast('Result copied.'); }
+  async function copyResult(){ if(!currentRoom) return; const result = [`MOBA HUB Draft Simulator - ${CONFIG.gameKey} - ${currentRoom.id}`, currentRoom.roomName || 'Draft Room', gameTitle(), `${teamName('A')} (${sideForTeam('A')}) Ban: ${(currentRoom.bansA || []).map(heroLabel).join(', ') || '-'}`, `${teamName('A')} Pick: ${(currentRoom.picksA || []).map(heroLabel).join(', ') || '-'}`, '', `${teamName('B')} (${sideForTeam('B')}) Ban: ${(currentRoom.bansB || []).map(heroLabel).join(', ') || '-'}`, `${teamName('B')} Pick: ${(currentRoom.picksB || []).map(heroLabel).join(', ') || '-'}`, '', `Estimated Draft Advantage: ${analyzeDraftResult(currentRoom).blueName} ${analyzeDraftResult(currentRoom).bluePct}% vs ${analyzeDraftResult(currentRoom).redName} ${analyzeDraftResult(currentRoom).redPct}%`, analyzeDraftResult(currentRoom).summary].join('\n'); await navigator.clipboard.writeText(result); showToast('Result copied.'); }
   async function downloadResultPng(){
     if(!currentRoom) return showToast('Result is not available yet.');
     const canvas = document.createElement('canvas'); canvas.width = 1500; canvas.height = 1160; const ctx = canvas.getContext('2d');
@@ -729,14 +925,14 @@
     const gradient = ctx.createLinearGradient(0,0,1500,1160); gradient.addColorStop(0,'#071018'); gradient.addColorStop(0.55,'#0d2030'); gradient.addColorStop(1,'#0a111b'); ctx.fillStyle = gradient; ctx.fillRect(0,0,1500,1160);
     roundRect(ctx,42,42,1416,1076,34,true,false,'rgba(255,255,255,.055)'); ctx.strokeStyle = 'rgba(245,196,81,.44)'; ctx.lineWidth = 3; roundRect(ctx,42,42,1416,1076,34,false,true);
     let headerX = 82; if(gameLogo){ roundRect(ctx,82,72,82,82,18,true,false,'rgba(4,10,16,.72)'); ctx.save(); roundRect(ctx,92,82,62,62,14,false,false); ctx.clip(); ctx.drawImage(gameLogo,92,82,62,62); ctx.restore(); headerX = 184; }
-    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 34px Arial'; ctx.fillText('HCI MOBA Draft Hub',headerX,108); ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 54px Arial'; ctx.fillText(`${CONFIG.gameKey} ${gameTitle()} Result`,headerX,172);
+    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 34px Arial'; ctx.fillText('MOBA HUB Draft Simulator',headerX,108); ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 54px Arial'; ctx.fillText(`${CONFIG.gameKey} ${gameTitle()} Result`,headerX,172);
     ctx.fillStyle = '#a8bacf'; ctx.font = '23px Arial'; ctx.fillText(`${currentRoom.roomName || 'Draft Room'} · Room ${currentRoom.id || currentRoomId}`,headerX,214);
     const boardTeams = displayTeams(currentRoom);
     drawTeamResult(ctx, `${teamName(boardTeams.blue)} · Blue Side`, valuesForTeam(boardTeams.blue, 'ban'), valuesForTeam(boardTeams.blue, 'pick'), 82,250, '#4dabf7', imageCache);
     drawTeamResult(ctx, `${teamName(boardTeams.red)} · Red Side`, valuesForTeam(boardTeams.red, 'ban'), valuesForTeam(boardTeams.red, 'pick'), 770,250, '#ff6b6b', imageCache);
     drawSimulationResult(ctx, analyzeDraftResult(currentRoom), 82,850, 1336, 210);
     ctx.fillStyle = '#a8bacf'; ctx.font = '22px Arial'; ctx.fillText(new Date().toLocaleString('en-GB', { hour12:false }),82,1085);
-    const a = document.createElement('a'); a.download = `hci-${String(CONFIG.gameKey).toLowerCase()}-${String(currentRoom.id || currentRoomId).toLowerCase()}-game-${gameNumber()}-result.png`; a.href = canvas.toDataURL('image/png'); a.click(); showToast('Result PNG downloaded.');
+    const a = document.createElement('a'); a.download = `moba-hub-${String(CONFIG.gameKey).toLowerCase()}-${String(currentRoom.id || currentRoomId).toLowerCase()}-game-${gameNumber()}-result.png`; a.href = canvas.toDataURL('image/png'); a.click(); showToast('Result PNG downloaded.');
   }
   async function buildHeroImageCache(heroIds){ const ids = [...new Set((heroIds || []).filter(Boolean))]; const entries = await Promise.all(ids.map(async (heroId) => { const hero = heroById(heroId); if(!hero?.image) return [heroId, null]; const img = await loadImageSafe(hero.image); return [heroId, img]; })); return new Map(entries); }
   function loadImageSafe(src){ return new Promise((resolve) => { if(!src) return resolve(null); const img = new Image(); img.crossOrigin = 'anonymous'; img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = src; }); }
@@ -759,10 +955,10 @@
   }
   function drawSimulationResult(ctx, sim, x, y, w, h){
     roundRect(ctx,x,y,w,h,24,true,false,'rgba(245,196,81,.09)'); ctx.strokeStyle = 'rgba(245,196,81,.28)'; ctx.lineWidth = 2; roundRect(ctx,x,y,w,h,24,false,true);
-    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 24px Arial'; ctx.fillText('Estimated Draft Win Rate Simulation', x+28, y+42);
+    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 24px Arial'; ctx.fillText('Estimated Draft Advantage', x+28, y+42);
     ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 34px Arial'; ctx.fillText(`${sim.blueName}: ${sim.bluePct}%`, x+28, y+88); ctx.fillText(`${sim.redName}: ${sim.redPct}%`, x+420, y+88);
     ctx.fillStyle = '#a8bacf'; ctx.font = '19px Arial'; wrapText(ctx, sim.summary, x+28, y+126, w-56, 24);
-    ctx.font = '16px Arial'; ctx.fillText('Simulation estimate only, not official statistics.', x+28, y+h-24);
+    ctx.font = '16px Arial'; ctx.fillText('Composition estimate only, not official match statistics.', x+28, y+h-24);
   }
   function roundRect(ctx,x,y,w,h,r,fill,stroke,fillStyle){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill){ ctx.fillStyle = fillStyle || ctx.fillStyle; ctx.fill(); } if(stroke) ctx.stroke(); }
   function wrapText(ctx,text,x,y,maxWidth,lineHeight,align){ const words = String(text).split(' '); let line = ''; const oldAlign = ctx.textAlign; if(align) ctx.textAlign = align; for(let n=0;n<words.length;n++){ const test = line + words[n] + ' '; if(ctx.measureText(test).width > maxWidth && n>0){ ctx.fillText(line.trim(),x,y); line = words[n] + ' '; y += lineHeight; } else line = test; } ctx.fillText(line.trim(),x,y); ctx.textAlign = oldAlign; }
@@ -776,7 +972,7 @@
     });
   }
   function bindEvents(){
-    ensureRoomSettingsUI();
+    ensureRoomSettingsUI(); ensurePendingPickPanel();
     if(els.createRoomBtn) els.createRoomBtn.addEventListener('click', createRoom); if(els.joinRoomBtn) els.joinRoomBtn.addEventListener('click', joinRoom); if(els.roomIdInput){ els.roomIdInput.addEventListener('input', uppercaseRoomCodeInput); els.roomIdInput.addEventListener('paste', () => setTimeout(uppercaseRoomCodeInput, 0)); els.roomIdInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') joinRoom(); }); }
     [els.copyRoomBtn, els.copyRoomTopBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', copyRoomId));
     if(els.startDraftBtn) els.startDraftBtn.addEventListener('click', startDraft); if(els.copyResultBtn) els.copyResultBtn.addEventListener('click', copyResult); if(els.deleteRoomBtn) els.deleteRoomBtn.addEventListener('click', deleteRoom); if(els.deleteRoomTopBtn) els.deleteRoomTopBtn.addEventListener('click', deleteRoom); if(els.leaveRoomBtn) els.leaveRoomBtn.addEventListener('click', leaveRoom);
@@ -785,7 +981,14 @@
     document.querySelectorAll('.side-btn').forEach((btn) => btn.addEventListener('click', () => chooseSide(btn.dataset.side)));
     [els.teamANameInput, els.teamBNameInput].filter(Boolean).forEach((input) => input.addEventListener('change', updateTeamNames));
     document.querySelectorAll('[data-series]').forEach((btn) => btn.addEventListener('click', () => { if(els.seriesFormat) els.seriesFormat.value = normalizeSeriesKey(btn.dataset.series || 'bo3'); updateSeriesButtons(); })); updateSeriesButtons();
-    if(els.navToggle && els.siteNav){ els.navToggle.addEventListener('click', () => { const open = !els.siteNav.classList.contains('open'); els.siteNav.classList.toggle('open', open); els.navToggle.setAttribute('aria-expanded', open ? 'true' : 'false'); }); }
+    if(els.navToggle && els.siteNav){
+      const closeDraftNav = () => { els.siteNav.classList.remove('open'); els.navToggle.setAttribute('aria-expanded','false'); };
+      els.navToggle.addEventListener('click', (event) => { event.stopPropagation(); const open = !els.siteNav.classList.contains('open'); els.siteNav.classList.toggle('open', open); els.navToggle.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+      els.siteNav.querySelectorAll('.nav-links a,.nav-links button').forEach((item) => { item.addEventListener('pointerdown', closeDraftNav); item.addEventListener('click', closeDraftNav); });
+      document.addEventListener('click', (event) => { if(!event.target.closest('#siteNav')) closeDraftNav(); });
+      document.addEventListener('keydown', (event) => { if(event.key === 'Escape') closeDraftNav(); });
+      window.addEventListener('pagehide', closeDraftNav); window.addEventListener('pageshow', closeDraftNav);
+    }
     window.addEventListener('popstate', () => { const roomId = getRouteRoomId() || new URLSearchParams(location.search).get('room'); if(roomId && roomId !== currentRoomId) listenRoom(String(roomId).toUpperCase()); });
     window.addEventListener('resize', () => { maybeShowRotatePrompt(); renderProDraftTopbar(); updateRoomSettingsUI(); });
     updateGameVisuals();

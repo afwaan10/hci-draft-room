@@ -1,5 +1,5 @@
 // MLBB hero database. Add photos later in assets/game/mlbb/hero-name.png, then fill the image field if needed.
-// Starter database hero MLBB. Foto hero boleh ditambahkan nanti lewat field image.
+// Starter MLBB hero database. Hero images can be added through the image field.
 window.HCI_HEROES = [
   { id:"akai", name:"Akai", lanes:["Roam","Jungle"], image:"", active:true },
   { id:"aldous", name:"Aldous", lanes:["EXP Lane"], image:"", active:true },
@@ -117,9 +117,4 @@ window.HCI_HEROES = [
 ];
 
 
-(function(){
-  const basePath = "/assets/game/mlbb/";
-  window.HCI_HEROES = (window.HCI_HEROES || []).map(function(hero){
-    return Object.assign({}, hero, { image: hero.image || (basePath + hero.id + ".png") });
-  });
-})();
+window.MOBA_HUB_HEROES = window.HCI_HEROES || [];

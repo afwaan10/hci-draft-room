@@ -47,7 +47,7 @@
   let spaceHeld = false;
 
   function storageKey() {
-    return `mobaHubMapPlan:${window.MOBAHub?.state?.user?.uid || 'local'}`;
+    return `mobaHubMapPlanV42:${window.MOBAHub?.state?.user?.uid || 'local'}`;
   }
 
   function serializableState() {
