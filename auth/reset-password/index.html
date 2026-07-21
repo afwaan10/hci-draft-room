@@ -1,2 +1,38 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="../../assets/brand/moba-hub-favicon-32.png"><title>Choose New Password · MOBA HUB</title><link rel="stylesheet" href="../../css/moba-hub.css">  <script src="../../js/path-config.js"></script>
-<script>window.setTimeout(function(){document.body?.classList.add('auth-ready');var l=document.querySelector('.mh-loader');if(l){l.classList.add('is-done');window.setTimeout(function(){l.remove();},280);}},6000);</script></head><body data-auth="public"><div class="mh-loader"><div class="mh-loader-card"><div class="mh-loader-mark"><img src="../../assets/brand/moba-hub-icon.png" alt="MOBA HUB"></div><div class="mh-spinner"></div></div></div><main class="auth-page"><section class="auth-panel"><a class="auth-brand" href="../../auth/login/"><img class="auth-brand-logo" src="../../assets/brand/moba-hub-logo-horizontal.png" alt="MOBA HUB"></a><div class="auth-card"><span class="mh-kicker">New password</span><h1>Secure your account.</h1><p>Your password may be as long as needed and must contain at least 8 characters.</p><form class="auth-form" id="authForm" data-mode="reset"><div class="mh-field"><label for="password">New Password</label><div style="display:flex;gap:8px"><input class="mh-input" id="password" type="password" autocomplete="new-password" minlength="8" required><button class="mh-btn" type="button" data-toggle-password="password">Show</button></div></div><div class="mh-field"><label for="confirmPassword">Confirm New Password</label><div style="display:flex;gap:8px"><input class="mh-input" id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required><button class="mh-btn" type="button" data-toggle-password="confirmPassword">Show</button></div></div><button class="mh-btn primary" id="authSubmit" type="submit">Update Password</button><p class="mh-status" id="authStatus" role="status"></p></form></div></section><section class="auth-visual"><div class="auth-visual-content"><img class="auth-visual-logo" src="../../assets/brand/moba-hub-logo-white.png" alt="MOBA HUB Competitive Tools"><span class="mh-kicker">MOBA HUB</span><h2>Create a password only you know.</h2></div></section></main><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="../../js/firebase-config.js"></script><script src="../../js/app-core.js"></script><script src="../../js/auth.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07090d">
+  <link rel="icon" href="../../assets/brand/moba-hub-favicon-32.png">
+  <title>Choose New Password · MOBA HUB</title>
+  <meta name="description" content="Choose a new password for your MOBA HUB account.">
+  <link rel="stylesheet" href="../../css/moba-hub.css">
+  <script src="../../js/path-config.js"></script>
+  <script>window.setTimeout(function(){document.body?.classList.add('auth-ready');var l=document.querySelector('.mh-loader');if(l){l.classList.add('is-done');window.setTimeout(function(){l.remove();},280);}},6000);</script>
+</head>
+<body data-auth="public">
+<div class="mh-loader"><div class="mh-loader-card"><div class="mh-loader-mark"><img src="../../assets/brand/moba-hub-icon.png" alt="MOBA HUB"></div><div class="mh-spinner"></div><small>Validating reset link</small></div></div>
+<main class="auth-page">
+  <section class="auth-panel">
+    <a class="auth-brand" href="../../auth/login/"><img class="auth-brand-logo" src="../../assets/brand/moba-hub-logo-horizontal.png" alt="MOBA HUB"></a>
+    <div class="auth-card">
+      <span class="mh-kicker">Account recovery</span>
+      <h1>Choose a new password.</h1>
+      <p id="resetIntro">We are validating this secure password-reset link.</p>
+      <div class="auth-link-state" id="resetLinkState" aria-live="polite"><span class="mh-spinner" aria-hidden="true"></span><span>Checking reset link…</span></div>
+      <form class="auth-form" id="authForm" data-mode="reset" hidden>
+        <p class="reset-account" id="resetAccount" hidden></p>
+        <div class="mh-field"><label for="password">New Password</label><div class="password-row"><input class="mh-input" id="password" type="password" autocomplete="new-password" minlength="8" required><button class="mh-btn" type="button" data-toggle-password="password">Show</button></div><small class="mh-help">Use at least 8 characters.</small></div>
+        <div class="mh-field"><label for="confirmPassword">Confirm New Password</label><div class="password-row"><input class="mh-input" id="confirmPassword" type="password" autocomplete="new-password" minlength="8" required><button class="mh-btn" type="button" data-toggle-password="confirmPassword">Show</button></div></div>
+        <button class="mh-btn primary" id="authSubmit" type="submit">Update Password</button>
+        <p class="mh-status" id="authStatus" role="status"></p>
+      </form>
+      <div class="auth-reset-fallback" id="resetFallback" hidden><p class="mh-status error" id="resetFallbackMessage">This reset link is invalid or has expired.</p><a class="mh-btn primary" href="../forgot-password/">Request a New Reset Link</a><a class="mh-btn" href="../login/">Back to Sign In</a></div>
+    </div>
+  </section>
+  <section class="auth-visual"><div class="auth-visual-content"><img class="auth-visual-logo" src="../../assets/brand/moba-hub-logo-stacked.png" alt="MOBA HUB Competitive Tools"><span class="mh-kicker">MOBA HUB</span><h2>Secure your competitive identity.</h2><p>Your account, teams, draft records, and tactical plans remain connected after the password is changed.</p></div></section>
+</main>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script><script src="../../js/firebase-config.js"></script><script src="../../js/app-core.js"></script><script src="../../js/auth.js"></script>
+</body>
+</html>
