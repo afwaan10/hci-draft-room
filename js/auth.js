@@ -22,6 +22,8 @@
     if(code.includes('invalid-email')) return 'Enter a valid email address.';
     if(code.includes('weak-password')) return 'Password must contain at least 8 characters.';
     if(code.includes('too-many-requests')) return 'Too many attempts. Try again later.';
+    if(code.includes('expired-action-code')) return 'This password reset link has expired. Request a new link.';
+    if(code.includes('invalid-action-code')) return 'This password reset link is invalid or has already been used.';
     return error?.message || 'Authentication failed.';
   };
   async function login(){
@@ -61,14 +63,35 @@
   }
   async function forgot(){
     const {auth}=authState(); const email=$('email').value.trim(); if(!email) throw new Error('Enter your email address.');
-    await auth.sendPasswordResetEmail(email,{url:window.MOBAHub.LOGIN_ROUTE,handleCodeInApp:false});
+    const resetContinueUrl=window.MOBAHub.url('auth/reset-password/');
+    await auth.sendPasswordResetEmail(email,{url:resetContinueUrl,handleCodeInApp:false});
     showStatus('Password reset instructions were sent. Check your inbox and spam folder.','success');
   }
   async function reset(){
     const {auth}=authState(); const params=new URLSearchParams(location.search); const code=params.get('oobCode'); const password=$('password').value; const confirmation=$('confirmPassword').value;
     if(!code) throw new Error('This password reset link is invalid or incomplete.'); validatePassword(password,confirmation);
     await auth.verifyPasswordResetCode(code); await auth.confirmPasswordReset(code,password);
-    showStatus('Password updated. Redirecting to sign in…','success'); setTimeout(()=>location.replace(window.MOBAHub.LOGIN_ROUTE),900);
+    showStatus('Password updated successfully. Redirecting to sign in…','success');
+    form.querySelectorAll('input,button').forEach((element)=>{element.disabled=true;});
+    setTimeout(()=>location.replace(window.MOBAHub.LOGIN_ROUTE),1200);
+  }
+  async function initializeReset(){
+    if(mode!=='reset') return;
+    const linkState=$('resetLinkState'); const fallback=$('resetFallback'); const fallbackMessage=$('resetFallbackMessage');
+    const params=new URLSearchParams(location.search); const code=params.get('oobCode'); const actionMode=params.get('mode');
+    try{
+      if(actionMode && actionMode!=='resetPassword') throw Object.assign(new Error('This link is not a password reset request.'),{code:'auth/invalid-action-code'});
+      if(!code) throw Object.assign(new Error('The reset code is missing.'),{code:'auth/invalid-action-code'});
+      const email=await authState().auth.verifyPasswordResetCode(code);
+      linkState.hidden=true; form.hidden=false;
+      const account=$('resetAccount'); if(account){account.hidden=false;account.textContent=`Resetting password for ${email}`;}
+      const intro=$('resetIntro'); if(intro)intro.textContent='Enter and confirm the new password for your MOBA HUB account.';
+      $('password')?.focus();
+    }catch(error){
+      if(linkState)linkState.hidden=true;
+      if(fallback){fallback.hidden=false;if(fallbackMessage)fallbackMessage.textContent=firebaseMessage(error);}
+      const intro=$('resetIntro'); if(intro)intro.textContent='We could not validate this password-reset link.';
+    }
   }
   async function submitHandler(event){
     event.preventDefault(); if(!authState()?.auth){showStatus('Authentication service is unavailable. Check Firebase configuration.');return;} busy(true); showStatus('Processing…');
@@ -84,6 +107,7 @@
     }catch(error){showStatus(firebaseMessage(error));}finally{busy(false);}
   }
   form.addEventListener('submit',submitHandler);
+  initializeReset();
   google?.addEventListener('click',async()=>{
     busy(true);showStatus('Opening Google sign in…');
     try{

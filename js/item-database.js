@@ -5,6 +5,7 @@
   let items = Array.isArray(window.MOBA_HUB_ITEMS) ? window.MOBA_HUB_ITEMS : [];
   const itemMap = () => new Map(items.map((item) => [item.id, item]));
   const initials = (name) => String(name || '?').split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+  const escapeHtml = (value = '') => window.MOBAHub?.escapeHtml ? window.MOBAHub.escapeHtml(value) : String(value).replace(/[&<>'\"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;' }[character]));
 
   function normalizeAttribute(attribute) {
     if (Array.isArray(attribute)) return { name: attribute[0], value: attribute[1] };
@@ -23,15 +24,15 @@
   }
 
   function iconMarkup(item, eager = false) {
-    const fallback = `<span class="item-icon-fallback">${window.MOBAHub.escapeHtml(initials(item.name))}</span>`;
+    const fallback = `<span class="item-icon-fallback">${escapeHtml(initials(item.name))}</span>`;
     if (!item.image) return fallback;
-    return `${fallback}<img src="${window.MOBAHub.escapeHtml(item.image)}" alt="" ${eager ? '' : 'loading="lazy"'} referrerpolicy="no-referrer">`;
+    return `${fallback}<img src="${escapeHtml(item.image)}" alt="" ${eager ? '' : 'loading="lazy"'} referrerpolicy="no-referrer">`;
   }
 
   function primaryStats(item) {
     return (item.attributes || []).slice(0, 2).map((entry) => {
       const stat = normalizeAttribute(entry);
-      return `<span><b>${window.MOBAHub.escapeHtml(stat.value)}</b> ${window.MOBAHub.escapeHtml(stat.name)}</span>`;
+      return `<span><b>${escapeHtml(stat.value)}</b> ${escapeHtml(stat.name)}</span>`;
     }).join('');
   }
 
@@ -47,8 +48,8 @@
       button.innerHTML = `
         <span class="item-icon">${iconMarkup(item)}</span>
         <span class="item-card-copy">
-          <strong>${window.MOBAHub.escapeHtml(item.name)}</strong>
-          <small>${window.MOBAHub.escapeHtml(item.category || 'Uncategorized')} · ${Number(item.shopPrice || item.price || 0).toLocaleString()} Gold</small>
+          <strong>${escapeHtml(item.name)}</strong>
+          <small>${escapeHtml(item.category || 'Uncategorized')} · ${Number(item.shopPrice || item.price || 0).toLocaleString()} Gold</small>
           <span class="item-card-stats">${primaryStats(item) || '<span>Open for item details</span>'}</span>
         </span>`;
       const image = button.querySelector('img');
@@ -61,7 +62,7 @@
   }
 
   function renderTags(id, values) {
-    $(id).innerHTML = (values || []).map((value) => `<span class="hero-tag">${window.MOBAHub.escapeHtml(typeof value === 'string' ? value : value.name || value.id || '')}</span>`).join('');
+    $(id).innerHTML = (values || []).map((value) => `<span class="hero-tag">${escapeHtml(typeof value === 'string' ? value : value.name || value.id || '')}</span>`).join('');
   }
 
   function effectRows(item) {
@@ -70,17 +71,18 @@
       const name = Array.isArray(effect) ? effect[0] : effect.name;
       const description = Array.isArray(effect) ? effect[1] : effect.description;
       const type = Array.isArray(effect) ? 'Effect' : (effect.type || 'Effect');
-      const cooldown = !Array.isArray(effect) && Number.isFinite(Number(effect.cooldownSeconds)) ? `<span>${Number(effect.cooldownSeconds)}s cooldown</span>` : '';
-      return `<article class="item-effect"><header><strong>${window.MOBAHub.escapeHtml(name || 'Item Effect')}</strong><span>${window.MOBAHub.escapeHtml(type)}</span></header><p>${window.MOBAHub.escapeHtml(description || 'Description unavailable.')}</p>${cooldown}</article>`;
+      const cooldownValue = !Array.isArray(effect) && effect.cooldownSeconds !== null && effect.cooldownSeconds !== undefined && String(effect.cooldownSeconds).trim() !== '' ? Number(effect.cooldownSeconds) : null;
+      const cooldown = Number.isFinite(cooldownValue) ? `<span>${cooldownValue}s cooldown</span>` : '';
+      return `<article class="item-effect"><header><strong>${escapeHtml(name || 'Item Effect')}</strong><span>${escapeHtml(type)}</span></header><p>${escapeHtml(description || 'Description unavailable.')}</p>${cooldown}</article>`;
     }).join('') || '<p class="mh-help">This item has no listed passive or active effect.</p>';
   }
 
   function buildNode(entry, lookup) {
     const normalized = typeof entry === 'string' ? { itemId: entry } : (entry || {});
     const item = lookup.get(normalized.itemId) || { id: normalized.itemId, name: String(normalized.itemId || 'Unknown Item'), image: '' };
-    return `<button type="button" class="build-node" data-item-id="${window.MOBAHub.escapeHtml(item.id)}">
+    return `<button type="button" class="build-node" data-item-id="${escapeHtml(item.id)}">
       <span class="build-node-icon">${iconMarkup(item)}</span>
-      <span><strong>${window.MOBAHub.escapeHtml(item.name)}</strong><small>${Number(normalized.priceAtSnapshot || item.shopPrice || item.price || 0).toLocaleString()} Gold</small></span>
+      <span><strong>${escapeHtml(item.name)}</strong><small>${Number(normalized.priceAtSnapshot || item.shopPrice || item.price || 0).toLocaleString()} Gold</small></span>
     </button>`;
   }
 
@@ -115,7 +117,7 @@
     $('itemModalDescription').textContent = item.purpose || item.description || 'No verified purpose is available for this item.';
     $('itemAttributes').innerHTML = (item.attributes || []).map((attribute) => {
       const stat = normalizeAttribute(attribute);
-      return `<div class="attribute-row"><span>${window.MOBAHub.escapeHtml(stat.name)}</span><strong>${window.MOBAHub.escapeHtml(stat.value)}</strong></div>`;
+      return `<div class="attribute-row"><span>${escapeHtml(stat.name)}</span><strong>${escapeHtml(stat.value)}</strong></div>`;
     }).join('') || '<p class="mh-help">No base attributes are listed for this item.</p>';
     $('itemPassives').innerHTML = effectRows(item);
     renderTags('itemRoles', item.recommendedRoles || []);
@@ -148,15 +150,50 @@
     }
   }
 
-  window.MOBAHub.onReady(async (state) => {
-    await mergeFirestoreItems(state);
-    const categories = [...new Set(items.map((item) => item.category).filter(Boolean))].sort();
-    $('itemCategory').innerHTML = '<option value="">All Categories</option>' + categories.map((category) => `<option>${window.MOBAHub.escapeHtml(category)}</option>`).join('');
-    $('itemSearch').addEventListener('input', render);
-    $('itemCategory').addEventListener('change', render);
-    $('itemModalClose').addEventListener('click', closeItem);
-    $('itemModal').addEventListener('click', (event) => { if (event.target.id === 'itemModal') closeItem(); });
-    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !$('itemModal').hidden) closeItem(); });
-    render();
-  });
+  function showFatalState(message) {
+    const grid = $('itemGrid');
+    if (grid) {
+      grid.innerHTML = `<article class="mh-empty item-empty"><strong>Item data could not be loaded.</strong><p>${escapeHtml(message || 'Please refresh the page after deployment finishes.')}</p><button class="mh-btn" type="button" data-item-retry>Reload Item Center</button></article>`;
+      grid.querySelector('[data-item-retry]')?.addEventListener('click', () => location.reload());
+    }
+    if ($('itemResultCount')) $('itemResultCount').textContent = 'Data unavailable';
+  }
+
+  let booted = false;
+
+  async function boot(state = {}) {
+    if (booted) return;
+    booted = true;
+    try {
+      if (!Array.isArray(items) || !items.length) throw new Error('The local item dataset is missing or was not published.');
+      await mergeFirestoreItems(state);
+      const categories = [...new Set(items.map((item) => item.category).filter(Boolean))].sort();
+      $('itemCategory').innerHTML = '<option value="">All Categories</option>' + categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
+      $('itemSearch').addEventListener('input', render);
+      $('itemCategory').addEventListener('change', render);
+      $('itemModalClose').addEventListener('click', closeItem);
+      $('itemModal').addEventListener('click', (event) => { if (event.target.id === 'itemModal') closeItem(); });
+      document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !$('itemModal').hidden) closeItem(); });
+      render();
+    } catch (error) {
+      console.error('Item Center initialization failed:', error);
+      showFatalState(error.message);
+    }
+  }
+
+  function scheduleStandaloneBoot() {
+    const run = () => boot({ db: null, auth: null, user: null });
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
+    else run();
+  }
+
+  if (window.MOBAHub?.onReady) {
+    window.MOBAHub.onReady(boot);
+    // Android local-preview servers may not complete Firebase authentication.
+    if (/^(?:localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === 'file:') {
+      window.setTimeout(() => { if (!booted) scheduleStandaloneBoot(); }, 1800);
+    }
+  } else {
+    scheduleStandaloneBoot();
+  }
 })();

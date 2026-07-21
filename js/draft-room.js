@@ -47,12 +47,12 @@
     teamATitle: $('teamATitle'), teamBTitle: $('teamBTitle'), teamASideLabel: $('teamASideLabel'), teamBSideLabel: $('teamBSideLabel'), resultATitle: $('resultATitle'), resultBTitle: $('resultBTitle'), resultASideLabel: $('resultASideLabel'), resultBSideLabel: $('resultBSideLabel'),
     heroSearch: $('heroSearch'), laneFilterButtons: $('laneFilterButtons'), draftSequence: $('draftSequence'), heroGrid: $('heroGrid'), draftBoard: $('draftBoard'), heroPanel: $('heroPanel'), draftStage: $('draftStage'), draftFocusHeader: $('draftFocusHeader'), focusRoomText: $('focusRoomText'), gameHeadline: $('gameHeadline'),
     draftResultPanel: $('draftResultPanel'), resultGameTitle: $('resultGameTitle'), resultABans: $('resultABans'), resultBBans: $('resultBBans'), resultAPicks: $('resultAPicks'), resultBPicks: $('resultBPicks'),
-    sessionModal: $('sessionModal'), sessionModalTitle: $('sessionModalTitle'), nextGameBtn: $('nextGameBtn'), backLobbyBtn: $('backLobbyBtn'), downloadResultBtn: $('downloadResultBtn'), toast: $('toast'),
+    sessionModal: $('sessionModal'), sessionModalTitle: $('sessionModalTitle'), nextGameBtn: $('nextGameBtn'), backLobbyBtn: $('backLobbyBtn'), downloadResultBtn: $('downloadResultBtn'), sessionDeleteBtn: $('sessionDeleteBtn'), toast: $('toast'),
     siteNav: $('siteNav'), navToggle: $('navToggle'), seriesOptions: document.querySelectorAll('[data-series]')
   };
 
   let db = null, auth = null, currentUser = null, currentRoomId = null, currentRoom = null, currentRole = 'SPECTATOR';
-  let unsubscribeRoom = null, timerInterval = null, prepareTransitionTimer = null, intermissionTransitionTimer = null, activeLane = 'ALL', lastAutoScrollTurnKey = '', lastFinishedModalKey = '', autoResolveBusy = false, historySaving = false;
+  let unsubscribeRoom = null, timerInterval = null, prepareTransitionTimer = null, intermissionTransitionTimer = null, activeLane = 'ALL', lastAutoScrollTurnKey = '', lastFinishedModalKey = '', lastParticipantEventKey = '', autoNextGameKey = '', autoResolveBusy = false, historySaving = false;
   let pendingPickIds = [], pendingPickContext = '';
   let heroes = Array.isArray(window.MOBA_HUB_HEROES) ? [...window.MOBA_HUB_HEROES] : (Array.isArray(window.HCI_HEROES) ? [...window.HCI_HEROES] : []);
 
@@ -101,11 +101,12 @@
       updated: data.updated || data.lastUpdated || ''
     };
   }
+  function formatOfficialRate(value){ return value === null || value === undefined || value === '' ? 'N/A' : `${value}%`; }
   function metaBadgeHtml(hero){
     const meta = heroMeta(hero);
     if(!meta) return '';
-    const primary = meta.wr ? `<b>WR ${escapeHtml(meta.wr)}%</b>` : '<b>Verified meta</b>';
-    const details = [meta.pr ? `PR ${meta.pr}%` : '', meta.br ? `BR ${meta.br}%` : '', meta.tier].filter(Boolean).join(' · ');
+    const primary = meta.wr !== null ? `<b>WR ${escapeHtml(formatOfficialRate(meta.wr))}</b>` : '<b>Verified meta</b>';
+    const details = [meta.pr !== null ? `PR ${formatOfficialRate(meta.pr)}` : '', meta.br !== null ? `BR ${formatOfficialRate(meta.br)}` : '', meta.tier].filter(Boolean).join(' · ');
     return `<span class="hero-meta-line">${primary}${details ? `<small>${escapeHtml(details)}</small>` : ''}</span>`;
   }
   function heroInitials(name){ return String(name || '?').split(/\s+|\.|-/).filter(Boolean).slice(0,2).map((p) => p[0]?.toUpperCase()).join('') || '?'; }
@@ -243,7 +244,7 @@
       auth.onAuthStateChanged(async (user) => {
         if(!user || user.isAnonymous){ redirectToLogin(); return; }
         currentUser = user;
-        if(els.signedUserMini){ const photo = user.photoURL ? `<img src="${escapeHtml(user.photoURL)}" alt="">` : '<span class="mini-avatar-fallback">MH</span>'; els.signedUserMini.innerHTML = `${photo}<span>${escapeHtml(user.displayName || 'Profile')}</span>`; }
+        if(els.signedUserMini){ const photoSrc = user.photoURL || assetUrl('assets/brand/default-avatar.svg'); const photo = `<img src="${escapeHtml(photoSrc)}" alt="" onerror="this.src='${escapeHtml(assetUrl('assets/brand/default-avatar.svg'))}'">`; els.signedUserMini.innerHTML = `${photo}<span>${escapeHtml(user.displayName || 'Profile')}</span>`; }
         setText(els.connectionStatus, 'Realtime ready');
         if(els.createRoomBtn) els.createRoomBtn.disabled = false;
         if(els.joinRoomBtn) els.joinRoomBtn.disabled = false;
@@ -271,7 +272,7 @@
       teamAUid: currentUser.uid, teamBUid:'', teamAName, teamBName, spectatorUids: [],
       turnIndex:0, turnSeconds:getTurnSeconds(), currentTurnSeconds:turnSecondsForStep(draftSteps({gameNumber:1})[0]), prepareSeconds: PREPARE_SECONDS, bansPerTeam:getBansPerTeam(),
       bansA:[], bansB:[], picksA:[], picksB:[], selectedHeroIds:[], currentTurnStartedAt:null, prepareEndsAt:null,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), finishedGames: []
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), finishedGames: [], lastParticipantEvent: null
     };
   }
   function restoreRoomIfNeeded(){ const params = new URLSearchParams(location.search); const roomParam = params.get('room') || getRouteRoomId(); if(roomParam) listenRoom(String(roomParam).toUpperCase()); }
@@ -311,7 +312,14 @@
         showToast(`Room ${deletedRoomId || ''} was deleted or is no longer available.`.trim());
         return;
       }
-      currentRoom = doc.data(); inferRoleFromRoom(); saveRestore(); renderRoom();
+      const incomingRoom = doc.data();
+      const event = incomingRoom?.lastParticipantEvent;
+      const eventKey = event ? `${event.type || ''}:${event.uid || ''}:${event.atMillis || ''}` : '';
+      if(eventKey && eventKey !== lastParticipantEventKey){
+        lastParticipantEventKey = eventKey;
+        if(event.uid && event.uid !== currentUser?.uid && event.type === 'left') showToast(`${event.name || 'A participant'} left the match.`);
+      }
+      currentRoom = incomingRoom; inferRoleFromRoom(); saveRestore(); renderRoom();
     }, (error) => showToast(error.message));
     setHidden(els.setupPanel, true); setHidden(els.roomPanel, false);
   }
@@ -421,7 +429,18 @@
     const unavailable = heroUnavailableReason(currentRoom, step, hero.id);
     if(unavailable === 'selected') return showToast('This hero has already been selected or banned.');
     if(unavailable === 'gbp-used') return showToast(`${hero.name} was already used by ${teamName(step.team)} in a previous game and cannot be picked again.`);
-    if(isDoublePickRound(currentRoom)) return togglePendingPick(hero);
+    if(isDoublePickRound(currentRoom)){
+      const alreadyPending = pendingPickIds.includes(hero.id);
+      const meta = heroMeta(hero);
+      const actionLabel = alreadyPending ? 'Remove from double pick' : `Add as Pick ${Math.min(pendingPickIds.length + 1, activeRoundSteps(currentRoom).length)}`;
+      const detail = [
+        `${teamName(step.team)} · ${step.side === 'BLUE' ? 'Blue Side' : 'Red Side'} · ${gameTitle(currentRoom)}`,
+        meta ? `WR ${meta.wr ?? 'N/A'}% · PR ${meta.pr ?? 'N/A'}% · BR ${meta.br ?? 'N/A'}%` : 'Official ranked statistics unavailable'
+      ].join('\n');
+      const ok = await confirmDialog({ title:`${actionLabel}: ${hero.name}?`, message:detail, confirmText:alreadyPending ? 'Remove' : 'Add Hero', cancelText:'Cancel', danger:false, hero, actionType:'double pick' });
+      if(ok) togglePendingPick(hero);
+      return;
+    }
     const action = step.type === 'ban' ? 'Ban' : 'Pick';
     const ok = await confirmDialog({ title:`${action} ${hero.name}?`, message:`${teamName(step.team)} · ${step.side === 'BLUE' ? 'Blue Side' : 'Red Side'} · ${gameTitle(currentRoom)}`, confirmText:action, cancelText:'Cancel', danger:step.type === 'ban', hero, actionType:step.type });
     if(!ok) return;
@@ -467,7 +486,17 @@
     if(!ok) return;
     try{ await db.collection('draftRooms').doc(currentRoomId).delete(); resetLocalState(true); showToast('Room deleted.'); location.href = gameHomeRoute(); }catch(error){ showToast(error.message); }
   }
-  async function leaveRoom(){ resetLocalState(true); location.href = gameHomeRoute(); }
+  async function leaveRoom(){
+    if(currentRoomId && db && currentUser){
+      try{
+        await db.collection('draftRooms').doc(currentRoomId).update({
+          lastParticipantEvent:{ type:'left', uid:currentUser.uid, name:currentUser.displayName || currentUser.email || 'Participant', role:currentRole, atMillis:Date.now() },
+          updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }catch(error){ console.warn('Leave event could not be saved:', error.message); }
+    }
+    resetLocalState(true); location.href = gameHomeRoute();
+  }
   function resetLocalState(clearStorage = true){
     if(unsubscribeRoom) unsubscribeRoom(); unsubscribeRoom = null; currentRoomId = null; currentRoom = null; currentRole = 'SPECTATOR'; pendingPickIds = []; pendingPickContext = '';
     setHidden(els.setupPanel, false); setHidden(els.roomPanel, true); setHidden(els.draftStage, true); if(els.roomIdInput) els.roomIdInput.value = '';
@@ -497,7 +526,40 @@
     setHidden(els.sidePicker, !isLobby); setHidden(els.startDraftBtn, !(isLobby && isHost())); if(els.startDraftBtn) els.startDraftBtn.disabled = !hasBothTeams();
     setHidden(els.copyResultBtn, !isFinished); setHidden(els.downloadResultTopBtn, !isFinished || !isLobby); setHidden(els.downloadResultTopBtn2, true); setHidden(els.deleteRoomBtn, !isHost() || !isLobby); setHidden(els.deleteRoomTopBtn, true);
     const banCount = Number(currentRoom.bansPerTeam || getBansPerTeam()); renderSlots(els.teamABans, valuesForTeam(leftTeam, 'ban'), banCount, 'Ban'); renderSlots(els.teamBBans, valuesForTeam(rightTeam, 'ban'), banCount, 'Ban'); renderSlots(els.teamAPicks, valuesForTeam(leftTeam, 'pick'), 5, 'Pick'); renderSlots(els.teamBPicks, valuesForTeam(rightTeam, 'pick'), 5, 'Pick');
-    renderDraftResult(); renderCurrentTurn(); renderProDraftTopbar(); renderDraftSequence(); renderHeroGrid(); ensurePrepareTransition(); ensureIntermissionTransition(); startTimerRenderer(); if(isIntermission) showIntermissionModal(); else if(!isFinished) hideSessionModal(); maybeShowRotatePrompt(); maybeShowFinishedModal(); maybeSaveHistory();
+    renderDraftResult(); renderCurrentTurn(); renderProDraftTopbar(); renderSeriesHistory(); renderDraftSequence(); renderHeroGrid(); ensurePrepareTransition(); ensureIntermissionTransition(); startTimerRenderer(); if(isIntermission) showIntermissionModal(); else if(!isFinished) hideSessionModal(); maybeShowRotatePrompt(); maybeShowFinishedModal(); maybeSaveHistory();
+  }
+  function ensureSeriesHistory(){
+    if(!els.draftStage || document.getElementById('seriesHistoryLayout')) return;
+    ensureProDraftTopbar();
+    const topbar = document.getElementById('proDraftTopbar');
+    if(!topbar || !els.heroPanel) return;
+    const layout = document.createElement('div'); layout.id = 'seriesHistoryLayout'; layout.className = 'series-history-layout';
+    const left = document.createElement('aside'); left.id = 'seriesHistoryLeft'; left.className = 'series-history-panel blue-history'; left.hidden = true;
+    const main = document.createElement('div'); main.className = 'series-history-main';
+    const right = document.createElement('aside'); right.id = 'seriesHistoryRight'; right.className = 'series-history-panel red-history'; right.hidden = true;
+    topbar.parentNode.insertBefore(layout, topbar);
+    main.append(topbar, els.heroPanel);
+    layout.append(left, main, right);
+  }
+  function historyHeroStrip(ids, type){
+    if(!Array.isArray(ids) || !ids.length) return '<span class="series-history-empty">—</span>';
+    return ids.map((id,index)=>{ const hero=heroById(id); return `<span class="series-history-hero" title="${escapeHtml(heroLabel(id))} · ${type} ${index+1}">${heroAvatarHtml(hero,'series-history-avatar',heroLabel(id))}<b>${index+1}</b></span>`; }).join('');
+  }
+  function historyCardHtml(game, team){
+    const number=Number(game?.gameNumber||1); const teamWasBlue=game?.blueTeamKey===team; const side=teamWasBlue?'Blue Side':'Red Side';
+    const bans=team==='A'?(game?.bansA||[]):(game?.bansB||[]); const picks=team==='A'?(game?.picksA||[]):(game?.picksB||[]);
+    return `<details class="series-history-card" ${number===gameNumber()-1?'open':''}><summary><span>Game ${number}</span><small>${escapeHtml(side)}</small></summary><div><label>Bans</label><div class="series-history-strip bans">${historyHeroStrip(bans,'Ban')}</div><label>Picks</label><div class="series-history-strip picks">${historyHeroStrip(picks,'Pick')}</div></div></details>`;
+  }
+  function renderSeriesHistory(){
+    ensureSeriesHistory();
+    const layout=document.getElementById('seriesHistoryLayout'); if(!layout||!currentRoom) return;
+    const games=finishedGames(currentRoom).slice().sort((a,b)=>Number(b.gameNumber||0)-Number(a.gameNumber||0));
+    const visible=gameNumber(currentRoom)>=2 && games.length>0;
+    layout.classList.toggle('has-history',visible);
+    const board=displayTeams(currentRoom);
+    const renderPanel=(id,team,label)=>{ const panel=document.getElementById(id); if(!panel)return; panel.hidden=!visible; if(!visible)return; panel.innerHTML=`<header><span class="eyebrow">Previous Drafts</span><h3>${escapeHtml(teamName(team))}</h3><small>${escapeHtml(label)}</small></header><div class="series-history-scroll">${games.map((game)=>historyCardHtml(game,team)).join('')}</div>`; };
+    renderPanel('seriesHistoryLeft',board.blue,'Current Blue Side');
+    renderPanel('seriesHistoryRight',board.red,'Current Red Side');
   }
   function renderSlots(container, values, count, prefix){
     if(!container) return; container.innerHTML = '';
@@ -643,7 +705,7 @@
   function ensurePendingPickPanel(){
     if(!els.heroPanel || document.getElementById('pendingPickPanel')) return;
     const panel = document.createElement('section'); panel.id = 'pendingPickPanel'; panel.className = 'pending-pick-panel'; panel.hidden = true;
-    panel.innerHTML = `<div class="pending-pick-copy"><span class="eyebrow">Tournament Double Pick</span><strong id="pendingPickTitle">Select two heroes</strong><small id="pendingPickHelp">Both heroes lock together. The round timer does not reset.</small></div><div class="pending-pick-slots" id="pendingPickSlots"></div><div class="pending-pick-actions"><button type="button" class="ghost-btn" id="clearPendingPicks">Clear</button><button type="button" class="primary-btn" id="lockPendingPicks" disabled>Lock Picks</button></div>`;
+    panel.innerHTML = `<div class="pending-pick-copy"><span class="eyebrow">Double Pick</span><strong id="pendingPickTitle">Select two heroes</strong><small id="pendingPickHelp">Review WR, PR, and BR in the hero popup before adding each pick.</small></div><div class="pending-pick-slots" id="pendingPickSlots"></div><div class="pending-pick-actions"><button type="button" class="ghost-btn" id="clearPendingPicks">Clear</button><button type="button" class="primary-btn" id="lockPendingPicks" disabled>Lock Picks</button></div>`;
     els.draftSequence?.insertAdjacentElement('afterend', panel);
     panel.querySelector('#clearPendingPicks')?.addEventListener('click', clearPendingPicks);
     panel.querySelector('#lockPendingPicks')?.addEventListener('click', lockPendingPicks);
@@ -709,7 +771,7 @@
       btn.disabled = locked || gbpLocked || disabledHero || !canClick;
       const avatar = heroAvatarHtml(hero, 'hero-avatar', hero.name);
       const lockNote = gbpLocked ? '<span class="hero-lock-note">Used by your team</span>' : locked ? '<span class="hero-lock-note">Selected / Banned</span>' : '';
-      btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span>${lockNote}<span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span>${metaBadgeHtml(hero)}</span>`;
+      btn.innerHTML = `<span>${avatar}</span><span><span class="hero-name">${escapeHtml(hero.name)}</span>${lockNote}<span class="hero-lanes">${miniRoleIcons(hero.lanes || [])}</span></span>`;
       btn.addEventListener('click', () => selectHero(hero), { passive: true });
       frag.appendChild(btn);
     }
@@ -729,7 +791,17 @@
     try{ const ref=db.collection('draftRooms').doc(currentRoomId); await db.runTransaction(async tx=>{ const snap=await tx.get(ref); if(!snap.exists) return; const room=snap.data(); if(room.status!=='intermission'||intermissionRemainingMs(room)>0) return; const firstStep=draftSteps(room)[0]; tx.update(ref,{status:'drafting',turnIndex:0,currentTurnSeconds:turnSecondsForStep(firstStep),currentTurnStartedAt:firebase.firestore.FieldValue.serverTimestamp(),nextGameStartsAt:null,updatedAt:firebase.firestore.FieldValue.serverTimestamp()}); }); }catch(error){ console.warn(error.message); }
   }
   function ensureIntermissionTransition(){ clearTimeout(intermissionTransitionTimer); intermissionTransitionTimer=null; if(!currentRoom||currentRoom.status!=='intermission') return; intermissionTransitionTimer=setTimeout(beginNextGameAfterIntermission,intermissionRemainingMs()+180); }
-  function showIntermissionModal(){ if(!els.sessionModal||!currentRoom||currentRoom.status!=='intermission') return; const remaining=Math.max(0,Math.ceil(intermissionRemainingMs()/1000)); setText(els.sessionModalTitle,`Game ${gameNumber()} begins in ${remaining}`); const card=els.sessionModal.querySelector('.session-modal-card'); const info=card?.querySelector('p'); if(info) info.textContent=`Teams have switched sides automatically. The next draft starts in ${remaining} seconds without returning to the lobby.`; let body=card?.querySelector('.session-result-body'); if(body) body.innerHTML=`<div class="next-game-countdown"><strong>${remaining}</strong><span>seconds</span></div>`; if(els.nextGameBtn) setHidden(els.nextGameBtn,true); if(els.backLobbyBtn) setHidden(els.backLobbyBtn,true); if(els.downloadResultBtn) setHidden(els.downloadResultBtn,true); setHidden(els.sessionModal,false); }
+  function showIntermissionModal(){
+    if(!els.sessionModal||!currentRoom||currentRoom.status!=='intermission') return;
+    const remaining=Math.max(0,Math.ceil(intermissionRemainingMs()/1000));
+    setText(els.sessionModalTitle,`Game ${gameNumber()} begins in ${remaining}`);
+    const card=els.sessionModal.querySelector('.session-modal-card');
+    const info=card?.querySelector('p'); if(info) info.textContent='Teams have switched sides automatically. The next draft will start inside the same room.';
+    let body=card?.querySelector('.session-result-body');
+    if(card && !body){ body=document.createElement('div'); body.className='session-result-body'; card.querySelector('.modal-actions')?.before(body); }
+    if(body) body.innerHTML=`<div class="intermission-brand"><img src="${escapeHtml(gameLogoPath())}" alt="${escapeHtml(CONFIG.gameKey)} logo"><span>${escapeHtml(CONFIG.gameKey)}</span></div><div class="next-game-countdown"><strong>${remaining}</strong><span>seconds</span></div>`;
+    if(els.nextGameBtn) setHidden(els.nextGameBtn,true); if(els.backLobbyBtn) setHidden(els.backLobbyBtn,true); if(els.downloadResultBtn) setHidden(els.downloadResultBtn,true); if(els.sessionDeleteBtn) setHidden(els.sessionDeleteBtn,true); setHidden(els.sessionModal,false);
+  }
   function draftRemainingMs(room = currentRoom){ if(!room || room.status !== 'drafting' || !room.currentTurnStartedAt) return 0; const startedAt = timestampToMillis(room.currentTurnStartedAt) || 0; const duration = activeTurnSeconds(room) * 1000; return Math.max(0, (startedAt + duration) - Date.now()); }
   async function tryAutoResolveTurn(){
     if(autoResolveBusy || !db || !currentRoomId || !currentRoom || currentRoom.status !== 'drafting') return;
@@ -793,7 +865,23 @@
     document.body.appendChild(overlay);
     overlay.querySelector('[data-continue]').addEventListener('click', () => { sessionStorage.setItem(key, '1'); overlay.remove(); });
   }
-  function maybeShowFinishedModal(){ if(!currentRoom || currentRoom.status !== 'finished') return; const key = `${currentRoom.id}-${gameNumber()}`; if(lastFinishedModalKey === key) return; lastFinishedModalKey = key; setTimeout(showSessionModal, 350); }
+  function maybeShowFinishedModal(){
+    if(!currentRoom || currentRoom.status !== 'finished') return;
+    const key = `${currentRoom.id}-${gameNumber()}`;
+    if(gameNumber() < bestOf()){
+      hideSessionModal();
+      if(isHost() && autoNextGameKey !== key){
+        autoNextGameKey=key;
+        const completedRoom=currentRoom;
+        setTimeout(async()=>{
+          await maybeSaveHistory(completedRoom);
+          if(currentRoom?.status==='finished' && gameNumber()<bestOf()) nextGame();
+        },500);
+      }
+      return;
+    }
+    if(lastFinishedModalKey === key) return; lastFinishedModalKey = key; setTimeout(showSessionModal, 350);
+  }
   function showSessionModal(){
     if(!els.sessionModal) return;
     setText(els.sessionModalTitle, `${gameTitle()} Complete Result`);
@@ -803,9 +891,10 @@
     let body = card?.querySelector('.session-result-body');
     if(card && !body){ body = document.createElement('div'); body.className = 'session-result-body'; const actions = card.querySelector('.modal-actions'); card.insertBefore(body, actions || null); }
     if(body) body.innerHTML = buildResultModalHtml(currentRoom);
-    if(els.nextGameBtn){ setHidden(els.nextGameBtn,false); els.nextGameBtn.disabled = gameNumber() >= bestOf() || !isHost(); }
-    if(els.backLobbyBtn){ setHidden(els.backLobbyBtn,false); els.backLobbyBtn.disabled = false; els.backLobbyBtn.textContent = 'Leave Match'; }
-    if(els.downloadResultBtn){ setHidden(els.downloadResultBtn,false); els.downloadResultBtn.textContent = 'Download Result'; }
+    if(els.nextGameBtn) setHidden(els.nextGameBtn,true);
+    if(els.backLobbyBtn){ setHidden(els.backLobbyBtn,false); els.backLobbyBtn.disabled=false; els.backLobbyBtn.textContent='Leave Match'; }
+    if(els.downloadResultBtn){ setHidden(els.downloadResultBtn,false); els.downloadResultBtn.textContent='Download Result'; }
+    if(els.sessionDeleteBtn) setHidden(els.sessionDeleteBtn,!isHost());
     setHidden(els.sessionModal, false);
   }
   function hideSessionModal(){ setHidden(els.sessionModal, true); }
@@ -875,28 +964,52 @@
     const leader = bluePct >= redPct ? 'blue' : 'red'; const leaderName = leader === 'blue' ? teamName(board.blue,room) : teamName(board.red,room);
     const completedPicks = Math.min(blue.picked.length, red.picked.length); const metaCoverage = (blue.metaCount + red.metaCount) / Math.max(1, blue.picked.length + red.picked.length);
     const confidence = completedPicks >= 5 && metaCoverage >= .8 ? 'High' : completedPicks >= 3 ? 'Medium' : 'Low';
+    const readableTag = (tag) => String(tag || '').replaceAll('-', ' ');
+    const keyHeroesFor = (data) => data.picked.slice(0,5).map((hero) => {
+      const tags = [...tacticalTagsForHero(hero)];
+      const priority = ['engage','crowd-control','area-stun','suppress','poke','burst','objective-control','team-sustain','shield','peel','mobility','true-damage','structure-damage'];
+      const strengths = priority.filter((tag)=>tags.includes(tag)).slice(0,2);
+      const fallback = [...roleTagsForHero(hero)].slice(0,2);
+      const detail = (strengths.length ? strengths : fallback).map(readableTag).join(' + ') || 'flexible draft contribution';
+      return `${hero.name}: ${detail}.`;
+    });
     const explainFor = (label, data, pct) => {
-      const notes = [];
-      if(data.features.hardCC >= 3) notes.push('Strong crowd-control chain for coordinated team fights.');
-      else if(data.features.hardCC === 0) notes.push('Limited reliable hard crowd control.');
-      if(data.features.engage >= 2) notes.push('Multiple engage tools create reliable initiation options.');
-      if(data.features.disengage >= 2) notes.push('Good peel and disengage against enemy dives.');
-      if(data.counts.frontline >= 2 || data.features.protection >= 2) notes.push('Stable frontline and protection for damage dealers.');
-      else if(!data.counts.frontline) notes.push('Fragile frontline may make objective setups difficult.');
-      if(data.features.objective >= 2) notes.push('Strong objective-control and jungle-tempo profile.');
-      if(data.features.sustain >= 2) notes.push('Sustain and shielding improve extended fights.');
+      const strengths = []; const risks = []; const winConditions = [];
+      if(data.features.hardCC >= 3) strengths.push('Strong crowd-control chain for coordinated team fights.');
+      else if(data.features.hardCC === 0) risks.push('Limited reliable hard crowd control makes targets harder to lock down.');
+      if(data.features.engage >= 2) strengths.push('Multiple engage tools create reliable initiation options.');
+      else risks.push('Engage options are limited, so positioning and enemy mistakes matter more.');
+      if(data.features.disengage >= 2) strengths.push('Good peel and disengage can punish enemy dives.');
+      if(data.counts.frontline >= 2 || data.features.protection >= 2) strengths.push('Stable frontline or protection gives damage dealers room to operate.');
+      else if(!data.counts.frontline) risks.push('A fragile frontline may make vision checks and objective setups dangerous.');
+      if(data.features.objective >= 2) strengths.push('Strong objective-control and jungle-tempo profile.');
+      else risks.push('Objective secure may depend heavily on one hero or precise timing.');
+      if(data.features.sustain >= 2) strengths.push('Sustain and shielding improve extended fights and repeated objective contests.');
+      if(data.features.poke >= 2) strengths.push('Poke pressure can soften targets before a full engage.');
+      if(data.features.burst >= 2) strengths.push('Burst tools can quickly remove a priority target.');
       const damageTypes = [data.features.physical>0,data.features.magical>0,data.features.trueDamage>0].filter(Boolean).length;
-      if(damageTypes >= 2) notes.push('Mixed damage profile is harder to itemize against.');
-      else if(data.picked.length >= 4) notes.push('Damage profile is predictable and easier to itemize against.');
-      if(data.covered < 5) notes.push(`${label} currently covers ${data.covered}/5 core role groups.`);
-      notes.push(`Estimated composition score: ${pct}/100.`);
-      return notes;
+      if(damageTypes >= 2) strengths.push('Mixed damage is harder for the opponent to itemize against.');
+      else if(data.picked.length >= 4) risks.push('A predictable damage profile is easier to counter with defensive items.');
+      if(data.covered < 5) risks.push(`${label} covers only ${data.covered}/5 core role groups in this model.`);
+      if(data.features.engage >= 2 && data.features.hardCC >= 2) winConditions.push('Control vision, force grouped fights, and start on a priority carry before the enemy can spread out.');
+      else if(data.features.poke >= 2) winConditions.push('Set up objectives early, maintain distance, and use poke before committing to a full fight.');
+      else winConditions.push('Create a lane or tempo advantage first, then convert it into controlled objective fights.');
+      if(data.features.objective >= 2) winConditions.push('Use objective pressure to force the opponent into narrow entrances where the composition is strongest.');
+      if(data.features.sustain >= 2) winConditions.push('Favor extended fights and repeated contests instead of one all-in burst exchange.');
+      if(data.features.mobility >= 3) winConditions.push('Use mobility to rotate first, create numbers advantages, and avoid predictable front-to-back fights.');
+      risks.push(`MOBA HUB estimated composition score: ${pct}/100; execution and player skill remain decisive.`);
+      return { strengths:strengths.slice(0,6), risks:risks.slice(0,5), winConditions:winConditions.slice(0,3), keyHeroes:keyHeroesFor(data) };
     };
+    const blueDetail = explainFor(teamName(board.blue,room),blue,bluePct); const redDetail = explainFor(teamName(board.red,room),red,redPct);
     return {
       bluePct, redPct, leader, leaderName, confidence,
       blueName:teamName(board.blue,room), redName:teamName(board.red,room), blueTeamKey:board.blue, redTeamKey:board.red,
-      blueNotes:explainFor(teamName(board.blue,room),blue,bluePct), redNotes:explainFor(teamName(board.red,room),red,redPct),
-      summary:`${leaderName} has the current draft edge from role coverage, crowd control, engage options, protection, objective pressure, damage profile, and patch-specific hero statistics.`
+      blueNotes:[...blueDetail.strengths,...blueDetail.risks], redNotes:[...redDetail.strengths,...redDetail.risks],
+      blueStrengths:blueDetail.strengths, redStrengths:redDetail.strengths,
+      blueRisks:blueDetail.risks, redRisks:redDetail.risks,
+      blueWinConditions:blueDetail.winConditions, redWinConditions:redDetail.winConditions,
+      blueKeyHeroes:blueDetail.keyHeroes, redKeyHeroes:redDetail.keyHeroes,
+      summary:`${leaderName} has the current draft edge from role coverage, crowd control, engage options, protection, objective pressure, damage profile, and the available official hero-stat snapshot.`
     };
   }
   function buildSimulationHtml(room, compact = false){
@@ -910,28 +1023,73 @@
     const bluePicks = valuesForTeam(board.blue, 'pick', room).slice(0, 5); const redPicks = valuesForTeam(board.red, 'pick', room).slice(0, 5);
     return `<div class="modal-result-grid"><section><h3>${escapeHtml(teamName(board.blue, room))} · Blue Side</h3><div class="modal-mini-list"><h4>Ban</h4>${resultListHtml(blueBans, 'B')}</div><div class="modal-mini-list"><h4>Pick</h4>${resultListHtml(bluePicks, 'P')}</div></section><section><h3>${escapeHtml(teamName(board.red, room))} · Red Side</h3><div class="modal-mini-list"><h4>Ban</h4>${resultListHtml(redBans, 'B')}</div><div class="modal-mini-list"><h4>Pick</h4>${resultListHtml(redPicks, 'P')}</div></section></div><div class="draft-sim-panel modal-sim">${buildSimulationHtml(room, true)}</div>`;
   }
-  async function maybeSaveHistory(){
-    if(historySaving || !db || !currentRoom || currentRoom.status !== 'finished' || !isHost()) return;
-    const historyId = `${currentRoom.id || currentRoomId}_${gameNumber()}`; if(sessionStorage.getItem(`mobaHubHistorySaved:${historyId}`)) return; historySaving = true;
-    try{ const ref = db.collection('draftHistory').doc(historyId); const snap = await ref.get(); if(!snap.exists){ const boardTeams = displayTeams(currentRoom); await ref.set({ id: historyId, roomId: currentRoom.id || currentRoomId, roomName: currentRoom.roomName || 'Draft Room', game: CONFIG.gameKey, gameNumber: gameNumber(), bestOf: bestOf(), seriesKey: currentRoom.seriesKey || seriesInfo(currentRoom).key, seriesMode: currentRoom.seriesMode || seriesInfo(currentRoom).mode, seriesLabel: seriesLabel(), teamAName: teamName('A'), teamBName: teamName('B'), teamASide: sideForTeam('A'), teamBSide: sideForTeam('B'), blueTeamKey: boardTeams.blue, redTeamKey: boardTeams.red, blueTeamName: teamName(boardTeams.blue), redTeamName: teamName(boardTeams.red), bansA: currentRoom.bansA || [], bansB: currentRoom.bansB || [], picksA: currentRoom.picksA || [], picksB: currentRoom.picksB || [], blueBans: valuesForTeam(boardTeams.blue, 'ban'), redBans: valuesForTeam(boardTeams.red, 'ban'), bluePicks: valuesForTeam(boardTeams.blue, 'pick'), redPicks: valuesForTeam(boardTeams.red, 'pick'), participantUids: [currentRoom.teamAUid, currentRoom.teamBUid, currentRoom.hostUid].filter(Boolean), hostUid: currentRoom.hostUid, simulation: analyzeDraftResult(currentRoom), finishedAtMillis: Date.now(), createdAt: firebase.firestore.FieldValue.serverTimestamp() }); } sessionStorage.setItem(`mobaHubHistorySaved:${historyId}`, '1'); }catch(error){ console.warn('History save failed:', error.message); }finally{ historySaving = false; }
+  async function maybeSaveHistory(roomSource = currentRoom){
+    if(historySaving || !db || !roomSource || roomSource.status !== 'finished' || !isHost()) return;
+    const room = {
+      ...roomSource,
+      bansA:[...(roomSource.bansA || [])], bansB:[...(roomSource.bansB || [])],
+      picksA:[...(roomSource.picksA || [])], picksB:[...(roomSource.picksB || [])],
+      selectedHeroIds:[...(roomSource.selectedHeroIds || [])]
+    };
+    const roomGameNumber=gameNumber(room); const historyId = `${room.id || currentRoomId}_${roomGameNumber}`;
+    if(sessionStorage.getItem(`mobaHubHistorySaved:${historyId}`)) return;
+    historySaving = true;
+    try{
+      const ref = db.collection('draftHistory').doc(historyId); const snap = await ref.get();
+      if(!snap.exists){
+        const boardTeams = displayTeams(room);
+        await ref.set({
+          id: historyId, roomId: room.id || currentRoomId, roomName: room.roomName || 'Draft Room', game: CONFIG.gameKey,
+          gameNumber: roomGameNumber, bestOf: bestOf(room), seriesKey: room.seriesKey || seriesInfo(room).key,
+          seriesMode: room.seriesMode || seriesInfo(room).mode, seriesLabel: seriesLabel(room),
+          teamAName: teamName('A',room), teamBName: teamName('B',room), teamASide: sideForTeam('A',roomGameNumber), teamBSide: sideForTeam('B',roomGameNumber),
+          blueTeamKey: boardTeams.blue, redTeamKey: boardTeams.red, blueTeamName: teamName(boardTeams.blue,room), redTeamName: teamName(boardTeams.red,room),
+          bansA: room.bansA, bansB: room.bansB, picksA: room.picksA, picksB: room.picksB,
+          blueBans: valuesForTeam(boardTeams.blue,'ban',room), redBans: valuesForTeam(boardTeams.red,'ban',room),
+          bluePicks: valuesForTeam(boardTeams.blue,'pick',room), redPicks: valuesForTeam(boardTeams.red,'pick',room),
+          participantUids: [room.teamAUid, room.teamBUid, room.hostUid].filter(Boolean), hostUid: room.hostUid,
+          simulation: analyzeDraftResult(room), finishedAtMillis: Date.now(), createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+      sessionStorage.setItem(`mobaHubHistorySaved:${historyId}`, '1');
+    }catch(error){ console.warn('History save failed:', error.message); }
+    finally{ historySaving = false; }
   }
 
+
   async function copyRoomId(){ if(!currentRoomId) return; await navigator.clipboard.writeText(currentRoomId); showToast('Room Code copied.'); }
-  async function copyResult(){ if(!currentRoom) return; const result = [`MOBA HUB Draft Simulator - ${CONFIG.gameKey} - ${currentRoom.id}`, currentRoom.roomName || 'Draft Room', gameTitle(), `${teamName('A')} (${sideForTeam('A')}) Ban: ${(currentRoom.bansA || []).map(heroLabel).join(', ') || '-'}`, `${teamName('A')} Pick: ${(currentRoom.picksA || []).map(heroLabel).join(', ') || '-'}`, '', `${teamName('B')} (${sideForTeam('B')}) Ban: ${(currentRoom.bansB || []).map(heroLabel).join(', ') || '-'}`, `${teamName('B')} Pick: ${(currentRoom.picksB || []).map(heroLabel).join(', ') || '-'}`, '', `Estimated Draft Advantage: ${analyzeDraftResult(currentRoom).blueName} ${analyzeDraftResult(currentRoom).bluePct}% vs ${analyzeDraftResult(currentRoom).redName} ${analyzeDraftResult(currentRoom).redPct}%`, analyzeDraftResult(currentRoom).summary].join('\n'); await navigator.clipboard.writeText(result); showToast('Result copied.'); }
+  async function copyResult(){
+    if(!currentRoom) return;
+    const sim=analyzeDraftResult(currentRoom); const bullets=(title,values)=>[title,...(values||[]).map((value)=>`- ${value}`)].join('\n');
+    const result = [
+      `MOBA HUB Draft Simulator - ${CONFIG.gameKey} - ${currentRoom.id}`,
+      currentRoom.roomName || 'Draft Room', gameTitle(),
+      `${teamName('A')} (${sideForTeam('A')}) Ban: ${(currentRoom.bansA || []).map(heroLabel).join(', ') || '-'}`,
+      `${teamName('A')} Pick: ${(currentRoom.picksA || []).map(heroLabel).join(', ') || '-'}`, '',
+      `${teamName('B')} (${sideForTeam('B')}) Ban: ${(currentRoom.bansB || []).map(heroLabel).join(', ') || '-'}`,
+      `${teamName('B')} Pick: ${(currentRoom.picksB || []).map(heroLabel).join(', ') || '-'}`, '',
+      `MOBA HUB Estimated Draft Advantage: ${sim.blueName} ${sim.bluePct}% vs ${sim.redName} ${sim.redPct}%`,
+      `Confidence: ${sim.confidence}`, sim.summary, '',
+      bullets(`${sim.blueName} strengths`,sim.blueStrengths), bullets(`${sim.blueName} risks`,sim.blueRisks), bullets(`${sim.blueName} win conditions`,sim.blueWinConditions), bullets(`${sim.blueName} key hero contributions`,sim.blueKeyHeroes), '',
+      bullets(`${sim.redName} strengths`,sim.redStrengths), bullets(`${sim.redName} risks`,sim.redRisks), bullets(`${sim.redName} win conditions`,sim.redWinConditions), bullets(`${sim.redName} key hero contributions`,sim.redKeyHeroes), '',
+      'Disclaimer: this is a MOBA HUB composition estimate, not an official match probability. Player skill, execution, lane outcomes, builds, and in-game decisions can change the result.'
+    ].join('\n');
+    await navigator.clipboard.writeText(result); showToast('Detailed result copied.');
+  }
   async function downloadResultPng(){
     if(!currentRoom) return showToast('Result is not available yet.');
-    const canvas = document.createElement('canvas'); canvas.width = 1500; canvas.height = 1160; const ctx = canvas.getContext('2d');
+    const canvas = document.createElement('canvas'); canvas.width = 1500; canvas.height = 1600; const ctx = canvas.getContext('2d');
     const allIds = [...(currentRoom.bansA || []), ...(currentRoom.picksA || []), ...(currentRoom.bansB || []), ...(currentRoom.picksB || [])]; const imageCache = await buildHeroImageCache(allIds); const gameLogo = await loadImageSafe(gameLogoPath());
-    const gradient = ctx.createLinearGradient(0,0,1500,1160); gradient.addColorStop(0,'#071018'); gradient.addColorStop(0.55,'#0d2030'); gradient.addColorStop(1,'#0a111b'); ctx.fillStyle = gradient; ctx.fillRect(0,0,1500,1160);
-    roundRect(ctx,42,42,1416,1076,34,true,false,'rgba(255,255,255,.055)'); ctx.strokeStyle = 'rgba(245,196,81,.44)'; ctx.lineWidth = 3; roundRect(ctx,42,42,1416,1076,34,false,true);
+    const gradient = ctx.createLinearGradient(0,0,1500,1600); gradient.addColorStop(0,'#071018'); gradient.addColorStop(0.55,'#0d2030'); gradient.addColorStop(1,'#0a111b'); ctx.fillStyle = gradient; ctx.fillRect(0,0,1500,1600);
+    roundRect(ctx,42,42,1416,1516,34,true,false,'rgba(255,255,255,.055)'); ctx.strokeStyle = 'rgba(245,196,81,.44)'; ctx.lineWidth = 3; roundRect(ctx,42,42,1416,1516,34,false,true);
     let headerX = 82; if(gameLogo){ roundRect(ctx,82,72,82,82,18,true,false,'rgba(4,10,16,.72)'); ctx.save(); roundRect(ctx,92,82,62,62,14,false,false); ctx.clip(); ctx.drawImage(gameLogo,92,82,62,62); ctx.restore(); headerX = 184; }
     ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 34px Arial'; ctx.fillText('MOBA HUB Draft Simulator',headerX,108); ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 54px Arial'; ctx.fillText(`${CONFIG.gameKey} ${gameTitle()} Result`,headerX,172);
     ctx.fillStyle = '#a8bacf'; ctx.font = '23px Arial'; ctx.fillText(`${currentRoom.roomName || 'Draft Room'} · Room ${currentRoom.id || currentRoomId}`,headerX,214);
     const boardTeams = displayTeams(currentRoom);
     drawTeamResult(ctx, `${teamName(boardTeams.blue)} · Blue Side`, valuesForTeam(boardTeams.blue, 'ban'), valuesForTeam(boardTeams.blue, 'pick'), 82,250, '#4dabf7', imageCache);
     drawTeamResult(ctx, `${teamName(boardTeams.red)} · Red Side`, valuesForTeam(boardTeams.red, 'ban'), valuesForTeam(boardTeams.red, 'pick'), 770,250, '#ff6b6b', imageCache);
-    drawSimulationResult(ctx, analyzeDraftResult(currentRoom), 82,850, 1336, 210);
-    ctx.fillStyle = '#a8bacf'; ctx.font = '22px Arial'; ctx.fillText(new Date().toLocaleString('en-GB', { hour12:false }),82,1085);
+    drawSimulationResult(ctx, analyzeDraftResult(currentRoom), 82,850, 1336, 625);
+    ctx.fillStyle = '#a8bacf'; ctx.font = '20px Arial'; ctx.fillText(new Date().toLocaleString('en-GB', { hour12:false }),82,1520);
     const a = document.createElement('a'); a.download = `moba-hub-${String(CONFIG.gameKey).toLowerCase()}-${String(currentRoom.id || currentRoomId).toLowerCase()}-game-${gameNumber()}-result.png`; a.href = canvas.toDataURL('image/png'); a.click(); showToast('Result PNG downloaded.');
   }
   async function buildHeroImageCache(heroIds){ const ids = [...new Set((heroIds || []).filter(Boolean))]; const entries = await Promise.all(ids.map(async (heroId) => { const hero = heroById(heroId); if(!hero?.image) return [heroId, null]; const img = await loadImageSafe(hero.image); return [heroId, img]; })); return new Map(entries); }
@@ -955,10 +1113,19 @@
   }
   function drawSimulationResult(ctx, sim, x, y, w, h){
     roundRect(ctx,x,y,w,h,24,true,false,'rgba(245,196,81,.09)'); ctx.strokeStyle = 'rgba(245,196,81,.28)'; ctx.lineWidth = 2; roundRect(ctx,x,y,w,h,24,false,true);
-    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 24px Arial'; ctx.fillText('Estimated Draft Advantage', x+28, y+42);
-    ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 34px Arial'; ctx.fillText(`${sim.blueName}: ${sim.bluePct}%`, x+28, y+88); ctx.fillText(`${sim.redName}: ${sim.redPct}%`, x+420, y+88);
-    ctx.fillStyle = '#a8bacf'; ctx.font = '19px Arial'; wrapText(ctx, sim.summary, x+28, y+126, w-56, 24);
-    ctx.font = '16px Arial'; ctx.fillText('Composition estimate only, not official match statistics.', x+28, y+h-24);
+    ctx.fillStyle = '#ffe3a2'; ctx.font = 'bold 24px Arial'; ctx.fillText('Detailed Draft Analysis · MOBA HUB Estimate', x+28, y+42);
+    ctx.fillStyle = '#eef6ff'; ctx.font = 'bold 32px Arial'; ctx.fillText(`${sim.blueName}: ${sim.bluePct}%`, x+28, y+86); ctx.fillText(`${sim.redName}: ${sim.redPct}%`, x+w/2+14, y+86);
+    ctx.fillStyle = '#a8bacf'; ctx.font = '18px Arial'; wrapText(ctx, `${sim.summary} Confidence: ${sim.confidence}.`, x+28, y+120, w-56, 23);
+    const colW=(w-82)/2, leftX=x+28, rightX=x+54+colW, top=y+180;
+    const drawSection=(title,values,px,py,max=4)=>{ ctx.fillStyle='#ffe3a2';ctx.font='bold 17px Arial';ctx.fillText(title,px,py);let cy=py+26;ctx.fillStyle='#dce8f5';ctx.font='15px Arial';(values||[]).slice(0,max).forEach((value)=>{ctx.fillStyle='#f5c451';ctx.beginPath();ctx.arc(px+5,cy-5,3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#dce8f5';cy=drawWrappedText(ctx,value,px+16,cy,colW-20,19,3)+7;});return cy;};
+    let ly=top,ry=top;
+    ly=drawSection(`${sim.blueName} · Why it can win`,sim.blueStrengths,leftX,ly,4); ly=drawSection('Risks / weaknesses',sim.blueRisks,leftX,ly+8,3); ly=drawSection('Win conditions',sim.blueWinConditions,leftX,ly+8,3); ly=drawSection('Hero contributions',sim.blueKeyHeroes,leftX,ly+8,3);
+    ry=drawSection(`${sim.redName} · Why it can win`,sim.redStrengths,rightX,ry,4); ry=drawSection('Risks / weaknesses',sim.redRisks,rightX,ry+8,3); ry=drawSection('Win conditions',sim.redWinConditions,rightX,ry+8,3); ry=drawSection('Hero contributions',sim.redKeyHeroes,rightX,ry+8,3);
+    ctx.fillStyle = '#8fa2b7'; ctx.font = '14px Arial'; ctx.fillText('Composition estimate only — not official match statistics. Player skill, execution, builds, and in-game decisions remain decisive.', x+28, y+h-24);
+  }
+  function drawWrappedText(ctx,text,x,y,maxWidth,lineHeight,maxLines=4){
+    const words=String(text||'').split(/\s+/);let line='',lines=0,cy=y;
+    for(let i=0;i<words.length;i++){const test=(line?line+' ':'')+words[i];if(ctx.measureText(test).width>maxWidth&&line){ctx.fillText(line,x,cy);cy+=lineHeight;lines++;line=words[i];if(lines>=maxLines-1){const rest=[line,...words.slice(i+1)].join(' ');let clipped=rest;while(clipped.length&&ctx.measureText(clipped+'…').width>maxWidth)clipped=clipped.slice(0,-1);ctx.fillText(clipped+(clipped!==rest?'…':''),x,cy);return cy+lineHeight;}}else line=test;}if(line){ctx.fillText(line,x,cy);cy+=lineHeight;}return cy;
   }
   function roundRect(ctx,x,y,w,h,r,fill,stroke,fillStyle){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); if(fill){ ctx.fillStyle = fillStyle || ctx.fillStyle; ctx.fill(); } if(stroke) ctx.stroke(); }
   function wrapText(ctx,text,x,y,maxWidth,lineHeight,align){ const words = String(text).split(' '); let line = ''; const oldAlign = ctx.textAlign; if(align) ctx.textAlign = align; for(let n=0;n<words.length;n++){ const test = line + words[n] + ' '; if(ctx.measureText(test).width > maxWidth && n>0){ ctx.fillText(line.trim(),x,y); line = words[n] + ' '; y += lineHeight; } else line = test; } ctx.fillText(line.trim(),x,y); ctx.textAlign = oldAlign; }
@@ -966,7 +1133,9 @@
     return new Promise((resolve) => {
       const overlay = document.createElement('div'); overlay.className = 'custom-confirm';
       const name = hero?.name || title || 'Confirm Action'; const heroVisual = hero ? heroAvatarHtml(hero, `custom-confirm-hero ${danger ? 'danger' : 'pick'}`, name) : `<div class="custom-confirm-icon ${danger ? 'danger' : ''}" aria-hidden="true">${danger ? '!' : '✓'}</div>`;
-      overlay.innerHTML = `<div class="custom-confirm-card ${hero ? 'hero-action-card' : ''} ${danger ? 'danger-action' : 'pick-action'}" role="dialog" aria-modal="true">${heroVisual}<div class="custom-confirm-copy"><span class="confirm-action-kicker">${escapeHtml(actionType ? actionType.toUpperCase() : 'CONFIRM')}</span><h2>${escapeHtml(title || 'Confirm Action')}</h2><p>${escapeHtml(message || 'Are you sure?')}</p></div><div class="custom-confirm-actions"><button class="secondary-btn" data-cancel>${escapeHtml(cancelText)}</button><button class="${danger ? 'danger-btn' : 'primary-btn'}" data-confirm>${escapeHtml(confirmText)}</button></div></div>`;
+      const meta = hero ? heroMeta(hero) : null;
+      const metaHtml = hero ? `<div class="confirm-hero-meta"><span><small>WR</small><b>${escapeHtml(formatOfficialRate(meta?.wr))}</b></span><span><small>PR</small><b>${escapeHtml(formatOfficialRate(meta?.pr))}</b></span><span><small>BR</small><b>${escapeHtml(formatOfficialRate(meta?.br))}</b></span></div><div class="confirm-hero-roles">${escapeHtml([...(hero.roles||[]),...(hero.lanes||[])].slice(0,4).join(' · ') || 'Role unavailable')}</div>` : '';
+      overlay.innerHTML = `<div class="custom-confirm-card ${hero ? 'hero-action-card' : ''} ${danger ? 'danger-action' : 'pick-action'}" role="dialog" aria-modal="true">${heroVisual}<div class="custom-confirm-copy"><span class="confirm-action-kicker">${escapeHtml(actionType ? actionType.toUpperCase() : 'CONFIRM')}</span><h2>${escapeHtml(title || 'Confirm Action')}</h2>${metaHtml}<p>${escapeHtml(message || 'Are you sure?').replaceAll('\n','<br>')}</p></div><div class="custom-confirm-actions"><button class="secondary-btn" data-cancel>${escapeHtml(cancelText)}</button><button class="${danger ? 'danger-btn' : 'primary-btn'}" data-confirm>${escapeHtml(confirmText)}</button></div></div>`;
       document.body.appendChild(overlay); const cleanup = (value) => { overlay.remove(); resolve(value); };
       overlay.querySelector('[data-cancel]').addEventListener('click', () => cleanup(false)); overlay.querySelector('[data-confirm]').addEventListener('click', () => cleanup(true)); overlay.addEventListener('click', (e) => { if(e.target === overlay) cleanup(false); });
     });
@@ -977,14 +1146,14 @@
     [els.copyRoomBtn, els.copyRoomTopBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', copyRoomId));
     if(els.startDraftBtn) els.startDraftBtn.addEventListener('click', startDraft); if(els.copyResultBtn) els.copyResultBtn.addEventListener('click', copyResult); if(els.deleteRoomBtn) els.deleteRoomBtn.addEventListener('click', deleteRoom); if(els.deleteRoomTopBtn) els.deleteRoomTopBtn.addEventListener('click', deleteRoom); if(els.leaveRoomBtn) els.leaveRoomBtn.addEventListener('click', leaveRoom);
     [els.downloadResultTopBtn, els.downloadResultTopBtn2, els.downloadResultBtn].filter(Boolean).forEach((btn) => btn.addEventListener('click', downloadResultPng));
-    if(els.heroSearch) els.heroSearch.addEventListener('input', () => { clearTimeout(renderHeroGrid.searchTimer); renderHeroGrid.searchTimer = setTimeout(renderHeroGrid, 80); }); if(els.nextGameBtn) els.nextGameBtn.addEventListener('click', nextGame); if(els.backLobbyBtn) els.backLobbyBtn.addEventListener('click', leaveRoom);
+    if(els.heroSearch) els.heroSearch.addEventListener('input', () => { clearTimeout(renderHeroGrid.searchTimer); renderHeroGrid.searchTimer = setTimeout(renderHeroGrid, 80); }); if(els.nextGameBtn) els.nextGameBtn.addEventListener('click', nextGame); if(els.backLobbyBtn) els.backLobbyBtn.addEventListener('click', leaveRoom); if(els.sessionDeleteBtn) els.sessionDeleteBtn.addEventListener('click', deleteRoom);
     document.querySelectorAll('.side-btn').forEach((btn) => btn.addEventListener('click', () => chooseSide(btn.dataset.side)));
     [els.teamANameInput, els.teamBNameInput].filter(Boolean).forEach((input) => input.addEventListener('change', updateTeamNames));
     document.querySelectorAll('[data-series]').forEach((btn) => btn.addEventListener('click', () => { if(els.seriesFormat) els.seriesFormat.value = normalizeSeriesKey(btn.dataset.series || 'bo3'); updateSeriesButtons(); })); updateSeriesButtons();
     if(els.navToggle && els.siteNav){
       const closeDraftNav = () => { els.siteNav.classList.remove('open'); els.navToggle.setAttribute('aria-expanded','false'); };
       els.navToggle.addEventListener('click', (event) => { event.stopPropagation(); const open = !els.siteNav.classList.contains('open'); els.siteNav.classList.toggle('open', open); els.navToggle.setAttribute('aria-expanded', open ? 'true' : 'false'); });
-      els.siteNav.querySelectorAll('.nav-links a,.nav-links button').forEach((item) => { item.addEventListener('pointerdown', closeDraftNav); item.addEventListener('click', closeDraftNav); });
+      els.siteNav.querySelectorAll('.nav-links a,.nav-links button').forEach((item) => { item.addEventListener('click', () => setTimeout(closeDraftNav,0)); });
       document.addEventListener('click', (event) => { if(!event.target.closest('#siteNav')) closeDraftNav(); });
       document.addEventListener('keydown', (event) => { if(event.key === 'Escape') closeDraftNav(); });
       window.addEventListener('pagehide', closeDraftNav); window.addEventListener('pageshow', closeDraftNav);
