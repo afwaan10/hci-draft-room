@@ -1,0 +1,28 @@
+{
+  "root_folder": "MOBA HUB",
+  "html_files": 26,
+  "javascript_files": 20,
+  "local_references_checked": 335,
+  "broken_local_references": [],
+  "javascript_syntax_failures": [],
+  "item_center": {
+    "canonical_file": "items/index.html",
+    "canonical_exists": true,
+    "duplicate_item_html_exists": false,
+    "item_data_count": 107,
+    "pages_linking_explicitly_to_canonical": [
+      "hok/index.html",
+      "mlbb/index.html",
+      "games/hok/index.html"
+    ],
+    "http_tested_paths": [
+      "/items/",
+      "/items/index.html",
+      "/js/item-database.js",
+      "/js/items-hok.js",
+      "/css/moba-hub.css"
+    ],
+    "http_status": "200 OK"
+  },
+  "passed": true
+}

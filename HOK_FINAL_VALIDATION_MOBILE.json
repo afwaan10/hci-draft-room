@@ -1,0 +1,11 @@
+{
+  "status": "updated_with_latest_hok_zip",
+  "hok_assets_game_count": 116,
+  "hok_assets_heroes_count": 116,
+  "source_zip": "hok.zip",
+  "notes": [
+    "All HOK hero portraits remain PNG.",
+    "Latest uploaded HOK photos inserted into both assets/game/hok and assets/heroes/hok.",
+    "Kept existing project slug lapulapu.png for code compatibility; source latest photo came from hok/lapu-lapu.png."
+  ]
+}

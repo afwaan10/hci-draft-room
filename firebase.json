@@ -13,6 +13,14 @@
     "trailingSlash": true,
     "rewrites": [
       {
+        "source": "/items/",
+        "destination": "/items/index.html"
+      },
+      {
+        "source": "/items",
+        "destination": "/items/index.html"
+      },
+      {
         "source": "/draft/hok/**",
         "destination": "/hok/index.html"
       },
