@@ -21,7 +21,7 @@
       <div class="nav-links" id="navLinks">
         <a href="#create-room">Create Room</a>
         <a href="#join-room">Join Room</a>
-        <a href="../">Home</a><a href="../map/?game=mlbb">Map Planner</a><a href="../heroes/">Heroes</a><a href="../items/">Items</a><a href="../games/aov/">Arena of Valor</a><a href="../team-center/">Team Center</a><a href="../profile/">Profile</a><button class="nav-logout" type="button" data-logout>Logout</button>
+        <a href="../">Home</a><a href="../map/?game=mlbb">Map Planner</a><a href="../heroes/">Heroes</a><a href="../items/index.html">Items</a><a href="../games/aov/">Arena of Valor</a><a href="../team-center/">Team Center</a><a href="../profile/">Profile</a><button class="nav-logout" type="button" data-logout>Logout</button>
       </div>
       <div class="nav-socials"><span class="mini-auth" id="signedUserMini">Checking login...</span><div class="social-links" role="group" aria-label="Community links">
   <a class="icon-link ig" href="https://www.instagram.com/hci.official/" target="_blank" rel="noopener" aria-label="Instagram Community Official"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 4.2A3.8 3.8 0 1 1 12 15.8 3.8 3.8 0 0 1 12 8.2Zm0 2A1.8 1.8 0 1 0 12 13.8 1.8 1.8 0 0 0 12 10.2ZM17.5 6.4a1.1 1.1 0 1 1-1.1 1.1 1.1 1.1 0 0 1 1.1-1.1Z"/></svg></a>
@@ -122,7 +122,7 @@
   </main>
 
   <div class="session-modal" id="sessionModal" hidden>
-    <div class="session-modal-card"><span class="eyebrow">Draft Complete</span><h2 id="sessionModalTitle">Game complete</h2><p>Draft result, composition analysis, and action controls are shown below.</p><div class="modal-actions"><button type="button" class="primary-btn" id="nextGameBtn">Next Game</button><button type="button" class="secondary-btn" id="backLobbyBtn">Leave Match</button><button type="button" class="danger-btn" id="downloadResultBtn">Download Result</button></div></div>
+    <div class="session-modal-card"><span class="eyebrow">Draft Complete</span><h2 id="sessionModalTitle">Game complete</h2><p>Draft result, composition analysis, and action controls are shown below.</p><div class="modal-actions"><button type="button" class="primary-btn" id="nextGameBtn" hidden>Next Game</button><button type="button" class="primary-btn" id="downloadResultBtn">Download Result</button><button type="button" class="secondary-btn" id="backLobbyBtn">Leave Match</button><button type="button" class="danger-btn" id="sessionDeleteBtn" hidden>Delete Match / Room</button></div></div>
   </div>
   <div class="toast" id="toast" hidden></div>
 
