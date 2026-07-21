@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="icon" href="../assets/brand/moba-hub-favicon-32.png">
+  <title>Item Center · MOBA HUB</title>
+  <meta name="description" content="Browse Honor of Kings item images, attributes, prices, effects, and role recommendations.">
+  <link rel="stylesheet" href="../css/moba-hub.css">
+  <script src="../js/path-config.js"></script>
+  <script>
+    // Local Android previews should reveal the page quickly even when Firebase is offline.
+    window.setTimeout(function () {
+      document.body?.classList.add('auth-ready');
+      var loader = document.querySelector('.mh-loader');
+      if (loader) {
+        loader.classList.add('is-done');
+        window.setTimeout(function () { loader.remove(); }, 280);
+      }
+    }, /^(?:localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === 'file:' ? 900 : 6000);
+  </script>
+</head>
+<body data-auth="protected">
+  <div class="mh-loader">
+    <div class="mh-loader-card">
+      <div class="mh-loader-mark"><img src="../assets/brand/moba-hub-icon.png" alt="MOBA HUB"></div>
+      <div class="mh-spinner"></div>
+      <small>Loading Item Center</small>
+    </div>
+  </div>
+
+  <div class="mh-app">
+    <header class="mh-nav">
+      <div class="mh-nav-inner">
+        <a class="mh-brand" href="../index.html">
+          <picture class="mh-brand-picture">
+            <source media="(max-width: 600px)" srcset="../assets/brand/moba-hub-icon.png">
+            <img class="mh-brand-logo" src="../assets/brand/moba-hub-logo-horizontal.png" alt="MOBA HUB">
+          </picture>
+        </a>
+
+        <button class="mh-menu-toggle" data-nav-toggle type="button" aria-expanded="false" aria-label="Open navigation">☰</button>
+
+        <nav class="mh-nav-links" data-nav-links>
+          <a href="../index.html">Home</a>
+          <a href="../games/hok/index.html" aria-current="page">Honor of Kings</a>
+          <a href="../games/mlbb/index.html">Mobile Legends</a>
+          <a href="../games/aov/index.html">Arena of Valor</a>
+          <a href="../team-center/index.html">Team Center</a>
+        </nav>
+
+        <div class="mh-profile-wrap">
+          <button class="mh-profile-btn" data-profile-toggle type="button" aria-label="Open profile menu">
+            <span class="mh-avatar" data-user-photo>M</span>
+            <span class="mh-profile-copy"><strong data-user-name>User</strong><small>Item Center</small></span>
+          </button>
+          <div class="mh-menu" data-profile-menu hidden>
+            <a href="../profile/index.html">Profile</a>
+            <a href="../team-center/index.html">Team Center</a>
+            <a href="../draft-history/index.html">Draft History</a>
+            <button class="danger" data-logout type="button">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="mh-main">
+      <header class="mh-page-head">
+        <div>
+          <span class="mh-kicker">Honor of Kings</span>
+          <h1>Item Center</h1>
+          <p>Browse the international-server item catalog and open an item for its image, price, attributes, effects, build information, and role guidance.</p>
+        </div>
+        <a class="mh-btn" href="../games/hok/index.html">Back to HOK Tools</a>
+      </header>
+
+      <div class="item-controls">
+        <input class="mh-input" id="itemSearch" type="search" placeholder="Search items, attributes, or effects..." autocomplete="off">
+        <select class="mh-select" id="itemCategory" aria-label="Filter item category"></select>
+        <span class="item-result-count" id="itemResultCount">Loading items…</span>
+      </div>
+
+      <section class="item-grid" id="itemGrid" aria-live="polite">
+        <div class="mh-empty item-empty">Preparing the local item database…</div>
+      </section>
+
+      <section class="mh-panel mh-panel-pad mh-section">
+        <span class="mh-kicker">Reference</span>
+        <h2>International item database</h2>
+        <p class="mh-help">Season 15 item records include shop price, attributes, item effects, and build components. Shop prices are intentionally kept separate from component totals.</p>
+      </section>
+    </main>
+  </div>
+
+  <div class="mh-modal" id="itemModal" hidden>
+    <article class="mh-modal-card" role="dialog" aria-modal="true" aria-labelledby="itemModalName">
+      <header class="mh-modal-head">
+        <h2 id="itemModalName">Item</h2>
+        <button type="button" class="mh-modal-close" id="itemModalClose" aria-label="Close">×</button>
+      </header>
+      <div class="mh-modal-body">
+        <div class="item-detail-top">
+          <div class="item-icon" id="itemModalIcon"></div>
+          <div>
+            <span class="mh-kicker">Equipment</span>
+            <p id="itemModalMeta" class="mh-status"></p>
+            <p id="itemModalDescription"></p>
+          </div>
+        </div>
+        <h3>Attributes</h3>
+        <div class="attribute-list" id="itemAttributes"></div>
+        <h3>Passive and Active Effects</h3>
+        <div class="attribute-list" id="itemPassives"></div>
+        <h3>Recommended Roles</h3>
+        <div class="hero-tags" id="itemRoles"></div>
+        <div id="itemBuildSection" hidden>
+          <h3>Build Path</h3>
+          <div class="hero-tags" id="itemBuildPath"></div>
+        </div>
+        <div id="itemHeroesSection" hidden>
+          <h3>Recommended Heroes</h3>
+          <div class="hero-tags" id="itemHeroes"></div>
+        </div>
+        <p class="mh-help" id="itemPatch" style="margin-top: 18px"></p>
+        <a class="mh-source" id="itemSource" href="https://hokstats.gg/items/" target="_blank" rel="noopener noreferrer">Open item reference ↗</a>
+      </div>
+    </article>
+  </div>
+
+  <noscript><div class="mh-auth-error"><section class="mh-auth-error-card"><h1>JavaScript is required.</h1><p>Enable JavaScript to open the Item Center.</p></section></div></noscript>
+
+  <script>
+    // Keep production protected, but allow Android localhost preview without a Firebase session.
+    if (/^(?:localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === 'file:') {
+      document.body.dataset.auth = 'public';
+    }
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/app-core.js"></script>
+  <script src="../js/items-hok.js"></script>
+  <script src="../js/item-database.js"></script>
+</body>
+</html>
