@@ -1002,3 +1002,48 @@ body.draft-game-page{background:radial-gradient(circle at 50% -10%,rgba(227,183,
   .pending-pick-slot span b{font-size:.78rem}
 }
 .sim-confidence{display:inline-flex;align-items:center;padding:4px 8px;border:1px solid rgba(245,196,81,.25);border-radius:999px;color:#ffe3a2;font-size:.72rem;font-weight:800;white-space:nowrap}
+
+/* =========================================================
+   MOBA HUB Major Draft Update
+   ========================================================= */
+.nav-links,.nav-links a,.nav-links button{pointer-events:auto;touch-action:manipulation}.site-nav.open{z-index:2200}.site-nav.open .nav-links{z-index:2205}
+.hero-meta-line{display:none!important}
+.hero-card>span:last-child{min-width:0}.hero-card .hero-name{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Hero action popup now carries official hero statistics. */
+.custom-confirm-card.hero-action-card{width:min(520px,calc(100vw - 28px));grid-template-columns:130px minmax(0,1fr);align-items:start}
+.custom-confirm-hero{width:130px;height:168px;border-radius:18px}.custom-confirm-copy p{white-space:normal;line-height:1.55}
+.confirm-hero-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:13px 0 8px}.confirm-hero-meta span{padding:10px 8px;border:1px solid rgba(255,255,255,.1);border-radius:11px;background:rgba(255,255,255,.035);text-align:center}.confirm-hero-meta small{display:block;color:#91a5b8;font-size:9px;font-weight:900;letter-spacing:.09em}.confirm-hero-meta b{display:block;margin-top:2px;color:#ffe09a;font-size:16px}.confirm-hero-roles{margin-bottom:7px;color:#aebed0;font-size:11px}
+
+/* Compact double-pick tray: does not cover the hero browser. */
+.pending-pick-panel{position:sticky;bottom:10px;z-index:85;display:grid;grid-template-columns:minmax(180px,1fr) auto auto;align-items:center;gap:12px;margin:10px 0;padding:10px 12px;border:1px solid rgba(245,196,81,.38);border-radius:16px;background:rgba(8,15,22,.96);box-shadow:0 14px 40px rgba(0,0,0,.42);backdrop-filter:blur(15px)}
+.pending-pick-copy{min-width:0}.pending-pick-copy strong,.pending-pick-copy small{display:block}.pending-pick-copy small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pending-pick-slots{display:flex;gap:8px}.pending-pick-slot{min-width:142px;min-height:50px}.pending-pick-actions{display:flex;gap:8px}.pending-pick-actions button{min-height:42px}
+
+/* Previous-game draft history uses the unused desktop side space. */
+.series-history-layout{display:block;min-width:0}.series-history-main{min-width:0}.series-history-panel{display:none}
+@media(min-width:1320px){
+  .draft-stage{max-width:none}.series-history-layout.has-history{display:grid;grid-template-columns:250px minmax(720px,1fr) 250px;align-items:start;gap:14px;width:min(1620px,calc(100vw - 28px));margin-left:50%;transform:translateX(-50%)}
+  .series-history-layout.has-history>.series-history-main{min-width:0;margin:0}
+  .series-history-layout.has-history .series-history-panel{display:block;position:sticky;top:96px;max-height:calc(100vh - 116px);padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:18px;background:rgba(9,15,22,.92);box-shadow:0 18px 50px rgba(0,0,0,.28);overflow:hidden}
+  .series-history-panel.blue-history{border-color:rgba(77,171,247,.30)}.series-history-panel.red-history{border-color:rgba(255,107,107,.30)}
+  .series-history-panel header{padding:3px 3px 12px;border-bottom:1px solid rgba(255,255,255,.08)}.series-history-panel h3{margin:3px 0;font-size:17px}.series-history-panel header small{color:#8fa3b8}
+  .series-history-scroll{display:grid;gap:9px;max-height:calc(100vh - 220px);padding-top:10px;overflow:auto;overscroll-behavior:contain}
+  .series-history-card{border:1px solid rgba(255,255,255,.09);border-radius:13px;background:rgba(255,255,255,.025);overflow:hidden}.series-history-card summary{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px;cursor:pointer;font-weight:850}.series-history-card summary small{color:#93a7ba;font-size:10px}.series-history-card>div{padding:0 10px 11px}.series-history-card label{display:block;margin:8px 0 5px;color:#91a5b8;font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+  .series-history-strip{display:flex;flex-wrap:wrap;gap:5px}.series-history-hero{position:relative;width:36px;height:36px;border-radius:9px;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:#111b26}.series-history-avatar{display:grid;width:100%;height:100%;place-items:center;font-size:10px}.series-history-avatar img{width:100%;height:100%;object-fit:cover}.series-history-hero>b{position:absolute;right:1px;bottom:1px;min-width:13px;height:13px;padding:0 2px;border-radius:4px;background:rgba(0,0,0,.8);color:#fff;font-size:8px;line-height:13px;text-align:center}.series-history-empty{color:#76889a}
+}
+
+/* Intermission logo uses its transparent source without a grey crop box. */
+.intermission-brand{display:grid;justify-items:center;gap:7px;margin:2px auto 10px}.intermission-brand img{width:min(210px,58vw);height:82px;object-fit:contain;object-position:center;background:transparent!important;border:0!important;border-radius:0!important;filter:drop-shadow(0 10px 24px rgba(0,0,0,.45))}.intermission-brand span{color:#f5c451;font-size:11px;font-weight:950;letter-spacing:.18em}
+.session-game-logo{background:transparent!important;border:0!important}.session-game-logo img{object-fit:contain!important;background:transparent!important}
+.session-modal-card{max-height:min(92vh,850px);overflow:auto}.session-result-body{min-width:0}
+
+@media(max-width:900px){
+  .custom-confirm-card.hero-action-card{display:grid;grid-template-columns:92px minmax(0,1fr);padding:14px}.custom-confirm-hero{width:92px;height:122px}.confirm-hero-meta{gap:5px}.confirm-hero-meta span{padding:8px 4px}
+  .pending-pick-panel{bottom:70px;grid-template-columns:1fr;padding:9px}.pending-pick-copy small{white-space:normal}.pending-pick-slots{overflow-x:auto}.pending-pick-slot{flex:0 0 145px}.pending-pick-actions{display:grid;grid-template-columns:1fr 1.5fr}
+}
+@media(max-width:560px){.custom-confirm-card.hero-action-card{grid-template-columns:1fr}.custom-confirm-hero{width:100%;height:170px}.custom-confirm-hero img{object-position:center 20%}.confirm-hero-meta b{font-size:14px}}
+
+/* Keep final/intermission actions reachable while long analysis scrolls. */
+.session-modal-card{display:flex;flex-direction:column;overflow:hidden}
+.session-modal-card>.session-result-body{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding-right:3px}
+.session-modal-card>.modal-actions{flex:0 0 auto;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);background:#111720}

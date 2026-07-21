@@ -1,6 +1,6 @@
 .map42-main{width:min(1800px,100%);margin:auto;padding:20px 20px 80px}.map42-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:16px}.map42-head h1{font-size:clamp(32px,4vw,54px);line-height:1;margin:7px 0}.map42-head p{margin:0;color:var(--muted);max-width:760px}.map42-game-tabs{display:flex;gap:8px}.map42-game-tabs button{min-height:44px;padding:9px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font-weight:850}.map42-game-tabs button.active{border-color:var(--gold);background:rgba(227,183,73,.11)}
 .map42-layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:14px;min-height:calc(100vh - 180px)}.map42-tools{padding:16px;overflow:auto;max-height:calc(100vh - 100px);position:sticky;top:86px}.tool-section{padding:0 0 16px;margin:0 0 16px;border-bottom:1px solid var(--line)}.tool-section:last-child{border:0}.tool-section h2,.tool-section h3{margin:0 0 10px}.tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.tool-btn{min-height:46px;padding:8px;border:1px solid var(--line);border-radius:11px;background:#0d1219;color:var(--text);font-size:12px;font-weight:800}.tool-btn.active{border-color:var(--gold);background:rgba(227,183,73,.12);color:var(--gold-2)}.tool-btn b{display:block;font-size:19px}.team-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.team-picker button{height:40px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text)}.team-picker button.active[data-team=blue]{border-color:var(--blue);color:#a9d0ff}.team-picker button.active[data-team=red]{border-color:var(--red);color:#ffadb6}.team-picker button.active[data-team=neutral]{border-color:var(--gold);color:var(--gold-2)}.role-picker{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.map42-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.map42-stage-panel{min-width:0;display:flex;flex-direction:column;overflow:hidden}.map42-stage-toolbar{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--line);background:rgba(17,23,32,.92)}.map42-stage-toolbar .spacer{flex:1}.zoom-readout{min-width:62px;text-align:center;font-size:12px;color:var(--muted)}.map42-viewport{position:relative;flex:1;min-height:620px;overflow:hidden;background:#070a0e;touch-action:none;cursor:crosshair}.map42-viewport.pan-mode{cursor:grab}.map42-viewport.is-panning{cursor:grabbing}.map42-world{position:absolute;left:0;top:0;width:1600px;height:900px;transform-origin:0 0;will-change:transform;background:#111}.map42-map-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;user-select:none;pointer-events:none}.map42-grid-overlay{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:80px 80px}.map42-routes{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}.map42-markers{position:absolute;inset:0}.map42-marker{position:absolute;transform:translate(-50%,-50%);min-width:48px;min-height:48px;border:2px solid rgba(255,255,255,.86);border-radius:50%;display:grid;place-items:center;padding:5px;background:#252f3b;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.4);font-weight:950;user-select:none;touch-action:none}.map42-marker.blue{background:#2066b2}.map42-marker.red{background:#a93042}.map42-marker.neutral{background:#8f6c1c}.map42-marker.note{border-radius:11px;min-width:80px;max-width:180px;font-size:12px;text-align:center}.map42-marker.selected{outline:3px solid var(--gold);outline-offset:3px}.map42-route{fill:none;stroke-width:7;vector-effect:non-scaling-stroke;stroke-linecap:round}.map42-route.blue{stroke:#4e9dff}.map42-route.red{stroke:#ff6577}.map42-route.neutral{stroke:#f0c75e}.map42-route.preview{stroke-dasharray:14 10;opacity:.7}.map42-hint{padding:9px 12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;background:rgba(17,23,32,.92)}
+.map42-stage-panel{min-width:0;display:flex;flex-direction:column;overflow:hidden}.map42-stage-toolbar{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--line);background:rgba(17,23,32,.92)}.map42-stage-toolbar .spacer{flex:1}.zoom-readout{min-width:62px;text-align:center;font-size:12px;color:var(--muted)}.map42-viewport{position:relative;flex:1;min-height:620px;overflow:hidden;background:#070a0e;touch-action:none;cursor:crosshair}.map42-viewport.pan-mode{cursor:grab}.map42-viewport.is-panning{cursor:grabbing}.map42-world{position:absolute;left:0;top:0;width:1600px;height:900px;transform-origin:0 0;will-change:transform;background:#111}.map42-map-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;user-select:none;pointer-events:none}.map42-grid-overlay{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:80px 80px}.map42-routes{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}.map42-markers{position:absolute;inset:0;pointer-events:none}.map42-marker{pointer-events:auto;position:absolute;transform:translate(-50%,-50%) scale(var(--map-object-scale,1));transform-origin:center;min-width:48px;min-height:48px;border:2px solid rgba(255,255,255,.86);border-radius:50%;display:grid;place-items:center;padding:5px;background:#252f3b;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.4);font-weight:950;user-select:none;touch-action:none}.map42-marker.blue{background:#2066b2}.map42-marker.red{background:#a93042}.map42-marker.neutral{background:#8f6c1c}.map42-marker.note{border-radius:11px;min-width:80px;max-width:180px;font-size:12px;text-align:center}.map42-marker.selected{outline:3px solid var(--gold);outline-offset:3px}.map42-route{fill:none;stroke-width:7;vector-effect:non-scaling-stroke;stroke-linecap:round}.map42-route.blue{stroke:#4e9dff}.map42-route.red{stroke:#ff6577}.map42-route.neutral{stroke:#f0c75e}.map42-route.preview{stroke-dasharray:14 10;opacity:.7}.map42-hint{padding:9px 12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;background:rgba(17,23,32,.92)}
 .map42-mobile-bar{display:none;position:fixed;left:8px;right:8px;bottom:8px;z-index:1200;padding:7px;border:1px solid var(--line);border-radius:16px;background:rgba(17,23,32,.96);box-shadow:var(--shadow);grid-template-columns:repeat(5,1fr);gap:6px}.map42-mobile-bar button{min-height:50px;border:0;border-radius:11px;background:transparent;color:var(--muted);font-size:11px}.map42-mobile-bar button b{display:block;color:var(--text);font-size:18px}.map42-mobile-bar button.active{background:rgba(227,183,73,.12);color:var(--gold-2)}
 @media(max-width:900px){.map42-main{padding:14px 12px 88px}.map42-head{align-items:flex-start;flex-direction:column}.map42-layout{grid-template-columns:1fr;min-height:auto}.map42-tools{position:fixed;left:10px;right:10px;bottom:74px;top:auto;z-index:1150;max-height:68vh;display:none;box-shadow:var(--shadow)}.map42-tools.open{display:block}.map42-stage-panel{height:calc(100vh - 190px);min-height:520px}.map42-viewport{min-height:0}.map42-mobile-bar{display:grid}.map42-stage-toolbar .desktop-only{display:none}}
 @media(max-width:520px){.map42-head p{font-size:13px}.map42-game-tabs{width:100%}.map42-game-tabs button{flex:1}.map42-stage-panel{height:calc(100vh - 230px);min-height:450px}.map42-stage-toolbar{gap:5px}.map42-stage-toolbar .mh-btn{padding:8px 10px}.map42-marker{min-width:44px;min-height:44px}.tool-grid{grid-template-columns:repeat(3,1fr)}}
@@ -11,3 +11,57 @@
 .map42-route.preview{pointer-events:none}
 .map42-stage-toolbar button:disabled,.map42-actions button:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:900px){.map42-tools.open{overscroll-behavior:contain}.map42-viewport{touch-action:none}}
+
+/* Major UX revision: contextual editing and mobile-first tactical controls */
+.map42-tools .tool-grid-primary{grid-template-columns:repeat(2,minmax(0,1fr))}
+.map42-tools details.tool-section{padding-bottom:10px}
+.map42-tools details.tool-section summary{cursor:pointer;font-weight:900;list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:42px}
+.map42-tools details.tool-section summary::-webkit-details-marker{display:none}
+.map42-tools details.tool-section summary::after{content:'⌄';color:var(--muted);transition:transform .18s ease}
+.map42-tools details[open].tool-section summary::after{transform:rotate(180deg)}
+.map42-plan-fields{display:grid;gap:10px;padding-top:10px}
+.map42-plan-fields textarea{min-height:84px;resize:vertical}
+.map42-stage-toolbar{flex-wrap:wrap}
+.map42-stage-toolbar .mh-btn{min-height:40px}
+.map42-route-handle{fill:#f5c451;stroke:#111720;stroke-width:5;vector-effect:non-scaling-stroke;cursor:grab;pointer-events:all}
+.map42-route-handle:active{cursor:grabbing}
+.map42-routes{pointer-events:none}
+.map42-route{pointer-events:stroke}
+.map42-object-menu{position:fixed;z-index:1800;width:min(260px,calc(100vw - 24px));padding:8px;border:1px solid rgba(245,196,81,.35);border-radius:16px;background:rgba(13,18,25,.98);box-shadow:0 22px 70px rgba(0,0,0,.55);backdrop-filter:blur(16px)}
+.map42-object-menu[hidden]{display:none!important}
+.map42-object-menu header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 5px 9px;border-bottom:1px solid var(--line)}
+.map42-object-menu header strong{font-size:13px}
+.map42-object-menu header button{width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:22px}
+.map42-object-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding-top:8px}
+.map42-object-actions button{min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-weight:800;text-align:left;padding:8px 10px}
+.map42-object-actions button:hover,.map42-object-actions button:focus-visible{border-color:var(--gold);color:var(--gold-2)}
+.map42-object-actions button.danger{border-color:rgba(255,101,119,.35);color:#ff9aa6}
+.map42-marker{cursor:grab}
+.map42-marker:active{cursor:grabbing}
+.map42-marker.selected{outline:3px solid var(--gold);outline-offset:4px;box-shadow:0 0 0 8px rgba(245,196,81,.14),0 10px 28px rgba(0,0,0,.5)}
+.map-plan-list{display:grid;gap:8px}
+.map-plan-list>button{display:grid;gap:4px;text-align:left;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--surface-2);color:var(--text)}
+.map-plan-list>button:hover,.map-plan-list>button:focus-visible{border-color:var(--gold)}
+.map-plan-list>button small{color:var(--muted)}
+body.map-object-menu-open .map42-marker.selected{z-index:2}
+
+@media(min-width:901px){
+  .map42-object-menu{transform:translate(12px,12px)}
+}
+@media(max-width:900px){
+  .map42-layout{display:block}
+  .map42-object-menu{left:8px!important;right:8px!important;bottom:8px!important;top:auto!important;width:auto;border-radius:20px;padding:10px;padding-bottom:max(10px,env(safe-area-inset-bottom));transform:none!important}
+  .map42-object-actions{grid-template-columns:repeat(3,1fr)}
+  .map42-object-actions button{text-align:center;padding:8px 4px;font-size:12px}
+  .map42-tools{padding-bottom:max(18px,env(safe-area-inset-bottom))}
+  .map42-stage-panel{border-radius:16px}
+  .map42-mobile-bar{bottom:max(8px,env(safe-area-inset-bottom))}
+  body.map-object-menu-open .map42-mobile-bar{opacity:0;pointer-events:none}
+}
+@media(max-width:520px){
+  .map42-head h1{font-size:31px}
+  .map42-head p{line-height:1.55}
+  .map42-stage-toolbar{padding:7px}
+  .map42-object-actions{grid-template-columns:repeat(2,1fr)}
+  .map42-tools .tool-grid-primary{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
