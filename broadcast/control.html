@@ -20,6 +20,14 @@
       </div>
     </header>
 
+    <nav class="operator-command-bar" aria-label="Navigasi cepat operator">
+      <a href="#matchSettingsHeading">MATCH SETUP</a>
+      <a href="#draftControls">DRAFT</a>
+      <a href="#ingameControls">IN-GAME</a>
+      <a href="#resultControlPanel">RESULT</a>
+      <a href="#resetHeading" class="is-danger">RESET</a>
+    </nav>
+
     <section class="panel mode-panel" aria-labelledby="modeHeading">
       <div class="panel-heading">
         <div>
@@ -313,84 +321,60 @@
       <div class="panel-heading result-panel-heading">
         <div>
           <p class="section-kicker">POST-GAME RESULT</p>
-          <h2 id="resultControlHeading">Result Scanner & Overlay Editor</h2>
-          <p class="result-panel-subtitle">Screenshot ukuran bebas → pilih/deteksi area result → scan hero, item, IGN, KDA, gold → review → tayangkan.</p>
+          <h2 id="resultControlHeading">Result Scanner</h2>
+          <p class="result-panel-subtitle">Input screenshot hasil asli HoK → Auto Scan → Review → Tayangkan. Layout output tidak memengaruhi scanner.</p>
         </div>
         <div class="result-publish-actions">
-          <a class="button button-secondary result-open-link" href="result.html" target="_blank" rel="noopener">Buka Result Overlay</a>
+          <a class="button button-secondary result-open-link" href="result.html?preview=1" target="_blank" rel="noopener">Preview Overlay</a>
           <button id="resultHideButton" class="button button-secondary" type="button">Sembunyikan</button>
-          <button id="resultShowButton" class="button button-primary" type="button">Tayangkan Result</button>
+          <button id="resultShowButton" class="button button-gold" type="button">Tayangkan Result</button>
         </div>
       </div>
 
-      <div class="result-workspace-grid">
-        <article class="control-card result-scan-card">
+      <div class="result-simple-flow">
+        <article class="control-card result-step-card">
+          <div class="step-badge">01</div>
           <div class="control-card-heading">
             <div>
-              <p class="section-kicker">AUTO SCAN</p>
-              <h3>Screenshot Result</h3>
+              <p class="section-kicker">INPUT</p>
+              <h3>Screenshot Hasil HoK</h3>
             </div>
             <span id="resultScanStatus" class="result-scan-badge" data-status="idle">BELUM SCAN</span>
           </div>
 
-          <div class="result-scan-toolbar">
+          <div class="result-input-actions">
             <label class="file-button result-file-button">
-              Upload Screenshot
+              ↑ Upload Screenshot
               <input id="resultScreenshotInput" type="file" accept="image/png,image/jpeg,image/webp">
             </label>
-
-            <button id="resultCaptureScreenButton" class="button button-secondary result-capture-button" type="button">Tangkap Layar Desktop</button>
-            <button id="resultPasteButton" class="button button-secondary result-capture-button" type="button">Tempel Clipboard</button>
-
-            <label class="field compact-field">
-              <span>Mode Scan</span>
-              <select id="resultScanMode">
-                <option value="fast">Cepat — Hero + Item</option>
-                <option value="full">Lengkap — Hero + Item + OCR</option>
-              </select>
-            </label>
-
-            <label class="field compact-field">
-              <span>Layout Result</span>
-              <select id="resultLayoutPreset">
-                <option value="horizontal">5v5 Horizontal</option>
-                <option value="rows">5v5 List / Rows</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="result-role-order" aria-label="Urutan role scanner">
-            <strong>Urutan slot wajib:</strong>
-            <span>1 Clash Lane</span>
-            <span>2 Jungle</span>
-            <span>3 Mid Lane</span>
-            <span>4 Farm Lane</span>
-            <span>5 Roam</span>
+            <button id="resultCaptureScreenButton" class="button button-secondary" type="button">▣ Tangkap Layar</button>
+            <button id="resultPasteButton" class="button button-secondary" type="button">⌘ Tempel Clipboard</button>
           </div>
 
           <div class="result-preview-shell">
-            <canvas id="resultScreenshotCanvas" width="960" height="540" aria-label="Preview screenshot dan area scanner"></canvas>
+            <canvas id="resultScreenshotCanvas" width="960" height="540" aria-label="Preview screenshot HoK dan area scan"></canvas>
             <div id="resultPreviewEmpty" class="result-preview-empty">
               <strong>Belum ada screenshot</strong>
-              <span>Upload screenshot desktop, Snipping Tool, atau crop result. Resolusi tidak wajib 1920×1080.</span>
+              <span>Upload hasil asli Honor of Kings. Screenshot boleh dari Android Box, desktop, Snipping Tool, atau crop manual.</span>
             </div>
           </div>
 
-          <div class="result-area-actions">
-            <button id="resultAutoAreaButton" class="button button-secondary" type="button">Deteksi Area Otomatis</button>
-            <button id="resultFullAreaButton" class="button button-secondary" type="button">Gunakan Seluruh Gambar</button>
-            <button id="resultManualAreaButton" class="button button-secondary" type="button">Pilih Area Manual</button>
-            <button id="resultCalibrateButton" class="button button-secondary" type="button">Kalibrasi 10 Slot</button>
-            <button id="resultResetCalibrationButton" class="button button-secondary" type="button">Reset Kalibrasi</button>
+          <div class="result-role-order" aria-label="Urutan role scanner">
+            <strong>Mapping slot:</strong>
+            <span>1 Clash</span>
+            <span>2 Jungle</span>
+            <span>3 Mid</span>
+            <span>4 Farm</span>
+            <span>5 Roam</span>
           </div>
 
           <div id="resultScanHint" class="result-scan-hint">
-            Upload screenshot. Scanner akan menormalisasi area result ke koordinat internal 1920×1080.
+            Scanner otomatis mencari panel hasil HoK dan memetakan 5 baris Blue + 5 baris Red.
           </div>
 
-          <div class="result-scan-actions">
-            <button id="resultSyncBroadcastButton" class="button button-secondary" type="button">Ambil Team / Roster dari Draft</button>
-            <button id="resultScanButton" class="button button-primary result-scan-main-button" type="button" disabled>SCAN RESULT</button>
+          <div class="result-scan-primary-row">
+            <button id="resultSyncBroadcastButton" class="button button-secondary" type="button">Ambil Roster Draft</button>
+            <button id="resultScanButton" class="button button-primary result-scan-main-button" type="button" disabled>⌁ AUTO SCAN RESULT</button>
           </div>
 
           <div class="result-progress-block" aria-live="polite">
@@ -401,18 +385,49 @@
             </div>
           </div>
 
-          <p class="result-ocr-note">
-            Mode Lengkap menggunakan OCR browser saat online. Jika OCR gagal, Hero + Item tetap diproses dan IGN/KDA/Gold bisa dikoreksi manual.
-          </p>
+          <details class="result-advanced-module">
+            <summary>Scanner Lanjutan</summary>
+            <div class="result-advanced-body">
+              <label class="field compact-field">
+                <span>Mode Scan</span>
+                <select id="resultScanMode">
+                  <option value="fast">Cepat — Hero + Item</option>
+                  <option value="full">Lengkap — Hero + Item + OCR</option>
+                </select>
+              </label>
+
+              <div class="result-area-actions">
+                <button id="resultAutoAreaButton" class="button button-secondary" type="button">Deteksi Area</button>
+                <button id="resultFullAreaButton" class="button button-secondary" type="button">Seluruh Gambar</button>
+                <button id="resultManualAreaButton" class="button button-secondary" type="button">Pilih Area Manual</button>
+                <button id="resultCalibrateButton" class="button button-secondary" type="button">Kalibrasi 10 Slot</button>
+                <button id="resultResetCalibrationButton" class="button button-danger-soft" type="button">Reset Kalibrasi</button>
+              </div>
+
+              <p class="result-ocr-note">
+                Scanner selalu membaca format baris hasil asli HoK. OCR hanya dipakai untuk IGN/KDA/Gold pada mode Lengkap.
+              </p>
+            </div>
+          </details>
         </article>
 
-        <article class="control-card result-editor-card">
+        <article class="control-card result-step-card result-output-card">
+          <div class="step-badge">02</div>
           <div class="control-card-heading">
             <div>
-              <p class="section-kicker">OVERLAY EDITOR</p>
-              <h3>Penyesuaian Result HTML</h3>
+              <p class="section-kicker">OUTPUT OVERLAY</p>
+              <h3>Tampilan Result</h3>
             </div>
             <button id="resultResetLayoutButton" class="button button-small button-secondary" type="button">Reset Layout</button>
+          </div>
+
+          <div class="result-layout-switch" role="group" aria-label="Layout result overlay">
+            <button class="result-layout-option is-active" type="button" data-result-layout="horizontal">5v5 Horizontal</button>
+            <button class="result-layout-option" type="button" data-result-layout="rows">5v5 Rows</button>
+            <select id="resultLayoutPreset" class="result-layout-select" aria-label="Layout Result">
+              <option value="horizontal">5v5 Horizontal</option>
+              <option value="rows">5v5 Rows</option>
+            </select>
           </div>
 
           <div class="result-meta-grid">
@@ -434,57 +449,58 @@
             </label>
           </div>
 
-          <div class="result-layout-controls">
-            <label class="result-range-control">
-              <span>Posisi X <output id="resultLayoutXValue">0px</output></span>
-              <input id="resultLayoutX" type="range" min="-500" max="500" step="5" value="0">
-            </label>
-            <label class="result-range-control">
-              <span>Posisi Y <output id="resultLayoutYValue">0px</output></span>
-              <input id="resultLayoutY" type="range" min="-420" max="420" step="5" value="0">
-            </label>
-            <label class="result-range-control">
-              <span>Scale <output id="resultLayoutScaleValue">100%</output></span>
-              <input id="resultLayoutScale" type="range" min="70" max="130" step="1" value="100">
-            </label>
-            <label class="result-range-control">
-              <span>Lebar Panel <output id="resultLayoutWidthValue">1780px</output></span>
-              <input id="resultLayoutWidth" type="range" min="1320" max="1880" step="10" value="1780">
-            </label>
-            <label class="result-range-control">
-              <span>Opacity Panel <output id="resultPanelOpacityValue">92%</output></span>
-              <input id="resultPanelOpacity" type="range" min="30" max="100" step="1" value="92">
-            </label>
-            <label class="result-range-control">
-              <span>Opacity Card <output id="resultCardOpacityValue">96%</output></span>
-              <input id="resultCardOpacity" type="range" min="45" max="100" step="1" value="96">
-            </label>
-            <label class="result-range-control">
-              <span>Jarak Card <output id="resultCardGapValue">8px</output></span>
-              <input id="resultCardGap" type="range" min="2" max="20" step="1" value="8">
-            </label>
-            <label class="result-range-control">
-              <span>Zoom Hero <output id="resultHeroZoomValue">100%</output></span>
-              <input id="resultHeroZoom" type="range" min="85" max="125" step="1" value="100">
-            </label>
-          </div>
+          <details class="result-advanced-module">
+            <summary>Pengaturan Overlay Editor</summary>
+            <div class="result-advanced-body">
+              <div class="result-layout-controls">
+                <label class="result-range-control">
+                  <span>Posisi X <output id="resultLayoutXValue">0px</output></span>
+                  <input id="resultLayoutX" type="range" min="-500" max="500" step="5" value="0">
+                </label>
+                <label class="result-range-control">
+                  <span>Posisi Y <output id="resultLayoutYValue">0px</output></span>
+                  <input id="resultLayoutY" type="range" min="-420" max="420" step="5" value="0">
+                </label>
+                <label class="result-range-control">
+                  <span>Scale <output id="resultLayoutScaleValue">100%</output></span>
+                  <input id="resultLayoutScale" type="range" min="70" max="130" step="1" value="100">
+                </label>
+                <label class="result-range-control">
+                  <span>Lebar Panel <output id="resultLayoutWidthValue">1780px</output></span>
+                  <input id="resultLayoutWidth" type="range" min="1320" max="1880" step="10" value="1780">
+                </label>
+                <label class="result-range-control">
+                  <span>Opacity Panel <output id="resultPanelOpacityValue">92%</output></span>
+                  <input id="resultPanelOpacity" type="range" min="30" max="100" step="1" value="92">
+                </label>
+                <label class="result-range-control">
+                  <span>Opacity Card <output id="resultCardOpacityValue">96%</output></span>
+                  <input id="resultCardOpacity" type="range" min="45" max="100" step="1" value="96">
+                </label>
+                <label class="result-range-control">
+                  <span>Jarak Card <output id="resultCardGapValue">8px</output></span>
+                  <input id="resultCardGap" type="range" min="2" max="20" step="1" value="8">
+                </label>
+                <label class="result-range-control">
+                  <span>Zoom Hero <output id="resultHeroZoomValue">100%</output></span>
+                  <input id="resultHeroZoom" type="range" min="85" max="125" step="1" value="100">
+                </label>
+              </div>
 
-          <div class="result-display-options">
-            <label><input id="resultShowRoles" type="checkbox" checked> Tampilkan role</label>
-            <label><input id="resultShowKda" type="checkbox" checked> Tampilkan KDA</label>
-            <label><input id="resultShowGold" type="checkbox" checked> Tampilkan Gold</label>
-            <label><input id="resultShowItems" type="checkbox" checked> Tampilkan Item</label>
-          </div>
-
-          <div class="result-editor-note">
-            Canvas <code>result.html</code> tetap transparan. Editor hanya mengubah posisi, scale, opacity, gap, dan zoom panel result tanpa mengubah source OBS.
-          </div>
+              <div class="result-display-options">
+                <label><input id="resultShowRoles" type="checkbox" checked> Role</label>
+                <label><input id="resultShowKda" type="checkbox" checked> KDA</label>
+                <label><input id="resultShowGold" type="checkbox" checked> Gold</label>
+                <label><input id="resultShowItems" type="checkbox" checked> Item</label>
+              </div>
+            </div>
+          </details>
         </article>
       </div>
 
       <div class="result-review-heading">
         <div>
-          <p class="section-kicker">REVIEW SEBELUM TAYANG</p>
+          <p class="section-kicker">03 · REVIEW SEBELUM TAYANG</p>
           <h3>10 Slot Berdasarkan Role</h3>
         </div>
         <div id="resultQualitySummary" class="result-quality-summary">Belum ada hasil scan.</div>
@@ -506,15 +522,15 @@
       <div class="section-title-row">
         <div>
           <p class="section-kicker">IN-GAME MODE</p>
-          <h2>In-Game Controls</h2>
+          <h2>Live Match Control</h2>
         </div>
-        <span class="section-note">Keyboard shortcuts aktif saat bukan sedang mengetik.</span>
+        <span class="section-note">Kill, total gold, objective, dan timer dalam satu workflow.</span>
       </div>
 
       <section class="panel ingame-control-panel">
         <div class="ingame-summary">
           <article class="ingame-summary-team is-blue">
-            <span>BLUE</span>
+            <span>BLUE SIDE</span>
             <strong id="ingameBlueTeamLabel">BLUE TEAM</strong>
             <small>Series <b id="ingameBlueSeriesScore">0</b></small>
           </article>
@@ -526,177 +542,162 @@
           </article>
 
           <article class="ingame-summary-team is-red">
-            <span>RED</span>
+            <span>RED SIDE</span>
             <strong id="ingameRedTeamLabel">RED TEAM</strong>
             <small>Series <b id="ingameRedSeriesScore">0</b></small>
           </article>
         </div>
 
-        <div class="ingame-controls-grid">
-          <article class="control-card">
+        <div class="live-control-board">
+          <article class="control-card live-team-control is-blue">
             <div class="control-card-heading">
               <div>
-                <p class="section-kicker">CLOCK</p>
-                <h3>Game Timer</h3>
+                <p class="section-kicker">BLUE SIDE</p>
+                <h3>Blue Live Data</h3>
+              </div>
+              <output id="blueKillsValue" class="live-kill-value">0</output>
+            </div>
+
+            <div class="live-counter-line">
+              <span>KILLS</span>
+              <div class="counter-actions">
+                <button id="blueKillsMinus" class="button button-square button-secondary" type="button">−1</button>
+                <button id="blueKillsPlus" class="button button-square button-primary" type="button">+1</button>
               </div>
             </div>
-            <div class="control-button-row">
-              <button id="gameTimerStartButton" class="button button-primary" type="button">Start</button>
-              <button id="gameTimerPauseButton" class="button button-secondary" type="button">Pause</button>
-              <button id="gameTimerResetButton" class="button button-secondary" type="button">Reset 00:00</button>
+
+            <label class="field live-gold-field">
+              <span>Total Gold Blue</span>
+              <input id="blueGoldInput" type="number" min="0" max="99999999" step="1" inputmode="numeric" value="0">
+            </label>
+
+            <div class="team-gold-quick" data-gold-team="blue">
+              <button class="button button-secondary team-gold-adjust-button" data-team-gold="blue" data-gold-delta="-500" type="button">−500</button>
+              <button class="button button-secondary team-gold-adjust-button" data-team-gold="blue" data-gold-delta="-100" type="button">−100</button>
+              <button class="button button-primary team-gold-adjust-button" data-team-gold="blue" data-gold-delta="100" type="button">+100</button>
+              <button class="button button-primary team-gold-adjust-button" data-team-gold="blue" data-gold-delta="500" type="button">+500</button>
+            </div>
+
+            <div class="objective-compact-grid">
+              <div class="objective-control">
+                <span class="objective-symbol">T</span>
+                <div><small>TYRANT</small><output id="blueTyrantValue">0</output></div>
+                <div class="counter-actions">
+                  <button id="blueTyrantMinus" class="button button-square button-secondary" type="button">−</button>
+                  <button id="blueTyrantPlus" class="button button-square button-primary" type="button">+</button>
+                </div>
+              </div>
+              <div class="objective-control">
+                <span class="objective-symbol">O</span>
+                <div><small>OVERLORD</small><output id="blueOverlordValue">0</output></div>
+                <div class="counter-actions">
+                  <button id="blueOverlordMinus" class="button button-square button-secondary" type="button">−</button>
+                  <button id="blueOverlordPlus" class="button button-square button-primary" type="button">+</button>
+                </div>
+              </div>
             </div>
           </article>
 
-          <article class="control-card">
+          <article class="control-card live-center-control">
             <div class="control-card-heading">
               <div>
-                <p class="section-kicker">KILLS</p>
-                <h3>Kill Score</h3>
-              </div>
-            </div>
-            <div class="dual-counter-grid">
-              <div class="counter-box is-blue">
-                <span>BLUE KILLS</span>
-                <output id="blueKillsValue" class="large-counter">0</output>
-                <div class="counter-actions">
-                  <button id="blueKillsMinus" class="button button-square button-secondary" type="button">−1</button>
-                  <button id="blueKillsPlus" class="button button-square button-primary" type="button">+1</button>
-                </div>
-              </div>
-
-              <div class="counter-box is-red">
-                <span>RED KILLS</span>
-                <output id="redKillsValue" class="large-counter">0</output>
-                <div class="counter-actions">
-                  <button id="redKillsMinus" class="button button-square button-secondary" type="button">−1</button>
-                  <button id="redKillsPlus" class="button button-square button-danger-solid" type="button">+1</button>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <article class="control-card">
-            <div class="control-card-heading">
-              <div>
-                <p class="section-kicker">ECONOMY</p>
-                <h3>Gold Advantage</h3>
+                <p class="section-kicker">MATCH CORE</p>
+                <h3>Timer & Gold Lead</h3>
               </div>
               <span id="goldAdvantagePreview" class="gold-preview is-even">EVEN</span>
             </div>
 
-            <label class="field">
-              <span>Gold Difference (positive = Blue, negative = Red)</span>
-              <input id="goldDiffInput" type="number" step="1" inputmode="numeric" value="0">
+            <div class="live-timer-hero">
+              <output id="gameTimerDisplayMirror" class="live-timer-mirror">00:00</output>
+              <span>Timer utama tetap pada header control.</span>
+            </div>
+
+            <div class="control-button-row live-timer-actions">
+              <button id="gameTimerStartButton" class="button button-primary" type="button">▶ Mulai</button>
+              <button id="gameTimerPauseButton" class="button button-secondary" type="button">Ⅱ Pause</button>
+              <button id="gameTimerResetButton" class="button button-danger-soft" type="button">↺ 00:00</button>
+            </div>
+
+            <div class="gold-lead-readout">
+              <span>GOLD LEAD OTOMATIS</span>
+              <strong id="goldLeadValue">EVEN</strong>
+              <small>Blue Gold − Red Gold</small>
+            </div>
+          </article>
+
+          <article class="control-card live-team-control is-red">
+            <div class="control-card-heading">
+              <div>
+                <p class="section-kicker">RED SIDE</p>
+                <h3>Red Live Data</h3>
+              </div>
+              <output id="redKillsValue" class="live-kill-value">0</output>
+            </div>
+
+            <div class="live-counter-line">
+              <span>KILLS</span>
+              <div class="counter-actions">
+                <button id="redKillsMinus" class="button button-square button-secondary" type="button">−1</button>
+                <button id="redKillsPlus" class="button button-square button-danger-solid" type="button">+1</button>
+              </div>
+            </div>
+
+            <label class="field live-gold-field">
+              <span>Total Gold Red</span>
+              <input id="redGoldInput" type="number" min="0" max="99999999" step="1" inputmode="numeric" value="0">
             </label>
 
-            <div class="gold-buttons" aria-label="Gold quick adjustments">
-              <button class="button button-secondary gold-adjust-button" data-gold-delta="-500" type="button">−500</button>
-              <button class="button button-secondary gold-adjust-button" data-gold-delta="-200" type="button">−200</button>
-              <button class="button button-secondary gold-adjust-button" data-gold-delta="-100" type="button">−100</button>
-              <button id="goldResetButton" class="button button-secondary" type="button">Even</button>
-              <button class="button button-primary gold-adjust-button" data-gold-delta="100" type="button">+100</button>
-              <button class="button button-primary gold-adjust-button" data-gold-delta="200" type="button">+200</button>
-              <button class="button button-primary gold-adjust-button" data-gold-delta="500" type="button">+500</button>
-            </div>
-          </article>
-
-          <article class="control-card objective-card">
-            <div class="control-card-heading">
-              <div>
-                <p class="section-kicker">OBJECTIVES</p>
-                <h3>Tyrant & Overlord</h3>
-              </div>
+            <div class="team-gold-quick" data-gold-team="red">
+              <button class="button button-secondary team-gold-adjust-button" data-team-gold="red" data-gold-delta="-500" type="button">−500</button>
+              <button class="button button-secondary team-gold-adjust-button" data-team-gold="red" data-gold-delta="-100" type="button">−100</button>
+              <button class="button button-danger-solid team-gold-adjust-button" data-team-gold="red" data-gold-delta="100" type="button">+100</button>
+              <button class="button button-danger-solid team-gold-adjust-button" data-team-gold="red" data-gold-delta="500" type="button">+500</button>
             </div>
 
-            <div class="objective-control-grid">
-              <div class="objective-team-column">
-                <h4>Blue Side</h4>
-
-                <div class="objective-control">
-                  <span class="objective-symbol">T</span>
-                  <div>
-                    <small>TYRANT</small>
-                    <output id="blueTyrantValue">0</output>
-                  </div>
-                  <div class="counter-actions">
-                    <button id="blueTyrantMinus" class="button button-square button-secondary" type="button">−1</button>
-                    <button id="blueTyrantPlus" class="button button-square button-primary" type="button">+1</button>
-                  </div>
-                </div>
-
-                <div class="objective-control">
-                  <span class="objective-symbol">O</span>
-                  <div>
-                    <small>OVERLORD</small>
-                    <output id="blueOverlordValue">0</output>
-                  </div>
-                  <div class="counter-actions">
-                    <button id="blueOverlordMinus" class="button button-square button-secondary" type="button">−1</button>
-                    <button id="blueOverlordPlus" class="button button-square button-primary" type="button">+1</button>
-                  </div>
+            <div class="objective-compact-grid">
+              <div class="objective-control">
+                <span class="objective-symbol">T</span>
+                <div><small>TYRANT</small><output id="redTyrantValue">0</output></div>
+                <div class="counter-actions">
+                  <button id="redTyrantMinus" class="button button-square button-secondary" type="button">−</button>
+                  <button id="redTyrantPlus" class="button button-square button-danger-solid" type="button">+</button>
                 </div>
               </div>
-
-              <div class="objective-team-column">
-                <h4>Red Side</h4>
-
-                <div class="objective-control">
-                  <span class="objective-symbol">T</span>
-                  <div>
-                    <small>TYRANT</small>
-                    <output id="redTyrantValue">0</output>
-                  </div>
-                  <div class="counter-actions">
-                    <button id="redTyrantMinus" class="button button-square button-secondary" type="button">−1</button>
-                    <button id="redTyrantPlus" class="button button-square button-danger-solid" type="button">+1</button>
-                  </div>
-                </div>
-
-                <div class="objective-control">
-                  <span class="objective-symbol">O</span>
-                  <div>
-                    <small>OVERLORD</small>
-                    <output id="redOverlordValue">0</output>
-                  </div>
-                  <div class="counter-actions">
-                    <button id="redOverlordMinus" class="button button-square button-secondary" type="button">−1</button>
-                    <button id="redOverlordPlus" class="button button-square button-danger-solid" type="button">+1</button>
-                  </div>
+              <div class="objective-control">
+                <span class="objective-symbol">O</span>
+                <div><small>OVERLORD</small><output id="redOverlordValue">0</output></div>
+                <div class="counter-actions">
+                  <button id="redOverlordMinus" class="button button-square button-secondary" type="button">−</button>
+                  <button id="redOverlordPlus" class="button button-square button-danger-solid" type="button">+</button>
                 </div>
               </div>
             </div>
           </article>
+        </div>
 
-          <article class="control-card shortcuts-card is-temporarily-disabled">
-            <div class="control-card-heading">
-              <div>
-                <p class="section-kicker">OPERATOR SPEED</p>
-                <h3>Keyboard Shortcuts</h3>
-              </div>
-              <span class="shortcut-focus-note">NONAKTIF SEMENTARA</span>
-            </div>
-
+        <details class="collapsible-module ingame-advanced-module">
+          <summary class="module-summary">
+            <span class="module-summary-copy">
+              <span class="module-kicker">OPSIONAL</span>
+              <strong>Keyboard Shortcuts</strong>
+              <small>Masih dinonaktifkan sementara.</small>
+            </span>
+            <span class="module-summary-action"><span class="module-chevron">⌄</span></span>
+          </summary>
+          <div class="module-body">
             <div class="shortcut-grid">
               <div><kbd>Q</kbd><span>Blue Kill +1</span></div>
               <div><kbd>E</kbd><span>Red Kill +1</span></div>
-              <div><kbd>A</kbd><span>Blue Gold +200</span></div>
-              <div><kbd>D</kbd><span>Red Gold +200</span></div>
-              <div><kbd>Shift</kbd> + <kbd>A</kbd><span>Blue Gold +500</span></div>
-              <div><kbd>Shift</kbd> + <kbd>D</kbd><span>Red Gold +500</span></div>
               <div><kbd>Z</kbd><span>Blue Tyrant +1</span></div>
               <div><kbd>X</kbd><span>Red Tyrant +1</span></div>
               <div><kbd>C</kbd><span>Blue Overlord +1</span></div>
               <div><kbd>V</kbd><span>Red Overlord +1</span></div>
               <div><kbd>Space</kbd><span>Start / Pause Game Timer</span></div>
               <div><kbd>T</kbd><span>Reset Game Timer</span></div>
-              <div><kbd>R</kbd><span>Reset All In-Game Stats</span></div>
+              <div><kbd>R</kbd><span>Reset In-Game Stats</span></div>
             </div>
-
-            <p class="shortcut-help">
-              Hotkey masih tersimpan di source code tetapi dinonaktifkan sementara untuk revisi broadcast saat ini.
-            </p>
-          </article>
-        </div>
+          </div>
+        </details>
       </section>
     </section>
   </main>
