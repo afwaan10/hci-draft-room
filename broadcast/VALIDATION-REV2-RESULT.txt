@@ -1,0 +1,57 @@
+HCI BROADCAST — REVISION 2 RESULT SCANNER VALIDATION
+================================================================
+
+[PASS] JS syntax js/control.js: PASS
+[PASS] JS syntax js/display.js: PASS
+[PASS] JS syntax js/ingame.js: PASS
+[PASS] JS syntax js/heroes-data.js: PASS
+[PASS] JS syntax js/items-data.js: PASS
+[PASS] JS syntax js/result.js: PASS
+[PASS] JS syntax js/result-scanner.js: PASS
+[PASS] DOM references js/control.js: missing=[]
+[PASS] DOM references js/result-scanner.js: missing=[]
+[PASS] DOM references js/display.js: missing=[]
+[PASS] DOM references js/ingame.js: missing=[]
+[PASS] DOM references js/result.js: missing=[]
+[PASS] Duplicate IDs control.html: []
+[PASS] Duplicate IDs display.html: []
+[PASS] Duplicate IDs ingame.html: []
+[PASS] Duplicate IDs result.html: []
+[PASS] Hero icons: 120 expected
+[PASS] Hero portraits: 120 expected
+[PASS] Item icons: 118 expected
+[PASS] Result overlay files: 
+[PASS] Input screenshot methods: 
+[PASS] Desktop capture implementation: 
+[PASS] Clipboard implementation: 
+[PASS] Random size normalization: 
+[PASS] Auto result-area detection: 
+[PASS] Manual result-area crop: 
+[PASS] 10-slot calibration: 
+[PASS] Fixed role order: 
+[PASS] Horizontal and rows presets: 
+[PASS] Hero visual matching: 
+[PASS] Item visual matching: 
+[PASS] 60 item architecture: 
+[PASS] Draft hero prior: 
+[PASS] OCR mode: 
+[PASS] OCR graceful fallback: 
+[PASS] Confidence/review: 
+[PASS] Manual correction picker: 
+[PASS] Per-slot rescan: 
+[PASS] Result editor controls: 
+[PASS] Display toggles: 
+[PASS] Transparent result canvas: 
+[PASS] Player photo on result: 
+[PASS] Team/logo sync: 
+[PASS] Separate result state key: 
+[PASS] Draft state preserved: 
+[PASS] No Firebase dependency in Result: 
+[PASS] HTTP smoke test: broadcast/control.html:200, broadcast/display.html:200, broadcast/ingame.html:200, broadcast/result.html:200, broadcast/result/:200, broadcast/css/result.css:200, broadcast/js/result.js:200, broadcast/js/result-scanner.js:200
+
+Scope:
+- Hanya folder /broadcast/ yang diperlukan.
+- Tidak memerlukan perubahan file root draft.hokcommunity.my.id.
+- Firebase config/rules tidak diperlukan untuk fitur Result ini.
+
+Overall: 47/47 PASS

@@ -241,3 +241,173 @@ Clear Photo
 Foto tidak lagi menggunakan crop "cover". Overlay memakai contain + bottom center,
 sehingga badan player lebih aman dari potongan berlebihan.
 
+
+============================================================
+POST-GAME RESULT SCANNER
+============================================================
+
+URL OBS Result Overlay:
+
+https://draft.hokcommunity.my.id/broadcast/result.html
+
+Browser Source OBS:
+Width  : 1920
+Height : 1080
+
+INPUT SCREENSHOT
+----------------
+
+Operator dapat menggunakan:
+
+1. Upload Screenshot.
+2. Tangkap Layar Desktop.
+3. Tempel Clipboard.
+4. Ctrl+V gambar screenshot langsung pada Control.
+
+Screenshot tidak wajib 1920x1080.
+Scanner bekerja pada area result yang dipilih lalu menormalisasi koordinat secara internal.
+
+AREA RESULT
+-----------
+
+Jika screenshot hanya berisi result:
+- Gunakan Seluruh Gambar.
+
+Jika screenshot full desktop:
+- Tekan Deteksi Area Otomatis.
+- Periksa kotak area warna gold.
+- Jika belum tepat, tekan Pilih Area Manual lalu drag area result.
+
+KALIBRASI SLOT
+---------------
+
+Urutan player scanner selalu:
+
+P1 = Clash Lane
+P2 = Jungle
+P3 = Mid Lane
+P4 = Farm Lane
+P5 = Roam
+
+Berlaku untuk Blue dan Red.
+
+Jika kotak player pada preview belum pas:
+
+1. Tekan Kalibrasi 10 Slot.
+2. Ikuti instruksi.
+3. Drag area player Blue Clash.
+4. Blue Jungle.
+5. Blue Mid.
+6. Blue Farm.
+7. Blue Roam.
+8. Red Clash.
+9. Red Jungle.
+10. Red Mid.
+11. Red Farm.
+12. Red Roam.
+
+Kalibrasi disimpan berdasarkan posisi relatif terhadap area result.
+Karena itu resolusi screenshot selanjutnya boleh berbeda selama layout result yang dipakai sama.
+
+MODE SCAN
+---------
+
+CEPAT:
+- Hero.
+- 6 item setiap player.
+
+LENGKAP:
+- Hero.
+- Item.
+- IGN.
+- KDA.
+- Gold.
+
+Mode Lengkap membutuhkan koneksi internet untuk OCR browser.
+Jika OCR gagal, Hero + Item tetap diproses.
+
+HERO
+----
+
+Scanner membandingkan icon pada screenshot dengan 120 hero asset lokal.
+Role player digunakan sebagai tambahan confidence.
+
+Jika hero sudah LOCK pada Draft Control, hero Draft menjadi prior utama dan scanner visual dipakai sebagai verifikasi tambahan.
+
+ITEM
+----
+
+Scanner membandingkan setiap slot item dengan 118 icon item lokal.
+Total maksimal:
+
+10 player x 6 item = 60 slot item.
+
+Hasil confidence rendah tetap ditampilkan sebagai warning agar operator dapat memperbaiki manual.
+
+REVIEW
+------
+
+Jangan langsung tayangkan result tanpa review.
+
+Periksa:
+- IGN.
+- Hero.
+- KDA.
+- Gold.
+- 6 Item.
+
+Slot warning dapat:
+- dikoreksi manual;
+- dipilih ulang melalui visual picker;
+- Scan Ulang Slot.
+
+TAYANGKAN RESULT
+----------------
+
+Setelah data benar:
+
+TAYANGKAN RESULT
+
+Untuk menutup:
+
+SEMBUNYIKAN
+
+RESULT OVERLAY EDITOR
+---------------------
+
+Operator dapat menyesuaikan result.html tanpa mengubah Browser Source OBS:
+
+- Posisi X.
+- Posisi Y.
+- Scale.
+- Lebar Panel.
+- Opacity Panel.
+- Opacity Card.
+- Jarak Card.
+- Zoom Hero.
+- Tampilkan/Sembunyikan Role.
+- Tampilkan/Sembunyikan KDA.
+- Tampilkan/Sembunyikan Gold.
+- Tampilkan/Sembunyikan Item.
+
+Canvas result.html selalu transparan.
+Foto player, team name, logo, roster, hero locked, dan beberapa data existing dapat diambil dari setup Draft menggunakan tombol:
+
+AMBIL TEAM / ROSTER DARI DRAFT
+
+RESULT STORAGE
+--------------
+
+Result menggunakan storage terpisah:
+
+hok_result_state_v1
+
+Draft tetap:
+
+hok_draft_state_v1
+
+CATATAN ANTAR-PC
+----------------
+
+localStorage tidak sinkron antar perangkat.
+Control pada PC A dan OBS Browser Source pada PC B tidak otomatis berbagi state tanpa realtime backend.

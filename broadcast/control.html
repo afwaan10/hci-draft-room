@@ -308,6 +308,200 @@
       </section>
     </section>
 
+
+    <section id="resultControlPanel" class="panel result-control-panel" aria-labelledby="resultControlHeading">
+      <div class="panel-heading result-panel-heading">
+        <div>
+          <p class="section-kicker">POST-GAME RESULT</p>
+          <h2 id="resultControlHeading">Result Scanner & Overlay Editor</h2>
+          <p class="result-panel-subtitle">Screenshot ukuran bebas → pilih/deteksi area result → scan hero, item, IGN, KDA, gold → review → tayangkan.</p>
+        </div>
+        <div class="result-publish-actions">
+          <a class="button button-secondary result-open-link" href="result.html" target="_blank" rel="noopener">Buka Result Overlay</a>
+          <button id="resultHideButton" class="button button-secondary" type="button">Sembunyikan</button>
+          <button id="resultShowButton" class="button button-primary" type="button">Tayangkan Result</button>
+        </div>
+      </div>
+
+      <div class="result-workspace-grid">
+        <article class="control-card result-scan-card">
+          <div class="control-card-heading">
+            <div>
+              <p class="section-kicker">AUTO SCAN</p>
+              <h3>Screenshot Result</h3>
+            </div>
+            <span id="resultScanStatus" class="result-scan-badge" data-status="idle">BELUM SCAN</span>
+          </div>
+
+          <div class="result-scan-toolbar">
+            <label class="file-button result-file-button">
+              Upload Screenshot
+              <input id="resultScreenshotInput" type="file" accept="image/png,image/jpeg,image/webp">
+            </label>
+
+            <button id="resultCaptureScreenButton" class="button button-secondary result-capture-button" type="button">Tangkap Layar Desktop</button>
+            <button id="resultPasteButton" class="button button-secondary result-capture-button" type="button">Tempel Clipboard</button>
+
+            <label class="field compact-field">
+              <span>Mode Scan</span>
+              <select id="resultScanMode">
+                <option value="fast">Cepat — Hero + Item</option>
+                <option value="full">Lengkap — Hero + Item + OCR</option>
+              </select>
+            </label>
+
+            <label class="field compact-field">
+              <span>Layout Result</span>
+              <select id="resultLayoutPreset">
+                <option value="horizontal">5v5 Horizontal</option>
+                <option value="rows">5v5 List / Rows</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="result-role-order" aria-label="Urutan role scanner">
+            <strong>Urutan slot wajib:</strong>
+            <span>1 Clash Lane</span>
+            <span>2 Jungle</span>
+            <span>3 Mid Lane</span>
+            <span>4 Farm Lane</span>
+            <span>5 Roam</span>
+          </div>
+
+          <div class="result-preview-shell">
+            <canvas id="resultScreenshotCanvas" width="960" height="540" aria-label="Preview screenshot dan area scanner"></canvas>
+            <div id="resultPreviewEmpty" class="result-preview-empty">
+              <strong>Belum ada screenshot</strong>
+              <span>Upload screenshot desktop, Snipping Tool, atau crop result. Resolusi tidak wajib 1920×1080.</span>
+            </div>
+          </div>
+
+          <div class="result-area-actions">
+            <button id="resultAutoAreaButton" class="button button-secondary" type="button">Deteksi Area Otomatis</button>
+            <button id="resultFullAreaButton" class="button button-secondary" type="button">Gunakan Seluruh Gambar</button>
+            <button id="resultManualAreaButton" class="button button-secondary" type="button">Pilih Area Manual</button>
+            <button id="resultCalibrateButton" class="button button-secondary" type="button">Kalibrasi 10 Slot</button>
+            <button id="resultResetCalibrationButton" class="button button-secondary" type="button">Reset Kalibrasi</button>
+          </div>
+
+          <div id="resultScanHint" class="result-scan-hint">
+            Upload screenshot. Scanner akan menormalisasi area result ke koordinat internal 1920×1080.
+          </div>
+
+          <div class="result-scan-actions">
+            <button id="resultSyncBroadcastButton" class="button button-secondary" type="button">Ambil Team / Roster dari Draft</button>
+            <button id="resultScanButton" class="button button-primary result-scan-main-button" type="button" disabled>SCAN RESULT</button>
+          </div>
+
+          <div class="result-progress-block" aria-live="polite">
+            <div class="result-progress-track"><span id="resultProgressBar"></span></div>
+            <div class="result-progress-copy">
+              <span id="resultProgressText">Menunggu screenshot.</span>
+              <strong id="resultProgressPercent">0%</strong>
+            </div>
+          </div>
+
+          <p class="result-ocr-note">
+            Mode Lengkap menggunakan OCR browser saat online. Jika OCR gagal, Hero + Item tetap diproses dan IGN/KDA/Gold bisa dikoreksi manual.
+          </p>
+        </article>
+
+        <article class="control-card result-editor-card">
+          <div class="control-card-heading">
+            <div>
+              <p class="section-kicker">OVERLAY EDITOR</p>
+              <h3>Penyesuaian Result HTML</h3>
+            </div>
+            <button id="resultResetLayoutButton" class="button button-small button-secondary" type="button">Reset Layout</button>
+          </div>
+
+          <div class="result-meta-grid">
+            <label class="field">
+              <span>Judul</span>
+              <input id="resultTitleInput" type="text" maxlength="32" value="GAME RESULT">
+            </label>
+            <label class="field">
+              <span>Label Game</span>
+              <input id="resultGameLabelInput" type="text" maxlength="24" value="GAME 1">
+            </label>
+            <label class="field">
+              <span>Kill Blue</span>
+              <input id="resultBlueKillsInput" type="number" min="0" max="999" step="1">
+            </label>
+            <label class="field">
+              <span>Kill Red</span>
+              <input id="resultRedKillsInput" type="number" min="0" max="999" step="1">
+            </label>
+          </div>
+
+          <div class="result-layout-controls">
+            <label class="result-range-control">
+              <span>Posisi X <output id="resultLayoutXValue">0px</output></span>
+              <input id="resultLayoutX" type="range" min="-500" max="500" step="5" value="0">
+            </label>
+            <label class="result-range-control">
+              <span>Posisi Y <output id="resultLayoutYValue">0px</output></span>
+              <input id="resultLayoutY" type="range" min="-420" max="420" step="5" value="0">
+            </label>
+            <label class="result-range-control">
+              <span>Scale <output id="resultLayoutScaleValue">100%</output></span>
+              <input id="resultLayoutScale" type="range" min="70" max="130" step="1" value="100">
+            </label>
+            <label class="result-range-control">
+              <span>Lebar Panel <output id="resultLayoutWidthValue">1780px</output></span>
+              <input id="resultLayoutWidth" type="range" min="1320" max="1880" step="10" value="1780">
+            </label>
+            <label class="result-range-control">
+              <span>Opacity Panel <output id="resultPanelOpacityValue">92%</output></span>
+              <input id="resultPanelOpacity" type="range" min="30" max="100" step="1" value="92">
+            </label>
+            <label class="result-range-control">
+              <span>Opacity Card <output id="resultCardOpacityValue">96%</output></span>
+              <input id="resultCardOpacity" type="range" min="45" max="100" step="1" value="96">
+            </label>
+            <label class="result-range-control">
+              <span>Jarak Card <output id="resultCardGapValue">8px</output></span>
+              <input id="resultCardGap" type="range" min="2" max="20" step="1" value="8">
+            </label>
+            <label class="result-range-control">
+              <span>Zoom Hero <output id="resultHeroZoomValue">100%</output></span>
+              <input id="resultHeroZoom" type="range" min="85" max="125" step="1" value="100">
+            </label>
+          </div>
+
+          <div class="result-display-options">
+            <label><input id="resultShowRoles" type="checkbox" checked> Tampilkan role</label>
+            <label><input id="resultShowKda" type="checkbox" checked> Tampilkan KDA</label>
+            <label><input id="resultShowGold" type="checkbox" checked> Tampilkan Gold</label>
+            <label><input id="resultShowItems" type="checkbox" checked> Tampilkan Item</label>
+          </div>
+
+          <div class="result-editor-note">
+            Canvas <code>result.html</code> tetap transparan. Editor hanya mengubah posisi, scale, opacity, gap, dan zoom panel result tanpa mengubah source OBS.
+          </div>
+        </article>
+      </div>
+
+      <div class="result-review-heading">
+        <div>
+          <p class="section-kicker">REVIEW SEBELUM TAYANG</p>
+          <h3>10 Slot Berdasarkan Role</h3>
+        </div>
+        <div id="resultQualitySummary" class="result-quality-summary">Belum ada hasil scan.</div>
+      </div>
+
+      <div class="result-review-grid">
+        <section class="result-review-team result-review-blue">
+          <header><span>BLUE SIDE</span><strong id="resultBlueReviewName">BLUE TEAM</strong></header>
+          <div id="resultBlueReviewPlayers" class="result-review-players"></div>
+        </section>
+        <section class="result-review-team result-review-red">
+          <header><span>RED SIDE</span><strong id="resultRedReviewName">RED TEAM</strong></header>
+          <div id="resultRedReviewPlayers" class="result-review-players"></div>
+        </section>
+      </div>
+    </section>
+
     <section id="ingameControls" class="mode-content is-hidden" data-mode-content="ingame">
       <div class="section-title-row">
         <div>
@@ -534,8 +728,32 @@
     </section>
   </div>
 
+
+  <div id="resultPicker" class="visual-picker" aria-hidden="true">
+    <div class="visual-picker-backdrop" data-result-picker-close></div>
+    <section class="visual-picker-dialog result-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="resultPickerTitle">
+      <header class="visual-picker-header">
+        <div>
+          <p id="resultPickerEyebrow" class="section-kicker">KOREKSI MANUAL</p>
+          <h2 id="resultPickerTitle">Pilih Data</h2>
+        </div>
+        <button id="resultPickerCloseButton" class="picker-close-button" type="button" aria-label="Tutup picker">×</button>
+      </header>
+      <div class="visual-picker-toolbar">
+        <label class="picker-search-field">
+          <span>Cari</span>
+          <input id="resultPickerSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Cari hero / item...">
+        </label>
+        <div id="resultPickerFilters" class="picker-filters"></div>
+      </div>
+      <div id="resultPickerGrid" class="picker-grid"></div>
+    </section>
+  </div>
+
+
   <script src="js/heroes-data.js"></script>
   <script src="js/items-data.js"></script>
   <script src="js/control.js"></script>
+  <script src="js/result-scanner.js"></script>
 </body>
 </html>

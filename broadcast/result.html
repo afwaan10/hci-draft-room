@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>HCI Broadcast - Result Overlay</title>
+  <link rel="stylesheet" href="css/result.css">
+</head>
+<body>
+  <main id="resultOverlay" class="result-overlay" aria-label="Post-game result overlay">
+    <section id="resultStage" class="result-stage">
+      <header class="result-scorebar">
+        <div class="result-team-head result-team-head-blue">
+          <div id="resultBlueLogo" class="result-team-logo">BL</div>
+          <div class="result-team-copy">
+            <span>BLUE SIDE</span>
+            <strong id="resultBlueTeamName">BLUE TEAM</strong>
+          </div>
+        </div>
+
+        <div class="result-score-center">
+          <span id="resultGameLabel" class="result-game-label">GAME 1</span>
+          <div class="result-kill-score">
+            <strong id="resultBlueKills">0</strong>
+            <span>-</span>
+            <strong id="resultRedKills">0</strong>
+          </div>
+          <span id="resultTitle" class="result-title">GAME RESULT</span>
+        </div>
+
+        <div class="result-team-head result-team-head-red">
+          <div class="result-team-copy">
+            <span>RED SIDE</span>
+            <strong id="resultRedTeamName">RED TEAM</strong>
+          </div>
+          <div id="resultRedLogo" class="result-team-logo">RD</div>
+        </div>
+      </header>
+
+      <div class="result-teams-body">
+        <section class="result-side result-side-blue">
+          <div id="resultBluePlayers" class="result-player-grid"></div>
+        </section>
+        <div class="result-center-divider"><span>VS</span></div>
+        <section class="result-side result-side-red">
+          <div id="resultRedPlayers" class="result-player-grid"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/heroes-data.js"></script>
+  <script src="js/items-data.js"></script>
+  <script src="js/result.js"></script>
+</body>
+</html>
