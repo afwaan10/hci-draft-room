@@ -1,0 +1,33 @@
+HCI BROADCAST — FINAL THEME + PLAYER PHOTO VALIDATION
+==============================================================
+
+[PASS] Syntax js/control.js: PASS
+[PASS] Syntax js/display.js: PASS
+[PASS] Syntax js/ingame.js: PASS
+[PASS] Syntax js/heroes-data.js: PASS
+[PASS] Syntax js/items-data.js: PASS
+[PASS] DOM references js/control.js: missing=[]
+[PASS] DOM references js/display.js: missing=[]
+[PASS] DOM references js/ingame.js: missing=[]
+[PASS] Hero data parse: 120 heroes
+[PASS] Hero count: 120
+[PASS] 5-lane hero model: Clash/Mid/Roam/Farm/Jungle only
+[PASS] Augran Jungle: ['Jungle', 'Clash Lane']
+[PASS] Hero assets: missing=0
+[PASS] Item icons: 118 files
+[PASS] Player photo state: backward-compatible scale/vertical fields
+[PASS] Player photo contain rendering: PASS
+[PASS] Player photo controls: Scale / Vertical / Reset Frame / Clear Photo
+[PASS] Player upload portrait processing: 540x960 WebP max
+[PASS] BO1 / BO3 / BO5: 
+[PASS] Hotkey system retained: 
+[PASS] Gold buttons retained: 
+[PASS] Draft compact lower-third retained: 
+[PASS] Pick animation retained: 
+[PASS] HCI theme control: 
+[PASS] HCI theme draft: 
+[PASS] HCI theme in-game: 
+
+Overall: 26/26 PASS
+
+Rental/licensing feature: NOT INCLUDED.

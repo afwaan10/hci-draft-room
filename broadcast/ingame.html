@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>HCI Broadcast - In-Game Overlay</title>
+  <link rel="stylesheet" href="css/ingame.css">
+</head>
+<body>
+  <main id="ingameOverlay" class="ingame-overlay" aria-label="Honor of Kings in-game overlay">
+    <section class="scoreboard-shell">
+      <div class="team-block team-blue">
+        <div id="blueTeamLogo" class="team-logo">BL</div>
+        <div class="team-copy">
+          <span class="side-label">BLUE SIDE</span>
+          <strong id="blueTeamName" class="team-name">BLUE TEAM</strong>
+        </div>
+        <div class="series-score-block">
+          <span>SERIES</span>
+          <strong id="blueSeriesScore">0</strong>
+        </div>
+      </div>
+
+      <div class="center-scoreboard">
+        <div class="series-label" id="seriesLabel">BO3</div>
+
+        <div class="game-clock-wrap">
+          <span class="clock-label">GAME TIME</span>
+          <time id="gameTimer" class="game-clock" datetime="PT0M0S">00:00</time>
+        </div>
+
+        <div class="kill-row" aria-label="Kill score">
+          <strong id="blueKills" class="kill-score kill-blue">0</strong>
+          <span class="kill-divider">KILLS</span>
+          <strong id="redKills" class="kill-score kill-red">0</strong>
+        </div>
+
+        <div id="goldAdvantage" class="gold-advantage is-even">GOLD EVEN</div>
+      </div>
+
+      <div class="team-block team-red">
+        <div class="series-score-block">
+          <span>SERIES</span>
+          <strong id="redSeriesScore">0</strong>
+        </div>
+        <div class="team-copy team-copy-red">
+          <span class="side-label">RED SIDE</span>
+          <strong id="redTeamName" class="team-name">RED TEAM</strong>
+        </div>
+        <div id="redTeamLogo" class="team-logo">RD</div>
+      </div>
+    </section>
+
+    <section class="objective-strip" aria-label="Objective counters">
+      <div class="objective-side objective-blue">
+        <div class="objective-item">
+          <span class="objective-icon">T</span>
+          <div class="objective-copy">
+            <span>TYRANT</span>
+            <strong id="blueTyrant">0</strong>
+          </div>
+        </div>
+        <div class="objective-item">
+          <span class="objective-icon">O</span>
+          <div class="objective-copy">
+            <span>OVERLORD</span>
+            <strong id="blueOverlord">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="objective-center">
+        <span>OBJECTIVES</span>
+      </div>
+
+      <div class="objective-side objective-red">
+        <div class="objective-item">
+          <div class="objective-copy align-right">
+            <span>TYRANT</span>
+            <strong id="redTyrant">0</strong>
+          </div>
+          <span class="objective-icon">T</span>
+        </div>
+        <div class="objective-item">
+          <div class="objective-copy align-right">
+            <span>OVERLORD</span>
+            <strong id="redOverlord">0</strong>
+          </div>
+          <span class="objective-icon">O</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/ingame.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+HCI BROADCAST — REVISION 1 VALIDATION
+====================================================
+
+[PASS] Existing MOBA HUB files unchanged: changed=[]
+[PASS] JS syntax js/control.js: PASS
+[PASS] JS syntax js/display.js: PASS
+[PASS] JS syntax js/ingame.js: PASS
+[PASS] JS syntax js/heroes-data.js: PASS
+[PASS] JS syntax js/items-data.js: PASS
+[PASS] DOM references js/control.js: missing=[]
+[PASS] DOM references js/display.js: missing=[]
+[PASS] DOM references js/ingame.js: missing=[]
+[PASS] 2 collapsible item modules: 
+[PASS] Hotkey disabled via flag: 
+[PASS] Lock-only hero render: 
+[PASS] Pending hero hidden from center: 
+[PASS] Lock animation duration: 
+[PASS] Bottom-to-top animation: 
+[PASS] Logo 66px: 
+[PASS] Transparent canvas retained: 
+[PASS] Baseline display geometry retained: 
+[PASS] Clean route aliases: 
+[PASS] Hero icons: 120
+[PASS] Hero portraits: 120
+[PASS] Item icons: 118
+[PASS] Existing Firebase routing does not intercept /broadcast: ['/items/', '/items', '/draft/hok/**', '/draft/mlbb/**']
+
+Scope:
+- Existing MOBA HUB files unchanged.
+- Only /broadcast/ added.
+- Draft Control + Draft Display revised.
+- In-Game baseline retained.
+- Hotkey disabled, not deleted.
+
+Overall: 23/23 PASS

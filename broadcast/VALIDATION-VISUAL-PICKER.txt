@@ -1,0 +1,16 @@
+HOK OVERLAY - VISUAL PICKER FIX
+================================================
+
+Root cause:
+Native HTML <select> on Android/Chrome cannot render hero/item thumbnails inside options.
+
+[PASS] Syntax js/control.js: PASS
+[PASS] Syntax js/display.js: PASS
+[PASS] Syntax js/ingame.js: PASS
+[PASS] Syntax js/heroes-data.js: PASS
+[PASS] Syntax js/items-data.js: PASS
+[PASS] Hero icons available: 120 files
+[PASS] Item icons available: 118 files
+[PASS] Hero native select removed: custom hero picker enabled
+[PASS] Item native select removed: custom item picker enabled
+[PASS] Visual picker modal present: modal exists

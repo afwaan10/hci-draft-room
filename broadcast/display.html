@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>HCI Broadcast - Draft Overlay</title>
+  <link rel="stylesheet" href="css/display.css">
+</head>
+<body>
+  <main id="draftOverlay" class="overlay" aria-label="Honor of Kings draft overlay">
+    <section class="draft-shell">
+      <header class="draft-header">
+        <section class="team-summary team-summary-blue">
+          <div id="blueTeamLogo" class="team-logo">BL</div>
+
+          <div class="team-copy">
+            <span class="side-label">BLUE SIDE</span>
+            <strong id="blueTeamName" class="team-name">BLUE TEAM</strong>
+          </div>
+
+          <div class="series-score">
+            <span>SCORE</span>
+            <strong id="blueTeamScore">0</strong>
+          </div>
+
+          <div class="ban-strip-wrap">
+            <span class="ban-label">BANS</span>
+            <div id="blueBans" class="ban-strip"></div>
+          </div>
+        </section>
+
+        <section class="draft-center-header">
+          <span id="seriesLabel" class="series-label">BO3</span>
+          <strong class="draft-title">DRAFT PHASE</strong>
+          <div id="seriesDots" class="series-dots" aria-label="Series score"></div>
+        </section>
+
+        <section class="team-summary team-summary-red">
+          <div class="ban-strip-wrap ban-strip-wrap-red">
+            <span class="ban-label">BANS</span>
+            <div id="redBans" class="ban-strip"></div>
+          </div>
+
+          <div class="series-score">
+            <span>SCORE</span>
+            <strong id="redTeamScore">0</strong>
+          </div>
+
+          <div class="team-copy team-copy-red">
+            <span class="side-label">RED SIDE</span>
+            <strong id="redTeamName" class="team-name">RED TEAM</strong>
+          </div>
+
+          <div id="redTeamLogo" class="team-logo">RD</div>
+        </section>
+      </header>
+
+      <div class="draft-body">
+        <section class="pick-side pick-side-blue">
+          <div id="bluePicks" class="pick-list"></div>
+        </section>
+
+        <section class="draft-center-control">
+          <span id="activePickSide" class="active-pick-side">READY</span>
+          <div id="timerDisplay" class="timer-display">00:30</div>
+          <strong id="activePickText" class="active-pick-text">WAITING LOCK</strong>
+          <span id="connectionLabel" class="connection-label">LOCAL STATE READY</span>
+        </section>
+
+        <section class="pick-side pick-side-red">
+          <div id="redPicks" class="pick-list"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/heroes-data.js"></script>
+  <script src="js/items-data.js"></script>
+  <script src="js/display.js"></script>
+</body>
+</html>

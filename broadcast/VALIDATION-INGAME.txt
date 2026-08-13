@@ -1,0 +1,21 @@
+HOK DRAFT OVERLAY + IN-GAME EXTENSION
+FINAL VALIDATION REPORT
+====================================================
+
+[PASS] control.js DOM IDs: missing=[]
+[PASS] ingame.js DOM IDs: missing=[]
+[PASS] Syntax js/control.js: PASS
+[PASS] Syntax js/display.js: PASS
+[PASS] Syntax js/ingame.js: PASS
+[PASS] Syntax js/heroes-data.js: PASS
+[PASS] Syntax js/items-data.js: PASS
+[PASS] Hero icons: 120 files
+[PASS] Hero portraits: 120 files
+[PASS] Item icons: 118 files
+[PASS] Draft mode auto-hide: display.html hidden when mode=ingame
+[PASS] In-game mode auto-hide: ingame hidden when mode=draft
+
+State key: hok_draft_state_v1
+New mode fields: mode, gameTimer, gameTimerRunning, blueKills, redKills, goldDiff, blueTyrant, redTyrant, blueOverlord, redOverlord
+New files: ingame.html, css/ingame.css, js/ingame.js
+Updated: control.html, css/control.css, js/control.js, js/display.js, README.md

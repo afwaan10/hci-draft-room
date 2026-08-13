@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>HCI Broadcast - Control</title>
+  <link rel="stylesheet" href="css/control.css">
+</head>
+<body>
+  <main class="control-app">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">HONOR OF KINGS</p>
+        <h1>HCI Broadcast Control</h1>
+        <p class="subtitle">Panel operator broadcast · hero Draft baru tayang setelah tombol LOCK ditekan</p>
+      </div>
+      <div class="header-actions">
+        <span id="storageStatus" class="status-badge" data-status="ok">Ready</span>
+      </div>
+    </header>
+
+    <section class="panel mode-panel" aria-labelledby="modeHeading">
+      <div class="panel-heading">
+        <div>
+          <p class="section-kicker">OVERLAY MODE</p>
+          <h2 id="modeHeading">Active Broadcast Phase</h2>
+        </div>
+        <span id="activeModeBadge" class="mode-status">DRAFT MODE</span>
+      </div>
+
+      <div class="mode-switch" role="tablist" aria-label="Overlay mode">
+        <button id="draftModeButton" class="mode-button is-active" type="button" role="tab" aria-selected="true">
+          DRAFT MODE
+          <small>Pick / Ban / Draft Timer</small>
+        </button>
+        <button id="ingameModeButton" class="mode-button" type="button" role="tab" aria-selected="false">
+          IN-GAME MODE
+          <small>Game Timer / Kills / Gold / Objectives</small>
+        </button>
+      </div>
+
+      <p class="mode-help">
+        Team, logo, player, photo, item, dan series score digunakan bersama oleh Draft dan In-Game.
+      </p>
+    </section>
+
+    <section class="panel reset-panel" aria-labelledby="resetHeading">
+      <div class="panel-heading">
+        <div>
+          <p class="section-kicker">RESET ACTIONS</p>
+          <h2 id="resetHeading">Broadcast Reset</h2>
+        </div>
+      </div>
+
+      <div class="reset-action-grid">
+        <button id="resetDraftButton" class="reset-action-button" type="button">
+          <strong>Reset Draft</strong>
+          <small>Ban, pick, lock status, draft timer</small>
+        </button>
+
+        <button id="resetIngameButton" class="reset-action-button" type="button">
+          <strong>Reset In-Game</strong>
+          <small>Game timer, kills, gold, objectives</small>
+        </button>
+
+        <button id="resetMatchButton" class="reset-action-button" type="button">
+          <strong>Reset Match</strong>
+          <small>Draft + in-game; series score tetap</small>
+        </button>
+
+        <button id="resetSeriesButton" class="reset-action-button" type="button">
+          <strong>Reset Series</strong>
+          <small>Match stats + series score 0-0</small>
+        </button>
+
+        <button id="resetEventButton" class="reset-action-button is-danger" type="button">
+          <strong>Reset Event / Clear All</strong>
+          <small>Hapus team, logo, player, photo, item, semua stats</small>
+        </button>
+      </div>
+    </section>
+
+    <section class="panel match-panel" aria-labelledby="matchSettingsHeading">
+      <div class="panel-heading">
+        <div>
+          <p class="section-kicker">MATCH</p>
+          <h2 id="matchSettingsHeading">Series & Draft Timer</h2>
+        </div>
+      </div>
+
+      <div class="match-grid">
+        <label class="field">
+          <span>Series</span>
+          <select id="seriesSelect">
+            <option value="BO1">BO1</option>
+            <option value="BO3">BO3</option>
+            <option value="BO5">BO5</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Draft Timer (seconds)</span>
+          <input id="timerInput" type="number" min="0" max="999" step="1" inputmode="numeric">
+        </label>
+
+        <div class="timer-actions" aria-label="Draft timer controls">
+          <button id="timerStartButton" class="button button-primary" type="button">▶ Mulai</button>
+          <button id="timerStopButton" class="button button-secondary" type="button">Ⅱ Pause</button>
+          <button id="timerResetButton" class="button button-secondary" type="button">↺ Reset 30s</button>
+        </div>
+
+        <div class="state-key">
+          <span>Storage key</span>
+          <code>hok_draft_state_v1</code>
+        </div>
+      </div>
+    </section>
+
+    <section id="draftControls" class="mode-content" data-mode-content="draft">
+      <div class="section-title-row">
+        <div>
+          <p class="section-kicker">DRAFT MODE</p>
+          <h2>Draft Controls</h2>
+        </div>
+        <span class="section-note">Pilih hero di control → LOCK &amp; TAYANGKAN → baru muncul di OBS</span>
+      </div>
+
+
+      <aside class="draft-onair-rule" aria-label="Aturan hero Draft di OBS">
+        <div class="draft-onair-rule-icon">ON AIR</div>
+        <div>
+          <strong>Hero belum tampil di OBS sebelum LOCK</strong>
+          <p>Operator boleh memilih hero sementara di control. Foto player tetap tampil di Draft Display sampai operator menekan <b>LOCK &amp; TAYANGKAN</b>.</p>
+        </div>
+      </aside>
+
+      <aside class="photo-guideline" aria-label="Player photo guideline">
+        <div class="photo-guideline-icon">9:16</div>
+        <div>
+          <strong>Player Photo Standard</strong>
+          <p>Recommended source 1080×1920, waist-up pose, 8–12% headroom, PNG/WebP transparent preferred. Framing can be adjusted per player without editing the source photo.</p>
+        </div>
+      </aside>
+
+      <section class="teams-grid" aria-label="Team settings">
+        <article class="panel team-panel team-blue">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">BLUE SIDE</p>
+              <h2>Blue Team</h2>
+            </div>
+          </div>
+
+          <div class="team-settings-grid">
+            <label class="field">
+              <span>Team Name</span>
+              <input id="blueTeamName" type="text" maxlength="32" placeholder="Blue Team">
+            </label>
+
+            <div class="field">
+              <span>Team Logo</span>
+              <div class="upload-row">
+                <div id="blueLogoPreview" class="image-preview logo-preview" aria-label="Blue team logo preview">BL</div>
+                <label class="file-button">
+                  Upload Logo
+                  <input id="blueLogoInput" type="file" accept="image/png,image/jpeg,image/webp">
+                </label>
+                <button id="blueLogoClear" class="button button-small button-secondary" type="button">Hapus Logo</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <span>Series Score</span>
+              <div class="score-control">
+                <button id="blueScoreMinus" class="button button-square button-secondary" type="button" aria-label="Decrease blue series score">−</button>
+                <output id="blueScoreValue" class="score-value">0</output>
+                <button id="blueScorePlus" class="button button-square button-primary" type="button" aria-label="Increase blue series score">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-heading">
+              <h3>Players</h3>
+              <span>5 slots</span>
+            </div>
+            <div id="bluePlayers" class="players-editor"></div>
+          </div>
+
+          <details class="subsection collapsible-module">
+            <summary class="module-summary">
+              <span class="module-summary-copy">
+                <span class="module-kicker">MODUL OPSIONAL</span>
+                <strong>In-Game Items</strong>
+                <small>6 slot per player · buka hanya saat dibutuhkan</small>
+              </span>
+              <span class="module-summary-action">
+                <span class="module-state module-state-closed">Tampilkan</span>
+                <span class="module-state module-state-open">Sembunyikan</span>
+                <span class="module-chevron" aria-hidden="true">⌄</span>
+              </span>
+            </summary>
+            <div class="module-body">
+              <div id="blueItems" class="items-editor"></div>
+            </div>
+          </details>
+
+          <div class="draft-editor-grid">
+            <div class="subsection">
+              <div class="subsection-heading">
+                <h3>Bans</h3>
+                <span>5 slots</span>
+              </div>
+              <div id="blueBans" class="hero-select-list"></div>
+            </div>
+
+            <div class="subsection">
+              <div class="subsection-heading">
+                <h3>Picks</h3>
+                <span>5 slots · lock flow</span>
+              </div>
+              <div id="bluePicks" class="hero-select-list"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel team-panel team-red">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">RED SIDE</p>
+              <h2>Red Team</h2>
+            </div>
+          </div>
+
+          <div class="team-settings-grid">
+            <label class="field">
+              <span>Team Name</span>
+              <input id="redTeamName" type="text" maxlength="32" placeholder="Red Team">
+            </label>
+
+            <div class="field">
+              <span>Team Logo</span>
+              <div class="upload-row">
+                <div id="redLogoPreview" class="image-preview logo-preview" aria-label="Red team logo preview">RD</div>
+                <label class="file-button">
+                  Upload Logo
+                  <input id="redLogoInput" type="file" accept="image/png,image/jpeg,image/webp">
+                </label>
+                <button id="redLogoClear" class="button button-small button-secondary" type="button">Hapus Logo</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <span>Series Score</span>
+              <div class="score-control">
+                <button id="redScoreMinus" class="button button-square button-secondary" type="button" aria-label="Decrease red series score">−</button>
+                <output id="redScoreValue" class="score-value">0</output>
+                <button id="redScorePlus" class="button button-square button-danger-solid" type="button" aria-label="Increase red series score">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <div class="subsection-heading">
+              <h3>Players</h3>
+              <span>5 slots</span>
+            </div>
+            <div id="redPlayers" class="players-editor"></div>
+          </div>
+
+          <details class="subsection collapsible-module">
+            <summary class="module-summary">
+              <span class="module-summary-copy">
+                <span class="module-kicker">MODUL OPSIONAL</span>
+                <strong>In-Game Items</strong>
+                <small>6 slot per player · buka hanya saat dibutuhkan</small>
+              </span>
+              <span class="module-summary-action">
+                <span class="module-state module-state-closed">Tampilkan</span>
+                <span class="module-state module-state-open">Sembunyikan</span>
+                <span class="module-chevron" aria-hidden="true">⌄</span>
+              </span>
+            </summary>
+            <div class="module-body">
+              <div id="redItems" class="items-editor"></div>
+            </div>
+          </details>
+
+          <div class="draft-editor-grid">
+            <div class="subsection">
+              <div class="subsection-heading">
+                <h3>Bans</h3>
+                <span>5 slots</span>
+              </div>
+              <div id="redBans" class="hero-select-list"></div>
+            </div>
+
+            <div class="subsection">
+              <div class="subsection-heading">
+                <h3>Picks</h3>
+                <span>5 slots · lock flow</span>
+              </div>
+              <div id="redPicks" class="hero-select-list"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </section>
+
+    <section id="ingameControls" class="mode-content is-hidden" data-mode-content="ingame">
+      <div class="section-title-row">
+        <div>
+          <p class="section-kicker">IN-GAME MODE</p>
+          <h2>In-Game Controls</h2>
+        </div>
+        <span class="section-note">Keyboard shortcuts aktif saat bukan sedang mengetik.</span>
+      </div>
+
+      <section class="panel ingame-control-panel">
+        <div class="ingame-summary">
+          <article class="ingame-summary-team is-blue">
+            <span>BLUE</span>
+            <strong id="ingameBlueTeamLabel">BLUE TEAM</strong>
+            <small>Series <b id="ingameBlueSeriesScore">0</b></small>
+          </article>
+
+          <article class="ingame-summary-center">
+            <span>GAME TIMER</span>
+            <output id="gameTimerDisplay" class="control-game-timer">00:00</output>
+            <small id="gameTimerStatus">PAUSED</small>
+          </article>
+
+          <article class="ingame-summary-team is-red">
+            <span>RED</span>
+            <strong id="ingameRedTeamLabel">RED TEAM</strong>
+            <small>Series <b id="ingameRedSeriesScore">0</b></small>
+          </article>
+        </div>
+
+        <div class="ingame-controls-grid">
+          <article class="control-card">
+            <div class="control-card-heading">
+              <div>
+                <p class="section-kicker">CLOCK</p>
+                <h3>Game Timer</h3>
+              </div>
+            </div>
+            <div class="control-button-row">
+              <button id="gameTimerStartButton" class="button button-primary" type="button">Start</button>
+              <button id="gameTimerPauseButton" class="button button-secondary" type="button">Pause</button>
+              <button id="gameTimerResetButton" class="button button-secondary" type="button">Reset 00:00</button>
+            </div>
+          </article>
+
+          <article class="control-card">
+            <div class="control-card-heading">
+              <div>
+                <p class="section-kicker">KILLS</p>
+                <h3>Kill Score</h3>
+              </div>
+            </div>
+            <div class="dual-counter-grid">
+              <div class="counter-box is-blue">
+                <span>BLUE KILLS</span>
+                <output id="blueKillsValue" class="large-counter">0</output>
+                <div class="counter-actions">
+                  <button id="blueKillsMinus" class="button button-square button-secondary" type="button">−1</button>
+                  <button id="blueKillsPlus" class="button button-square button-primary" type="button">+1</button>
+                </div>
+              </div>
+
+              <div class="counter-box is-red">
+                <span>RED KILLS</span>
+                <output id="redKillsValue" class="large-counter">0</output>
+                <div class="counter-actions">
+                  <button id="redKillsMinus" class="button button-square button-secondary" type="button">−1</button>
+                  <button id="redKillsPlus" class="button button-square button-danger-solid" type="button">+1</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="control-card">
+            <div class="control-card-heading">
+              <div>
+                <p class="section-kicker">ECONOMY</p>
+                <h3>Gold Advantage</h3>
+              </div>
+              <span id="goldAdvantagePreview" class="gold-preview is-even">EVEN</span>
+            </div>
+
+            <label class="field">
+              <span>Gold Difference (positive = Blue, negative = Red)</span>
+              <input id="goldDiffInput" type="number" step="1" inputmode="numeric" value="0">
+            </label>
+
+            <div class="gold-buttons" aria-label="Gold quick adjustments">
+              <button class="button button-secondary gold-adjust-button" data-gold-delta="-500" type="button">−500</button>
+              <button class="button button-secondary gold-adjust-button" data-gold-delta="-200" type="button">−200</button>
+              <button class="button button-secondary gold-adjust-button" data-gold-delta="-100" type="button">−100</button>
+              <button id="goldResetButton" class="button button-secondary" type="button">Even</button>
+              <button class="button button-primary gold-adjust-button" data-gold-delta="100" type="button">+100</button>
+              <button class="button button-primary gold-adjust-button" data-gold-delta="200" type="button">+200</button>
+              <button class="button button-primary gold-adjust-button" data-gold-delta="500" type="button">+500</button>
+            </div>
+          </article>
+
+          <article class="control-card objective-card">
+            <div class="control-card-heading">
+              <div>
+                <p class="section-kicker">OBJECTIVES</p>
+                <h3>Tyrant & Overlord</h3>
+              </div>
+            </div>
+
+            <div class="objective-control-grid">
+              <div class="objective-team-column">
+                <h4>Blue Side</h4>
+
+                <div class="objective-control">
+                  <span class="objective-symbol">T</span>
+                  <div>
+                    <small>TYRANT</small>
+                    <output id="blueTyrantValue">0</output>
+                  </div>
+                  <div class="counter-actions">
+                    <button id="blueTyrantMinus" class="button button-square button-secondary" type="button">−1</button>
+                    <button id="blueTyrantPlus" class="button button-square button-primary" type="button">+1</button>
+                  </div>
+                </div>
+
+                <div class="objective-control">
+                  <span class="objective-symbol">O</span>
+                  <div>
+                    <small>OVERLORD</small>
+                    <output id="blueOverlordValue">0</output>
+                  </div>
+                  <div class="counter-actions">
+                    <button id="blueOverlordMinus" class="button button-square button-secondary" type="button">−1</button>
+                    <button id="blueOverlordPlus" class="button button-square button-primary" type="button">+1</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="objective-team-column">
+                <h4>Red Side</h4>
+
+                <div class="objective-control">
+                  <span class="objective-symbol">T</span>
+                  <div>
+                    <small>TYRANT</small>
+                    <output id="redTyrantValue">0</output>
+                  </div>
+                  <div class="counter-actions">
+                    <button id="redTyrantMinus" class="button button-square button-secondary" type="button">−1</button>
+                    <button id="redTyrantPlus" class="button button-square button-danger-solid" type="button">+1</button>
+                  </div>
+                </div>
+
+                <div class="objective-control">
+                  <span class="objective-symbol">O</span>
+                  <div>
+                    <small>OVERLORD</small>
+                    <output id="redOverlordValue">0</output>
+                  </div>
+                  <div class="counter-actions">
+                    <button id="redOverlordMinus" class="button button-square button-secondary" type="button">−1</button>
+                    <button id="redOverlordPlus" class="button button-square button-danger-solid" type="button">+1</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="control-card shortcuts-card is-temporarily-disabled">
+            <div class="control-card-heading">
+              <div>
+                <p class="section-kicker">OPERATOR SPEED</p>
+                <h3>Keyboard Shortcuts</h3>
+              </div>
+              <span class="shortcut-focus-note">NONAKTIF SEMENTARA</span>
+            </div>
+
+            <div class="shortcut-grid">
+              <div><kbd>Q</kbd><span>Blue Kill +1</span></div>
+              <div><kbd>E</kbd><span>Red Kill +1</span></div>
+              <div><kbd>A</kbd><span>Blue Gold +200</span></div>
+              <div><kbd>D</kbd><span>Red Gold +200</span></div>
+              <div><kbd>Shift</kbd> + <kbd>A</kbd><span>Blue Gold +500</span></div>
+              <div><kbd>Shift</kbd> + <kbd>D</kbd><span>Red Gold +500</span></div>
+              <div><kbd>Z</kbd><span>Blue Tyrant +1</span></div>
+              <div><kbd>X</kbd><span>Red Tyrant +1</span></div>
+              <div><kbd>C</kbd><span>Blue Overlord +1</span></div>
+              <div><kbd>V</kbd><span>Red Overlord +1</span></div>
+              <div><kbd>Space</kbd><span>Start / Pause Game Timer</span></div>
+              <div><kbd>T</kbd><span>Reset Game Timer</span></div>
+              <div><kbd>R</kbd><span>Reset All In-Game Stats</span></div>
+            </div>
+
+            <p class="shortcut-help">
+              Hotkey masih tersimpan di source code tetapi dinonaktifkan sementara untuk revisi broadcast saat ini.
+            </p>
+          </article>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="hotkeyFeedback" class="hotkey-feedback" role="status" aria-live="polite"></div>
+
+  <div id="visualPicker" class="visual-picker" aria-hidden="true">
+    <div class="visual-picker-backdrop" data-picker-close></div>
+
+    <section class="visual-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="pickerTitle">
+      <header class="visual-picker-header">
+        <div>
+          <p id="pickerEyebrow" class="section-kicker">SELECT</p>
+          <h2 id="pickerTitle">Visual Picker</h2>
+        </div>
+        <button id="pickerCloseButton" class="picker-close-button" type="button" aria-label="Close visual picker">×</button>
+      </header>
+
+      <div class="visual-picker-toolbar">
+        <label class="picker-search-field">
+          <span>Search</span>
+          <input id="pickerSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Search...">
+        </label>
+
+        <div id="pickerFilters" class="picker-filters" aria-label="Picker filters"></div>
+      </div>
+
+      <div id="pickerGrid" class="picker-grid"></div>
+    </section>
+  </div>
+
+  <script src="js/heroes-data.js"></script>
+  <script src="js/items-data.js"></script>
+  <script src="js/control.js"></script>
+</body>
+</html>
