@@ -92,6 +92,7 @@
       bluePlayers: normalizePlayers(source.bluePlayers),
       redPlayers: normalizePlayers(source.redPlayers),
       layout: {
+        variant: layout.variant === "rows" ? "rows" : "horizontal",
         x: clamp(safeInt(layout.x), -500, 500),
         y: clamp(safeInt(layout.y), -420, 420),
         scale: clamp(Number.parseFloat(layout.scale) || 1, 0.7, 1.3),
@@ -237,15 +238,20 @@
     root.style.setProperty("--result-card-gap", `${layout.cardGap}px`);
     root.style.setProperty("--result-hero-zoom", String(layout.heroZoom));
 
+    elements.overlay.classList.toggle("layout-horizontal", layout.variant !== "rows");
+    elements.overlay.classList.toggle("layout-rows", layout.variant === "rows");
     elements.overlay.classList.toggle("hide-roles", !layout.showRoles);
     elements.overlay.classList.toggle("hide-kda", !layout.showKda);
     elements.overlay.classList.toggle("hide-gold", !layout.showGold);
     elements.overlay.classList.toggle("hide-items", !layout.showItems);
   }
 
+  const params = new URLSearchParams(location.search);
+  const previewMode = params.get("preview") === "1";
+
   function render(rawState) {
     const state = normalizeState(rawState);
-    elements.overlay.classList.toggle("is-hidden", !state.visible);
+    elements.overlay.classList.toggle("is-hidden", !state.visible && !previewMode);
     elements.title.textContent = state.title || "GAME RESULT";
     elements.gameLabel.textContent = state.gameLabel || "GAME 1";
     elements.blueName.textContent = state.blueTeam.name || "BLUE TEAM";
@@ -270,8 +276,22 @@
     }
   });
 
-  const params = new URLSearchParams(location.search);
-  document.body.classList.toggle("show-safe-area", params.get("safe") === "1");
+  function fitOverlay() {
+    const scale = Math.min(
+      window.innerWidth / 1920,
+      window.innerHeight / 1080
+    );
 
+    elements.overlay.style.transformOrigin = "top left";
+    elements.overlay.style.transform = `scale(${scale})`;
+    elements.overlay.style.left = `${Math.max(0, (window.innerWidth - 1920 * scale) / 2)}px`;
+    elements.overlay.style.top = `${Math.max(0, (window.innerHeight - 1080 * scale) / 2)}px`;
+  }
+
+  document.body.classList.toggle("show-safe-area", params.get("safe") === "1");
+  document.body.classList.toggle("preview-mode", previewMode);
+
+  fitOverlay();
   render(loadState());
+  window.addEventListener("resize", fitOverlay);
 })();

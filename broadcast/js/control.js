@@ -10,6 +10,7 @@
   const MAX_GAME_TIMER = 99 * 60 + 59;
   const MAX_COUNTER = 999;
   const MAX_GOLD_DIFF = 999999;
+  const MAX_TEAM_GOLD = 99999999;
   const LANE_FILTERS = ["Clash Lane", "Mid Lane", "Roam", "Farm Lane", "Jungle"];
   const PLAYER_PHOTO_SCALE_MIN = 0.85;
   const PLAYER_PHOTO_SCALE_MAX = 1.30;
@@ -55,6 +56,8 @@
     gameTimerRunning: false,
     blueKills: 0,
     redKills: 0,
+    blueGold: 0,
+    redGold: 0,
     goldDiff: 0,
     blueTyrant: 0,
     redTyrant: 0,
@@ -122,9 +125,11 @@
     redKillsMinus: $("redKillsMinus"),
     redKillsPlus: $("redKillsPlus"),
 
-    goldDiffInput: $("goldDiffInput"),
+    blueGoldInput: $("blueGoldInput"),
+    redGoldInput: $("redGoldInput"),
     goldAdvantagePreview: $("goldAdvantagePreview"),
-    goldReset: $("goldResetButton"),
+    goldLeadValue: $("goldLeadValue"),
+    gameTimerDisplayMirror: $("gameTimerDisplayMirror"),
 
     blueTyrantValue: $("blueTyrantValue"),
     redTyrantValue: $("redTyrantValue"),
@@ -270,6 +275,28 @@
     return { side, index };
   }
 
+  function normalizeTeamGold(source) {
+    const legacyDiff = clamp(safeInt(source?.goldDiff), -MAX_GOLD_DIFF, MAX_GOLD_DIFF);
+    const hasBlueGold = Number.isFinite(Number.parseInt(source?.blueGold, 10));
+    const hasRedGold = Number.isFinite(Number.parseInt(source?.redGold, 10));
+
+    if (hasBlueGold || hasRedGold) {
+      const blueGold = clamp(safeInt(source.blueGold), 0, MAX_TEAM_GOLD);
+      const redGold = clamp(safeInt(source.redGold), 0, MAX_TEAM_GOLD);
+      return {
+        blueGold,
+        redGold,
+        goldDiff: clamp(blueGold - redGold, -MAX_GOLD_DIFF, MAX_GOLD_DIFF)
+      };
+    }
+
+    return {
+      blueGold: legacyDiff > 0 ? legacyDiff : 0,
+      redGold: legacyDiff < 0 ? Math.abs(legacyDiff) : 0,
+      goldDiff: legacyDiff
+    };
+  }
+
   function normalizeState(candidate) {
     const source = candidate && typeof candidate === "object" ? candidate : {};
     const series = normalizeSeries(source.series);
@@ -306,7 +333,7 @@
       gameTimerRunning: Boolean(source.gameTimerRunning),
       blueKills: clamp(safeInt(source.blueKills), 0, MAX_COUNTER),
       redKills: clamp(safeInt(source.redKills), 0, MAX_COUNTER),
-      goldDiff: clamp(safeInt(source.goldDiff), -MAX_GOLD_DIFF, MAX_GOLD_DIFF),
+      ...normalizeTeamGold(source),
       blueTyrant: clamp(safeInt(source.blueTyrant), 0, MAX_COUNTER),
       redTyrant: clamp(safeInt(source.redTyrant), 0, MAX_COUNTER),
       blueOverlord: clamp(safeInt(source.blueOverlord), 0, MAX_COUNTER),
@@ -1106,14 +1133,20 @@
     elements.ingameBlueSeriesScore.textContent = String(state.blueTeam.score);
     elements.ingameRedSeriesScore.textContent = String(state.redTeam.score);
 
-    elements.gameTimerDisplay.textContent = formatClock(state.gameTimer);
+    const clock = formatClock(state.gameTimer);
+    elements.gameTimerDisplay.textContent = clock;
+    if (elements.gameTimerDisplayMirror) {
+      elements.gameTimerDisplayMirror.textContent = clock;
+    }
     elements.gameTimerStatus.textContent = state.gameTimerRunning ? "RUNNING" : "PAUSED";
     elements.gameTimerStatus.dataset.running = String(state.gameTimerRunning);
 
     elements.blueKillsValue.textContent = String(state.blueKills);
     elements.redKillsValue.textContent = String(state.redKills);
 
-    elements.goldDiffInput.value = String(state.goldDiff);
+    elements.blueGoldInput.value = String(state.blueGold);
+    elements.redGoldInput.value = String(state.redGold);
+    state.goldDiff = clamp(state.blueGold - state.redGold, -MAX_GOLD_DIFF, MAX_GOLD_DIFF);
     renderGoldPreview();
 
     elements.blueTyrantValue.textContent = String(state.blueTyrant);
@@ -1123,7 +1156,8 @@
   }
 
   function renderGoldPreview() {
-    const value = state.goldDiff;
+    const value = clamp(state.blueGold - state.redGold, -MAX_GOLD_DIFF, MAX_GOLD_DIFF);
+    state.goldDiff = value;
     const preview = elements.goldAdvantagePreview;
 
     preview.classList.remove("is-blue", "is-red", "is-even");
@@ -1137,6 +1171,11 @@
     } else {
       preview.textContent = "EVEN";
       preview.classList.add("is-even");
+    }
+
+    if (elements.goldLeadValue) {
+      elements.goldLeadValue.textContent = preview.textContent;
+      elements.goldLeadValue.dataset.lead = value > 0 ? "blue" : value < 0 ? "red" : "even";
     }
   }
 
@@ -1165,10 +1204,17 @@
     renderIngameControls();
   }
 
-  function updateGoldDiff(value) {
-    state.goldDiff = clamp(safeInt(value), -MAX_GOLD_DIFF, MAX_GOLD_DIFF);
+  function updateTeamGold(side, value) {
+    const key = side === "red" ? "redGold" : "blueGold";
+    state[key] = clamp(safeInt(value), 0, MAX_TEAM_GOLD);
+    state.goldDiff = clamp(state.blueGold - state.redGold, -MAX_GOLD_DIFF, MAX_GOLD_DIFF);
     saveState();
     renderIngameControls();
+  }
+
+  function adjustTeamGold(side, delta) {
+    const key = side === "red" ? "redGold" : "blueGold";
+    updateTeamGold(side, safeInt(state[key]) + safeInt(delta));
   }
 
   function resetDraftFields() {
@@ -1188,6 +1234,8 @@
     state.gameTimerRunning = false;
     state.blueKills = 0;
     state.redKills = 0;
+    state.blueGold = 0;
+    state.redGold = 0;
     state.goldDiff = 0;
     state.blueTyrant = 0;
     state.redTyrant = 0;
@@ -1212,7 +1260,7 @@
   function resetIngameStats({ confirmReset = true } = {}) {
     if (
       confirmReset
-      && !window.confirm("Reset game timer, kills, gold advantage and objectives? Team/player setup and series score will stay.")
+      && !window.confirm("Reset game timer, kills, total gold dan objectives? Team/player setup dan series score tetap.")
     ) {
       return false;
     }
@@ -1462,12 +1510,12 @@
         break;
 
       case "a":
-        updateGoldDiff(state.goldDiff + (event.shiftKey ? 500 : 200));
+        adjustTeamGold("blue", event.shiftKey ? 500 : 200);
         showHotkeyFeedback(event.shiftKey ? "Shift+A" : "A", event.shiftKey ? "Blue Gold +500" : "Blue Gold +200");
         break;
 
       case "d":
-        updateGoldDiff(state.goldDiff - (event.shiftKey ? 500 : 200));
+        adjustTeamGold("red", event.shiftKey ? 500 : 200);
         showHotkeyFeedback(event.shiftKey ? "Shift+D" : "D", event.shiftKey ? "Red Gold +500" : "Red Gold +200");
         break;
 
@@ -1823,17 +1871,19 @@
     elements.redKillsMinus.addEventListener("click", () => updateCounter("redKills", -1));
     elements.redKillsPlus.addEventListener("click", () => updateCounter("redKills", 1));
 
-    elements.goldDiffInput.addEventListener("change", (event) => {
-      updateGoldDiff(event.target.value);
+    elements.blueGoldInput.addEventListener("input", (event) => {
+      updateTeamGold("blue", event.target.value);
     });
 
-    document.querySelectorAll(".gold-adjust-button").forEach((button) => {
+    elements.redGoldInput.addEventListener("input", (event) => {
+      updateTeamGold("red", event.target.value);
+    });
+
+    document.querySelectorAll(".team-gold-adjust-button").forEach((button) => {
       button.addEventListener("click", () => {
-        updateGoldDiff(state.goldDiff + safeInt(button.dataset.goldDelta));
+        adjustTeamGold(button.dataset.teamGold, safeInt(button.dataset.goldDelta));
       });
     });
-
-    elements.goldReset.addEventListener("click", () => updateGoldDiff(0));
 
     elements.blueTyrantMinus.addEventListener("click", () => updateCounter("blueTyrant", -1));
     elements.blueTyrantPlus.addEventListener("click", () => updateCounter("blueTyrant", 1));

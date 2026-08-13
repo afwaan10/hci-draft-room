@@ -16,6 +16,7 @@
   const OCR_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@7/dist/tesseract.min.js";
   const HERO_THRESHOLD = 57;
   const ITEM_THRESHOLD = 54;
+  const SCANNER_PROFILE = "hok-result-rows-v1";
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const safeInt = (value, fallback = 0) => {
@@ -72,6 +73,7 @@
 
   function defaultLayout() {
     return {
+      variant: "horizontal",
       x: 0,
       y: 0,
       scale: 1,
@@ -100,7 +102,7 @@
       redPlayers: Array.from({ length: PLAYER_COUNT }, (_, i) => emptyPlayer(i)),
       layout: defaultLayout(),
       scanner: {
-        preset: "horizontal",
+        profile: SCANNER_PROFILE,
         cropRect: { x: 0, y: 0, w: 1, h: 1 },
         calibratedCards: null,
         lastQuality: 0,
@@ -169,6 +171,9 @@
       bluePlayers: Array.from({ length: PLAYER_COUNT }, (_, i) => normalizePlayer(source.bluePlayers?.[i], i)),
       redPlayers: Array.from({ length: PLAYER_COUNT }, (_, i) => normalizePlayer(source.redPlayers?.[i], i)),
       layout: {
+        variant: layout.variant === "rows"
+          ? "rows"
+          : (scanner.preset === "rows" ? "rows" : "horizontal"),
         x: clamp(safeInt(layout.x), -500, 500),
         y: clamp(safeInt(layout.y), -420, 420),
         scale: clamp(safeFloat(layout.scale, 1), 0.7, 1.3),
@@ -183,9 +188,11 @@
         showItems: layout.showItems !== false
       },
       scanner: {
-        preset: scanner.preset === "rows" ? "rows" : "horizontal",
+        profile: SCANNER_PROFILE,
         cropRect: normalizeRect(scanner.cropRect),
-        calibratedCards: normalizeCalibratedCards(scanner.calibratedCards),
+        calibratedCards: scanner.profile === SCANNER_PROFILE
+          ? normalizeCalibratedCards(scanner.calibratedCards)
+          : null,
         lastQuality: clamp(safeInt(scanner.lastQuality), 0, 100),
         lastScanAt: Math.max(0, safeInt(scanner.lastScanAt))
       }
@@ -374,9 +381,12 @@
     els.gameLabel.value = state.gameLabel;
     els.blueKills.value = String(state.blueKills);
     els.redKills.value = String(state.redKills);
-    els.preset.value = state.scanner.preset;
 
     const layout = state.layout;
+    els.preset.value = layout.variant;
+    document.querySelectorAll(".result-layout-option").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.resultLayout === layout.variant);
+    });
     els.x.value = String(layout.x);
     els.xValue.textContent = `${layout.x}px`;
     els.y.value = String(layout.y);
@@ -560,22 +570,25 @@
     return { heroes, items, warnings, quality };
   }
 
-  function getDefaultCards(preset = state.scanner.preset) {
+  function getDefaultCards() {
+    /*
+      Scanner hanya membaca hasil match ASLI Honor of Kings dalam format row.
+      Layout output Horizontal / Rows tidak pernah mengubah mapping scanner.
+
+      Koordinat relatif di bawah diturunkan dari panel result HoK:
+      kiri = Blue 5 row, kanan = Red 5 row.
+    */
     const cards = { blue: [], red: [] };
-    if (preset === "rows") {
-      for (let i = 0; i < PLAYER_COUNT; i += 1) {
-        const y = 0.12 + i * 0.155;
-        cards.blue.push({ x: 0.035, y, w: 0.45, h: 0.135 });
-        cards.red.push({ x: 0.515, y, w: 0.45, h: 0.135 });
-      }
-    } else {
-      const cardW = 0.078;
-      const gap = 0.009;
-      for (let i = 0; i < PLAYER_COUNT; i += 1) {
-        cards.blue.push({ x: 0.045 + i * (cardW + gap), y: 0.17, w: cardW, h: 0.73 });
-        cards.red.push({ x: 0.565 + i * (cardW + gap), y: 0.17, w: cardW, h: 0.73 });
-      }
+    const startY = 0.185;
+    const stepY = 0.124;
+    const cardH = 0.112;
+
+    for (let i = 0; i < PLAYER_COUNT; i += 1) {
+      const y = startY + i * stepY;
+      cards.blue.push({ x: 0.044, y, w: 0.438, h: cardH });
+      cards.red.push({ x: 0.518, y, w: 0.438, h: cardH });
     }
+
     return cards;
   }
 
@@ -583,22 +596,18 @@
     return state.scanner.calibratedCards || getDefaultCards();
   }
 
-  function cardSubregions(preset = state.scanner.preset) {
-    if (preset === "rows") {
-      return {
-        hero: { x: 0.015, y: 0.08, w: 0.18, h: 0.84 },
-        ign: { x: 0.21, y: 0.07, w: 0.27, h: 0.24 },
-        kda: { x: 0.50, y: 0.07, w: 0.18, h: 0.24 },
-        gold: { x: 0.72, y: 0.07, w: 0.25, h: 0.24 },
-        items: { x: 0.21, y: 0.48, w: 0.76, h: 0.40 }
-      };
-    }
+  function cardSubregions() {
+    /*
+      Subregion per row HoK.
+      Role digunakan sebagai identity slot, bukan hasil OCR.
+      Hero dan item memakai image matching; IGN/KDA/Gold memakai OCR optional.
+    */
     return {
-      hero: { x: 0.05, y: 0.02, w: 0.90, h: 0.54 },
-      ign: { x: 0.05, y: 0.55, w: 0.90, h: 0.09 },
-      items: { x: 0.04, y: 0.66, w: 0.92, h: 0.105 },
-      kda: { x: 0.05, y: 0.79, w: 0.90, h: 0.075 },
-      gold: { x: 0.05, y: 0.885, w: 0.90, h: 0.075 }
+      hero: { x: 0.105, y: 0.04, w: 0.155, h: 0.90 },
+      ign: { x: 0.405, y: 0.03, w: 0.280, h: 0.36 },
+      items: { x: 0.405, y: 0.48, w: 0.305, h: 0.42 },
+      kda: { x: 0.690, y: 0.03, w: 0.155, h: 0.38 },
+      gold: { x: 0.835, y: 0.03, w: 0.160, h: 0.38 }
     };
   }
 
@@ -713,12 +722,23 @@
       });
       screenshotImage = image;
       screenshotName = file.name;
-      cropRect = { ...state.scanner.cropRect };
       els.previewEmpty.classList.add("is-hidden");
       els.scan.disabled = false;
       setStatus("SIAP SCAN", "good");
       setProgress(0, `${image.naturalWidth}×${image.naturalHeight} · ${file.name}`);
-      setHint("Screenshot siap. Gunakan Deteksi Area Otomatis atau pilih area result secara manual jika screenshot full desktop.", "good");
+
+      // Auto-detect setiap screenshot baru. Resolusi/aspect file tidak menjadi preset scanner.
+      const detected = detectLikelyPanel();
+      cropRect = detected || { x: 0, y: 0, w: 1, h: 1 };
+      state.scanner.cropRect = { ...cropRect };
+      saveState(false);
+
+      setHint(
+        detected
+          ? "Area hasil HoK terdeteksi otomatis. Periksa box 10 role; jika meleset gunakan Scanner Lanjutan → Pilih Area Manual/Kalibrasi."
+          : "Area otomatis belum yakin. Scanner memakai seluruh gambar; gunakan Pilih Area Manual bila box role tidak pas.",
+        detected ? "good" : "warn"
+      );
       drawPreview();
     } finally {
       URL.revokeObjectURL(url);
@@ -771,78 +791,139 @@
 
   function detectLikelyPanel() {
     if (!screenshotImage) return null;
-    const sampleW = 160;
-    const sampleH = Math.max(90, Math.round(sampleW / (screenshotImage.naturalWidth / screenshotImage.naturalHeight)));
+
+    const imageAspect = screenshotImage.naturalWidth / screenshotImage.naturalHeight;
+    const sampleW = 220;
+    const sampleH = Math.max(100, Math.round(sampleW / imageAspect));
     const canvas = document.createElement("canvas");
     canvas.width = sampleW;
     canvas.height = sampleH;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     ctx.drawImage(screenshotImage, 0, 0, sampleW, sampleH);
-    const data = ctx.getImageData(0, 0, sampleW, sampleH).data;
+
+    const pixels = ctx.getImageData(0, 0, sampleW, sampleH).data;
     const edge = new Float32Array(sampleW * sampleH);
+    const cool = new Float32Array(sampleW * sampleH);
+
+    const pixel = (x, y) => {
+      const i = (y * sampleW + x) * 4;
+      return [pixels[i], pixels[i + 1], pixels[i + 2]];
+    };
 
     const lum = (x, y) => {
-      const i = (y * sampleW + x) * 4;
-      return 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      const [r, g, b] = pixel(x, y);
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
 
     for (let y = 0; y < sampleH - 1; y += 1) {
       for (let x = 0; x < sampleW - 1; x += 1) {
         const here = lum(x, y);
-        edge[y * sampleW + x] = Math.abs(here - lum(x + 1, y)) + Math.abs(here - lum(x, y + 1));
+        edge[y * sampleW + x] =
+          Math.abs(here - lum(x + 1, y))
+          + Math.abs(here - lum(x, y + 1));
+
+        const [r, g, b] = pixel(x, y);
+        // Result HoK umumnya didominasi surface biru/cyan.
+        cool[y * sampleW + x] = b > r * 1.06 && b > g * 0.88
+          ? clamp((b - r + b - g * 0.72) / 255, 0, 1)
+          : 0;
       }
     }
 
-    const integral = new Float64Array((sampleW + 1) * (sampleH + 1));
-    for (let y = 1; y <= sampleH; y += 1) {
-      let rowSum = 0;
-      for (let x = 1; x <= sampleW; x += 1) {
-        rowSum += edge[(y - 1) * sampleW + (x - 1)];
-        integral[y * (sampleW + 1) + x] = integral[(y - 1) * (sampleW + 1) + x] + rowSum;
+    function integralOf(values) {
+      const integral = new Float64Array((sampleW + 1) * (sampleH + 1));
+      for (let y = 1; y <= sampleH; y += 1) {
+        let rowSum = 0;
+        for (let x = 1; x <= sampleW; x += 1) {
+          rowSum += values[(y - 1) * sampleW + (x - 1)];
+          integral[y * (sampleW + 1) + x] =
+            integral[(y - 1) * (sampleW + 1) + x] + rowSum;
+        }
       }
+      return integral;
     }
 
-    const rectSum = (x, y, w, h) => {
+    const edgeIntegral = integralOf(edge);
+    const coolIntegral = integralOf(cool);
+
+    function rectSum(integral, x, y, w, h) {
       const stride = sampleW + 1;
       const x2 = x + w;
       const y2 = y + h;
-      return integral[y2 * stride + x2] - integral[y * stride + x2] - integral[y2 * stride + x] + integral[y * stride + x];
-    };
+      return (
+        integral[y2 * stride + x2]
+        - integral[y * stride + x2]
+        - integral[y2 * stride + x]
+        + integral[y * stride + x]
+      );
+    }
 
     let best = null;
-    const ratios = [16 / 9, 16 / 10, 2.0, 2.2];
-    const scales = [0.48, 0.58, 0.68, 0.78, 0.88, 0.96];
+    // Panel result asli HoK pada contoh berkisar 2.0–2.25:1.
+    const ratios = [1.92, 2.02, 2.12, 2.22, 2.32];
+    const widthScales = [0.45, 0.55, 0.65, 0.75, 0.85, 0.94];
+
     for (const ratio of ratios) {
-      for (const scale of scales) {
+      for (const scale of widthScales) {
         let w = Math.round(sampleW * scale);
         let h = Math.round(w / ratio);
-        if (h > sampleH * 0.96) {
-          h = Math.round(sampleH * scale);
+
+        if (h > sampleH * 0.94) {
+          h = Math.round(sampleH * 0.94);
           w = Math.round(h * ratio);
         }
-        if (w < 30 || h < 20 || w > sampleW || h > sampleH) continue;
-        const stepX = Math.max(2, Math.round((sampleW - w) / 10));
-        const stepY = Math.max(2, Math.round((sampleH - h) / 8));
+
+        if (w < 60 || h < 28 || w > sampleW || h > sampleH) continue;
+
+        const stepX = Math.max(2, Math.round((sampleW - w) / 14));
+        const stepY = Math.max(2, Math.round((sampleH - h) / 12));
+
         for (let y = 0; y <= sampleH - h; y += stepY) {
           for (let x = 0; x <= sampleW - w; x += stepX) {
-            const density = rectSum(x, y, w, h) / (w * h);
+            const area = w * h;
+            const edgeDensity = rectSum(edgeIntegral, x, y, w, h) / area;
+            const coolDensity = rectSum(coolIntegral, x, y, w, h) / area;
             const centerX = (x + w / 2) / sampleW;
             const centerY = (y + h / 2) / sampleH;
-            const centerPenalty = Math.abs(centerX - 0.5) * 0.16 + Math.abs(centerY - 0.52) * 0.12;
-            const sizeBonus = scale * 2.1;
-            const score = density + sizeBonus - centerPenalty;
-            if (!best || score > best.score) best = { x, y, w, h, score };
+
+            const centerPenalty =
+              Math.abs(centerX - 0.5) * 0.14
+              + Math.abs(centerY - 0.52) * 0.08;
+
+            // Edge membantu menemukan tabel; cool-density membantu membedakan panel game dari browser chrome.
+            const score =
+              edgeDensity * 0.78
+              + coolDensity * 17
+              + scale * 1.25
+              - centerPenalty;
+
+            if (!best || score > best.score) {
+              best = { x, y, w, h, score, coolDensity };
+            }
           }
         }
       }
     }
 
-    if (!best) return { x: 0, y: 0, w: 1, h: 1 };
+    if (!best) return null;
+
+    // Jika tidak ada sinyal surface HoK yang cukup, jangan terlalu percaya auto crop.
+    if (best.coolDensity < 0.045 && imageAspect < 1.45) {
+      return null;
+    }
+
+    const padX = Math.round(best.w * 0.012);
+    const padY = Math.round(best.h * 0.025);
+    const x = Math.max(0, best.x - padX);
+    const y = Math.max(0, best.y - padY);
+    const x2 = Math.min(sampleW, best.x + best.w + padX);
+    const y2 = Math.min(sampleH, best.y + best.h + padY);
+
     return {
-      x: best.x / sampleW,
-      y: best.y / sampleH,
-      w: best.w / sampleW,
-      h: best.h / sampleH
+      x: x / sampleW,
+      y: y / sampleH,
+      w: (x2 - x) / sampleW,
+      h: (y2 - y) / sampleH
     };
   }
 
@@ -1063,6 +1144,50 @@
     };
   }
 
+  function rankRegionSignature(imageRect, refs, type, roleLabel = "") {
+    const variants = [
+      { dx: 0, dy: 0, scale: 1 },
+      { dx: -0.08, dy: 0, scale: 0.94 },
+      { dx: 0.08, dy: 0, scale: 0.94 },
+      { dx: 0, dy: -0.08, scale: 0.94 },
+      { dx: 0, dy: 0.08, scale: 0.94 }
+    ];
+
+    let best = null;
+
+    for (const variant of variants) {
+      const w = imageRect.w * variant.scale;
+      const h = imageRect.h * variant.scale;
+      const rect = {
+        x: clamp(
+          imageRect.x + (imageRect.w - w) / 2 + imageRect.w * variant.dx,
+          0,
+          1 - w
+        ),
+        y: clamp(
+          imageRect.y + (imageRect.h - h) / 2 + imageRect.h * variant.dy,
+          0,
+          1 - h
+        ),
+        w,
+        h
+      };
+
+      const ranked = rankSignature(
+        cropSignature(screenshotImage, rect),
+        refs,
+        type,
+        roleLabel
+      );
+
+      if (!best || ranked.confidence > best.confidence) {
+        best = ranked;
+      }
+    }
+
+    return best || { id: "", confidence: 0, candidates: [] };
+  }
+
   function splitItemRects(cardRect, itemsSubregion) {
     const strip = composeRect(cardRect, itemsSubregion);
     const gap = strip.w * 0.012;
@@ -1097,8 +1222,7 @@
     const sub = cardSubregions();
 
     const heroRect = composeRect(card, sub.hero);
-    const heroQuery = cropSignature(screenshotImage, heroRect);
-    const heroResult = rankSignature(heroQuery, heroSignatures, "hero", ROLES[index].label);
+    const heroResult = rankRegionSignature(heroRect, heroSignatures, "hero", ROLES[index].label);
 
     // Draft LOCK adalah prior terkuat bila tersedia. Scanner tetap menghitung visual sebagai verifikasi.
     const broadcast = loadBroadcastState();
@@ -1118,8 +1242,7 @@
 
     const itemRects = splitItemRects(card, sub.items);
     for (let itemIndex = 0; itemIndex < ITEM_COUNT; itemIndex += 1) {
-      const itemQuery = cropSignature(screenshotImage, itemRects[itemIndex]);
-      const itemResult = rankSignature(itemQuery, itemSignatures, "item");
+      const itemResult = rankRegionSignature(itemRects[itemIndex], itemSignatures, "item");
       player.items[itemIndex] = itemResult.confidence >= ITEM_THRESHOLD ? itemResult.id : (itemResult.confidence >= 44 ? itemResult.id : "");
       player.confidence.items[itemIndex] = itemResult.confidence;
       player.candidates.items[itemIndex] = itemResult.candidates;
@@ -1564,18 +1687,25 @@
     });
 
     els.preset.addEventListener("change", () => {
-      state.scanner.preset = els.preset.value === "rows" ? "rows" : "horizontal";
-      state.scanner.calibratedCards = null;
-      saveState(false);
-      drawPreview();
-      setHint("Layout preset berubah. Kalibrasi 10 slot jika box belum tepat pada screenshot.", "warn");
+      state.layout.variant = els.preset.value === "rows" ? "rows" : "horizontal";
+      saveState();
+      setHint("Layout overlay Result diperbarui. Mapping scanner tetap menggunakan format row hasil asli HoK.", "good");
+    });
+
+    document.querySelectorAll(".result-layout-option").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.layout.variant = button.dataset.resultLayout === "rows" ? "rows" : "horizontal";
+        els.preset.value = state.layout.variant;
+        saveState();
+        setHint("Layout output berubah. Scanner tidak berubah.", "good");
+      });
     });
 
     els.autoArea.addEventListener("click", () => {
       if (!screenshotImage) return setHint("Upload screenshot terlebih dahulu.", "warn");
       const detected = detectLikelyPanel();
       setCrop(detected || { x: 0, y: 0, w: 1, h: 1 });
-      setHint("Area result terdeteksi secara estimasi. Periksa kotak emas; gunakan Pilih Area Manual jika belum tepat.", "good");
+      setHint("Area hasil HoK terdeteksi. Periksa 10 box role; gunakan Pilih Area Manual hanya jika meleset.", "good");
     });
 
     els.fullArea.addEventListener("click", () => {
@@ -1595,7 +1725,7 @@
       state.scanner.calibratedCards = null;
       saveState(false);
       drawPreview();
-      setHint("Kalibrasi direset ke preset bawaan.", "good");
+      setHint("Kalibrasi direset ke mapping row hasil HoK bawaan.", "good");
     });
     els.sync.addEventListener("click", () => syncFromBroadcast({ preserveScan: true }));
     els.scan.addEventListener("click", scanAll);
