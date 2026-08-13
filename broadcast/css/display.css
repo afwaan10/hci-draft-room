@@ -1,0 +1,850 @@
+:root {
+  --blue: #18a8ff;
+  --blue-bright: #8bd9ff;
+  --blue-soft: rgba(24, 168, 255, 0.34);
+  --red: #ff4966;
+  --red-bright: #ff9cac;
+  --red-soft: rgba(255, 73, 102, 0.34);
+  --cyan: #3bd8ff;
+  --gold: #e7bf69;
+  --text: #f1f9ff;
+  --muted: rgba(206, 226, 240, 0.66);
+  --panel: rgba(5, 13, 22, 0.96);
+  --panel-soft: rgba(8, 23, 37, 0.95);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent !important;
+}
+
+body {
+  color: var(--text);
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: top left;
+  background: transparent;
+  transition: opacity 160ms ease;
+}
+
+.overlay[hidden] {
+  display: none;
+}
+
+.draft-shell {
+  position: absolute;
+  right: 34px;
+  bottom: 28px;
+  left: 34px;
+  height: 382px;
+  display: grid;
+  grid-template-rows: 90px minmax(0, 1fr);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(4, 10, 18, 0.82);
+  box-shadow: 0 24px 58px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.draft-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px minmax(0, 1fr);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.team-summary {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--panel);
+}
+
+.team-summary-blue {
+  border-top: 4px solid var(--blue);
+  background:
+    linear-gradient(90deg, rgba(22, 139, 255, 0.11), transparent 44%),
+    var(--panel);
+}
+
+.team-summary-red {
+  justify-content: flex-end;
+  border-top: 4px solid var(--red);
+  background:
+    linear-gradient(270deg, rgba(255, 60, 85, 0.11), transparent 44%),
+    var(--panel);
+}
+
+.team-logo {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  color: #eaf2fb;
+  background: rgba(255, 255, 255, 0.05) center/contain no-repeat;
+  font-size: 15px;
+  font-weight: 950;
+  overflow: hidden;
+}
+
+.team-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.team-copy-red {
+  text-align: right;
+}
+
+.side-label,
+.series-score span,
+.ban-label,
+.connection-label {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+}
+
+.team-name {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  font-size: 22px;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.series-score {
+  width: 50px;
+  flex: 0 0 50px;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+}
+
+.series-score strong {
+  font-size: 30px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.team-summary-blue .series-score strong {
+  color: var(--blue-bright);
+  text-shadow: 0 0 18px var(--blue-soft);
+}
+
+.team-summary-red .series-score strong {
+  color: var(--red-bright);
+  text-shadow: 0 0 18px var(--red-soft);
+}
+
+.ban-strip-wrap {
+  min-width: 246px;
+  display: grid;
+  gap: 5px;
+}
+
+.ban-strip-wrap-red {
+  justify-items: end;
+}
+
+.ban-strip {
+  display: flex;
+  gap: 6px;
+}
+
+.ban-card {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.035);
+  overflow: hidden;
+}
+
+.ban-card-image {
+  position: absolute;
+  inset: 0;
+  background: #111c2a center/cover no-repeat;
+  filter: grayscale(0.55) brightness(0.72);
+}
+
+.ban-card::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 2px solid rgba(255, 90, 105, 0.7);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.ban-card.is-empty::after {
+  display: none;
+}
+
+.draft-center-header {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(246, 200, 102, 0.06), transparent 70%),
+    rgba(4, 10, 18, 0.98);
+}
+
+.series-label {
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+}
+
+.draft-title {
+  font-size: 15px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.series-dots {
+  min-height: 8px;
+  display: flex;
+  gap: 5px;
+}
+
+.series-dot {
+  width: 20px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.series-dot.blue-win {
+  background: var(--blue);
+  box-shadow: 0 0 9px var(--blue-soft);
+}
+
+.series-dot.red-win {
+  background: var(--red);
+  box-shadow: 0 0 9px var(--red-soft);
+}
+
+.draft-body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px minmax(0, 1fr);
+  background: rgba(6, 13, 23, 0.92);
+}
+
+.pick-side {
+  min-width: 0;
+  padding: 12px;
+}
+
+.pick-side-blue {
+  box-shadow: inset 0 -4px 0 rgba(22, 139, 255, 0.88);
+}
+
+.pick-side-red {
+  box-shadow: inset 0 -4px 0 rgba(255, 60, 85, 0.88);
+}
+
+.pick-list {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  gap: 7px;
+  overflow: hidden;
+}
+
+.pick-card {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 0;
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: linear-gradient(180deg, #16283c, #07111d);
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    flex-grow 320ms cubic-bezier(0.18, 0.82, 0.2, 1),
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.pick-card.is-picking {
+  flex-grow: 1.18;
+  border-color: rgba(246, 200, 102, 0.7);
+  box-shadow:
+    0 0 0 2px rgba(246, 200, 102, 0.1),
+    0 0 28px rgba(246, 200, 102, 0.18);
+  z-index: 3;
+}
+
+.pick-card.is-locked.is-blue {
+  border-bottom: 3px solid var(--blue);
+}
+
+.pick-card.is-locked.is-red {
+  border-bottom: 3px solid var(--red);
+}
+
+.player-visual,
+.hero-visual,
+.card-shade {
+  position: absolute;
+  inset: 0;
+}
+
+.player-visual {
+  z-index: -3;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(59, 216, 255, 0.07), transparent 38%),
+    linear-gradient(180deg, #13273a 0%, #07131f 64%, #040a11 100%);
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 260ms ease, transform 360ms ease;
+}
+
+.player-visual.is-hidden {
+  opacity: 0;
+  transform: scale(1.035);
+}
+
+
+
+.player-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  transform-origin: center bottom;
+  will-change: transform, opacity;
+}
+
+.player-fallback {
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 26px;
+  font-weight: 950;
+}
+
+.hero-visual {
+  z-index: -2;
+  background-position: center top;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0;
+}
+
+.pick-card.has-hero .hero-visual {
+  opacity: 1;
+}
+
+.pick-card.is-picking.is-animating .hero-visual {
+  animation: heroPickIn 0.65s cubic-bezier(0.18, 0.82, 0.2, 1) both;
+}
+
+.card-shade {
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(2, 7, 12, 0.03) 20%, rgba(2, 7, 12, 0.25) 48%, rgba(2, 7, 12, 0.94) 100%);
+}
+
+.pick-card-top {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+}
+
+.pick-index,
+.pick-status {
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(0, 0, 0, 0.42);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.pick-status {
+  opacity: 0;
+}
+
+.pick-card.is-picking .pick-status,
+.pick-card.is-locked .pick-status,
+.pick-card.is-pending .pick-status {
+  opacity: 1;
+}
+
+.pick-card.is-picking .pick-status {
+  color: #ffe6ac;
+  background: rgba(112, 83, 23, 0.72);
+}
+
+.pick-card.is-locked .pick-status {
+  color: #a9f5df;
+  background: rgba(16, 79, 63, 0.72);
+}
+
+.pick-card-bottom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 18px 8px 9px;
+  background: linear-gradient(180deg, transparent, rgba(1, 5, 10, 0.92) 42%);
+}
+
+.hero-name {
+  min-height: 16px;
+  overflow: hidden;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.player-name {
+  margin-top: 3px;
+  overflow: hidden;
+  color: rgba(225, 235, 247, 0.76);
+  font-size: 9px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pick-card.is-blue .hero-name {
+  text-shadow: 0 0 12px var(--blue-soft);
+}
+
+.pick-card.is-red .hero-name {
+  text-shadow: 0 0 12px var(--red-soft);
+}
+
+.draft-center-control {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  padding: 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(246, 200, 102, 0.08), transparent 52%),
+    rgba(3, 8, 15, 0.98);
+  text-align: center;
+}
+
+.active-pick-side {
+  color: var(--gold);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+}
+
+.timer-display {
+  font-variant-numeric: tabular-nums;
+  font-size: 52px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: 0.025em;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.56);
+}
+
+.timer-display.is-urgent {
+  color: #ff7284;
+  animation: timerPulse 0.85s ease-in-out infinite;
+}
+
+.active-pick-text {
+  max-width: 190px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connection-label {
+  margin-top: 5px;
+  font-size: 7px;
+}
+
+@keyframes heroPickIn {
+  0% {
+    opacity: 0;
+    transform: translateY(80px) scale(0.7);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 0 34px rgba(255, 255, 255, 0.36);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 22px rgba(255, 255, 255, 0.22);
+  }
+}
+
+@keyframes timerPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    text-shadow: 0 0 12px rgba(255, 60, 85, 0.2);
+  }
+
+  50% {
+    transform: scale(1.04);
+    text-shadow: 0 0 26px rgba(255, 60, 85, 0.65);
+  }
+}
+
+/* =========================================================
+   HCI Community broadcast skin
+   ========================================================= */
+
+.draft-shell {
+  border-color: rgba(59, 216, 255, 0.14);
+  background: rgba(3, 9, 15, 0.88);
+  box-shadow:
+    0 26px 68px rgba(0, 0, 0, 0.50),
+    0 0 0 1px rgba(59, 216, 255, 0.025);
+}
+
+.draft-shell::before {
+  content: "";
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  right: 34%;
+  left: 34%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  box-shadow: 0 0 16px rgba(59, 216, 255, 0.22);
+  pointer-events: none;
+}
+
+.team-summary {
+  background:
+    linear-gradient(180deg, rgba(59, 216, 255, 0.018), transparent),
+    var(--panel);
+}
+
+.team-summary-blue {
+  background:
+    linear-gradient(90deg, rgba(24, 168, 255, 0.12), transparent 48%),
+    var(--panel);
+}
+
+.team-summary-red {
+  background:
+    linear-gradient(270deg, rgba(255, 73, 102, 0.12), transparent 48%),
+    var(--panel);
+}
+
+.team-logo {
+  border-radius: 7px;
+  border-color: rgba(59, 216, 255, 0.14);
+  background-color: #07131f;
+}
+
+.draft-center-header,
+.draft-center-control {
+  background:
+    linear-gradient(180deg, rgba(231, 191, 105, 0.055), transparent 58%),
+    #030a11;
+}
+
+.pick-side {
+  background:
+    linear-gradient(180deg, rgba(59, 216, 255, 0.012), transparent 34%),
+    rgba(4, 12, 20, 0.72);
+}
+
+.pick-card {
+  border-color: rgba(92, 180, 225, 0.10);
+  background: linear-gradient(180deg, #13273a, #06111b);
+}
+
+.pick-card.is-picking {
+  border-color: rgba(231, 191, 105, 0.72);
+  box-shadow:
+    0 0 0 1px rgba(231, 191, 105, 0.16),
+    0 0 28px rgba(231, 191, 105, 0.16);
+}
+
+.ban-card {
+  border-color: rgba(92, 180, 225, 0.12);
+  background: #07131f;
+}
+
+.pick-index,
+.pick-status {
+  border-radius: 3px;
+  backdrop-filter: blur(4px);
+}
+
+/* =========================================================
+   REVISION 1 — LOCK-ONLY DRAFT REVEAL
+   Posisi/layout baseline sengaja tidak diubah.
+   ========================================================= */
+
+.draft-shell {
+  background: rgba(3, 9, 15, 0.74);
+  backdrop-filter: blur(7px);
+}
+
+.team-summary {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  background:
+    linear-gradient(180deg, rgba(59, 216, 255, 0.014), transparent),
+    rgba(5, 13, 22, 0.88);
+}
+
+.team-summary-blue {
+  background:
+    linear-gradient(90deg, rgba(24, 168, 255, 0.12), transparent 48%),
+    rgba(5, 13, 22, 0.88);
+}
+
+.team-summary-red {
+  background:
+    linear-gradient(270deg, rgba(255, 73, 102, 0.12), transparent 48%),
+    rgba(5, 13, 22, 0.88);
+}
+
+.pick-side {
+  background:
+    linear-gradient(180deg, rgba(59, 216, 255, 0.010), transparent 34%),
+    rgba(4, 12, 20, 0.60);
+}
+
+.draft-center-header,
+.draft-center-control {
+  background:
+    linear-gradient(180deg, rgba(231, 191, 105, 0.050), transparent 58%),
+    rgba(3, 10, 17, 0.88);
+}
+
+/* Logo sedikit lebih besar; header/grid/posisi hero tetap. */
+.team-logo {
+  width: 66px;
+  height: 66px;
+  flex-basis: 66px;
+}
+
+/* Picking tidak lagi ditayangkan di OBS. */
+.pick-card.is-picking {
+  flex-grow: 1;
+  border-color: rgba(92, 180, 225, 0.10);
+  box-shadow: none;
+  z-index: auto;
+}
+
+.pick-card.is-picking .pick-status,
+.pick-card.is-pending .pick-status {
+  opacity: 0;
+}
+
+/* Hero LOCK menimpa foto player. */
+.hero-visual {
+  background-color: #07131f;
+  transform-origin: center bottom;
+  will-change: transform, opacity, filter;
+}
+
+.pick-card.is-blue {
+  --lock-accent: rgba(24, 168, 255, 0.95);
+  --lock-accent-soft: rgba(24, 168, 255, 0.30);
+}
+
+.pick-card.is-red {
+  --lock-accent: rgba(255, 73, 102, 0.95);
+  --lock-accent-soft: rgba(255, 73, 102, 0.30);
+}
+
+/* Durasi 1.15s: lebih smooth dan lebih terbaca saat live. */
+.pick-card.is-locking {
+  z-index: 4;
+  animation: heroLockImpact 1.15s cubic-bezier(0.16, 1, 0.30, 1) both;
+}
+
+.pick-card.is-locking .hero-visual {
+  animation: heroLockRise 1.15s cubic-bezier(0.16, 1, 0.30, 1) both;
+}
+
+.pick-card.is-locking::after {
+  content: "";
+  position: absolute;
+  z-index: 8;
+  inset: -1px;
+  pointer-events: none;
+  border: 1px solid var(--lock-accent);
+  background:
+    radial-gradient(circle at 50% 66%, var(--lock-accent-soft), transparent 42%),
+    linear-gradient(180deg, transparent 34%, var(--lock-accent-soft) 70%, transparent 100%);
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: heroLockBurst 1.15s ease-out both;
+}
+
+.pick-card.is-locking .pick-status {
+  animation: lockStatusPulse 1.15s ease-out both;
+}
+
+@keyframes heroLockRise {
+  0% {
+    opacity: 0;
+    transform: translateY(138px) scale(0.90);
+    filter: blur(5px) brightness(0.72);
+  }
+
+  48% {
+    opacity: 0.96;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(0.8px) brightness(1.08);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translateY(-7px) scale(1.018);
+    filter: blur(0) brightness(1.14);
+  }
+
+  86% {
+    transform: translateY(2px) scale(0.997);
+    filter: brightness(1.04);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0) brightness(1);
+  }
+}
+
+@keyframes heroLockImpact {
+  0%,
+  45% {
+    transform: translateY(0) scale(1);
+  }
+
+  58% {
+    transform: translateY(2px) scale(0.982);
+  }
+
+  69% {
+    transform: translateY(-2px) scale(1.016);
+  }
+
+  80% {
+    transform: translateY(1px) scale(0.995);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes heroLockBurst {
+  0%,
+  38% {
+    opacity: 0;
+    transform: scale(0.94);
+    box-shadow: 0 0 0 transparent;
+  }
+
+  55% {
+    opacity: 0.94;
+    transform: scale(1.01);
+    box-shadow:
+      inset 0 0 26px var(--lock-accent-soft),
+      0 0 34px var(--lock-accent-soft);
+  }
+
+  72% {
+    opacity: 0.38;
+    transform: scale(1.025);
+    box-shadow:
+      inset 0 0 12px var(--lock-accent-soft),
+      0 0 22px var(--lock-accent-soft);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.045);
+    box-shadow: 0 0 0 transparent;
+  }
+}
+
+@keyframes lockStatusPulse {
+  0%,
+  42% {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scale(1.10);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pick-card.is-locking,
+  .pick-card.is-locking .hero-visual,
+  .pick-card.is-locking::after,
+  .pick-card.is-locking .pick-status {
+    animation-duration: 1ms !important;
+  }
+}
+
