@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark">
   <title>HCI Broadcast - Control</title>
   <link rel="stylesheet" href="css/control.css">
+  <link rel="stylesheet" href="css/extras.css">
 </head>
 <body>
   <main class="control-app">
@@ -122,6 +123,125 @@
           <span>Storage key</span>
           <code>hok_draft_state_v1</code>
         </div>
+      </div>
+    </section>
+
+
+    <section id="hubPanel" class="panel broadcast-hub" aria-labelledby="hubHeading">
+      <div class="panel-heading hub-heading">
+        <div>
+          <p class="section-kicker">BROADCAST HUB</p>
+          <h2 id="hubHeading">Operator Console</h2>
+          <p class="hub-subtitle">Satu pusat kontrol untuk persiapan match, Draft, In-Game, Result, dan output OBS tambahan.</p>
+        </div>
+        <span id="hubLiveBadge" class="hub-live-badge">SIAP</span>
+      </div>
+
+      <div class="hub-console-grid">
+        <article class="hub-current-match">
+          <span class="hub-card-label">MATCH AKTIF</span>
+          <div class="hub-versus">
+            <strong id="hubBlueTeam">BLUE TEAM</strong>
+            <span>VS</span>
+            <strong id="hubRedTeam">RED TEAM</strong>
+          </div>
+          <div class="hub-match-meta">
+            <span id="hubSeries">BO3</span>
+            <span id="hubMode">DRAFT</span>
+            <span id="hubSeriesScore">0 - 0</span>
+          </div>
+        </article>
+
+        <nav class="hub-action-grid" aria-label="Akses cepat broadcast">
+          <a href="#draftControls" class="hub-action-card is-blue"><strong>DRAFT</strong><span>Pick · Ban · Lock</span></a>
+          <a href="#ingameControls" class="hub-action-card is-green"><strong>IN-GAME</strong><span>Scoreboard · Event</span></a>
+          <a href="#resultControlPanel" class="hub-action-card is-gold"><strong>RESULT</strong><span>Scan · Review · Publish</span></a>
+          <a href="#broadcastWorkflowPanel" class="hub-action-card"><strong>TOOLS</strong><span>Schedule · Recap · MVP</span></a>
+        </nav>
+      </div>
+
+      <div class="hub-output-strip" aria-label="Output OBS">
+        <span>OUTPUT OBS</span>
+        <a href="display.html" target="_blank" rel="noopener">Draft</a>
+        <a href="ingame.html" target="_blank" rel="noopener">In-Game</a>
+        <a href="result.html?preview=1" target="_blank" rel="noopener">Result</a>
+        <a href="postdraft.html?preview=1" target="_blank" rel="noopener">Post-Draft</a>
+        <a href="event.html?preview=1" target="_blank" rel="noopener">Event</a>
+        <a href="mvp.html?preview=1" target="_blank" rel="noopener">MVP</a>
+        <a href="recap.html?preview=1" target="_blank" rel="noopener">Draft Recap</a>
+      </div>
+    </section>
+
+    <section id="broadcastWorkflowPanel" class="panel broadcast-workflow-panel" aria-labelledby="workflowHeading">
+      <div class="panel-heading">
+        <div>
+          <p class="section-kicker">MATCH WORKFLOW</p>
+          <h2 id="workflowHeading">Schedule & Broadcast Tools</h2>
+        </div>
+        <span id="toolsStatus" class="tools-status">READY</span>
+      </div>
+
+      <div class="workflow-grid">
+        <article class="control-card workflow-card">
+          <div class="control-card-heading">
+            <div><p class="section-kicker">SCHEDULE</p><h3>Match Queue</h3></div>
+            <button id="scheduleAddButton" class="button button-primary button-small" type="button">+ Tambah Match</button>
+          </div>
+          <div class="schedule-create-grid">
+            <input id="scheduleBlueInput" type="text" maxlength="32" placeholder="Blue Team">
+            <span>VS</span>
+            <input id="scheduleRedInput" type="text" maxlength="32" placeholder="Red Team">
+            <select id="scheduleSeriesInput"><option>BO1</option><option selected>BO3</option><option>BO5</option></select>
+          </div>
+          <div id="scheduleList" class="schedule-list"></div>
+        </article>
+
+        <article class="control-card workflow-card">
+          <div class="control-card-heading">
+            <div><p class="section-kicker">POST-DRAFT</p><h3>Line-up Setelah Draft</h3></div>
+            <a class="button button-secondary button-small" href="postdraft.html?preview=1" target="_blank" rel="noopener">Preview</a>
+          </div>
+          <p class="workflow-copy">Mengambil 10 hero yang sudah LOCK dari Draft dan menampilkan line-up sebelum masuk game.</p>
+          <div class="workflow-actions">
+            <button id="postdraftShowButton" class="button button-gold" type="button">Tayangkan Post-Draft</button>
+            <button id="postdraftHideButton" class="button button-secondary" type="button">Sembunyikan</button>
+          </div>
+        </article>
+
+        <article class="control-card workflow-card">
+          <div class="control-card-heading">
+            <div><p class="section-kicker">DRAFT RECAP</p><h3>Riwayat Game Series</h3></div>
+            <button id="recapSaveButton" class="button button-primary button-small" type="button">Simpan Draft Game</button>
+          </div>
+          <div id="recapList" class="recap-list"></div>
+          <div class="workflow-actions">
+            <button id="recapShowButton" class="button button-gold" type="button">Tayangkan Recap</button>
+            <button id="recapHideButton" class="button button-secondary" type="button">Sembunyikan</button>
+          </div>
+        </article>
+
+        <article class="control-card workflow-card">
+          <div class="control-card-heading">
+            <div><p class="section-kicker">GLOBAL BAN</p><h3>Tracker Hero Terpakai</h3></div>
+            <label class="switch-line"><input id="globalBanEnabled" type="checkbox"><span>Aktif</span></label>
+          </div>
+          <p class="workflow-copy">Jika aktif, hero dari Draft Recap tersimpan ditandai dan diblokir di Hero Picker.</p>
+          <div id="globalBanChips" class="global-ban-chips"></div>
+          <button id="globalBanResetButton" class="button button-danger-soft button-small" type="button">Reset Global Ban / Recap</button>
+        </article>
+
+        <article class="control-card workflow-card workflow-card-wide">
+          <div class="control-card-heading">
+            <div><p class="section-kicker">POST-GAME MVP</p><h3>MVP Overlay</h3></div>
+            <a class="button button-secondary button-small" href="mvp.html?preview=1" target="_blank" rel="noopener">Preview</a>
+          </div>
+          <div class="mvp-control-row">
+            <select id="mvpPlayerSelect" aria-label="Pilih MVP"></select>
+            <button id="mvpShowButton" class="button button-gold" type="button">Tayangkan MVP</button>
+            <button id="mvpHideButton" class="button button-secondary" type="button">Sembunyikan</button>
+          </div>
+          <p id="mvpSourceHint" class="workflow-copy">MVP mengambil data Hero, KDA, Gold, Item, dan foto dari Result yang sudah dikonfirmasi.</p>
+        </article>
       </div>
     </section>
 
@@ -373,6 +493,7 @@
           </div>
 
           <div class="result-scan-primary-row">
+            <button id="resultResetScanButton" class="button button-danger-soft" type="button">↺ Reset Hasil Scan</button>
             <button id="resultSyncBroadcastButton" class="button button-secondary" type="button">Ambil Roster Draft</button>
             <button id="resultScanButton" class="button button-primary result-scan-main-button" type="button" disabled>⌁ AUTO SCAN RESULT</button>
           </div>
@@ -675,6 +796,28 @@
           </article>
         </div>
 
+
+        <section class="live-events-panel" aria-labelledby="liveEventsHeading">
+          <div class="control-card-heading">
+            <div>
+              <p class="section-kicker">LIVE EVENT</p>
+              <h3 id="liveEventsHeading">Objective & Kill Notification</h3>
+            </div>
+            <a class="button button-secondary button-small" href="event.html?preview=1" target="_blank" rel="noopener">Preview Event</a>
+          </div>
+          <div class="live-event-grid">
+            <div class="live-event-card">
+              <strong>Objective Otomatis</strong>
+              <span>Menekan + Tyrant / + Overlord juga memicu notification OBS selama beberapa detik.</span>
+            </div>
+            <div class="live-event-card kill-event-control">
+              <label><span>Player</span><select id="killEventPlayer"></select></label>
+              <label><span>Event</span><select id="killEventType"><option>FIRST BLOOD</option><option>DOUBLE KILL</option><option>TRIPLE KILL</option><option>QUAD KILL</option><option>PENTA KILL</option><option>TEAM WIPE</option></select></label>
+              <button id="killEventShowButton" class="button button-gold" type="button">Tayangkan Kill Event</button>
+            </div>
+          </div>
+        </section>
+
         <details class="collapsible-module ingame-advanced-module">
           <summary class="module-summary">
             <span class="module-summary-copy">
@@ -730,6 +873,30 @@
   </div>
 
 
+
+  <div id="resultScanPreviewModal" class="scan-preview-modal" aria-hidden="true">
+    <div class="scan-preview-backdrop"></div>
+    <section class="scan-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="scanPreviewTitle">
+      <header class="scan-preview-header">
+        <div>
+          <p class="section-kicker">HASIL AUTO SCAN</p>
+          <h2 id="scanPreviewTitle">Preview Overlay Result</h2>
+          <p id="resultScanPreviewSummary">Periksa hasil sebelum dikonfirmasi.</p>
+        </div>
+        <span id="resultScanPreviewBadge" class="result-scan-badge" data-status="idle">REVIEW</span>
+      </header>
+      <div class="scan-preview-frame-wrap">
+        <iframe id="resultScanPreviewFrame" title="Preview Result hasil scan" loading="lazy"></iframe>
+      </div>
+      <div class="scan-preview-warning" id="resultScanPreviewWarning">Confirm tidak langsung menayangkan ke OBS. Setelah confirm, operator tetap menekan Tayangkan Result.</div>
+      <footer class="scan-preview-actions">
+        <button id="resultScanCancelButton" class="button button-secondary" type="button">Cancel</button>
+        <button id="resultScanAgainButton" class="button button-primary" type="button">Scan Again</button>
+        <button id="resultScanConfirmButton" class="button button-gold" type="button">✓ Confirm</button>
+      </footer>
+    </section>
+  </div>
+
   <div id="resultPicker" class="visual-picker" aria-hidden="true">
     <div class="visual-picker-backdrop" data-result-picker-close></div>
     <section class="visual-picker-dialog result-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="resultPickerTitle">
@@ -756,5 +923,6 @@
   <script src="js/items-data.js"></script>
   <script src="js/control.js"></script>
   <script src="js/result-scanner.js"></script>
+  <script src="js/broadcast-tools.js"></script>
 </body>
 </html>

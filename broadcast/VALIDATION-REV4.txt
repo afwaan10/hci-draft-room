@@ -1,0 +1,60 @@
+HCI BROADCAST REV4 - VALIDATION
+===============================
+PASS: 56/56
+
+[PASS] File control.html
+[PASS] File display.html
+[PASS] File ingame.html
+[PASS] File result.html
+[PASS] File postdraft.html
+[PASS] File event.html
+[PASS] File mvp.html
+[PASS] File recap.html
+[PASS] File css/control.css
+[PASS] File css/display.css
+[PASS] File css/ingame.css
+[PASS] File css/result.css
+[PASS] File css/extras.css
+[PASS] File js/control.js
+[PASS] File js/display.js
+[PASS] File js/ingame.js
+[PASS] File js/result.js
+[PASS] File js/result-scanner.js
+[PASS] File js/broadcast-tools.js
+[PASS] File js/postdraft.js
+[PASS] File js/event.js
+[PASS] File js/mvp.js
+[PASS] File js/recap.js
+[PASS] JS syntax broadcast-tools.js
+[PASS] JS syntax control.js
+[PASS] JS syntax display.js
+[PASS] JS syntax event.js
+[PASS] JS syntax heroes-data.js
+[PASS] JS syntax ingame.js
+[PASS] JS syntax items-data.js
+[PASS] JS syntax mvp.js
+[PASS] JS syntax postdraft.js
+[PASS] JS syntax recap.js
+[PASS] JS syntax result-scanner.js
+[PASS] JS syntax result.js
+[PASS] Control duplicate ID — 184 IDs
+[PASS] DOM refs control.js
+[PASS] DOM refs result-scanner.js
+[PASS] DOM refs broadcast-tools.js
+[PASS] Hero icons 120 — 120
+[PASS] Hero portraits 120 — 120
+[PASS] Item icons 118 — 118
+[PASS] State key utama dipertahankan
+[PASS] Temporary result key
+[PASS] Upload tidak auto-detect
+[PASS] Auto Scan menjalankan deteksi
+[PASS] Popup Confirm tersedia
+[PASS] Reset hasil scan tersedia
+[PASS] Output layout terpisah scanner
+[PASS] Hub tersedia
+[PASS] Schedule tersedia
+[PASS] Postdraft output
+[PASS] Event output
+[PASS] MVP output
+[PASS] Recap output
+[PASS] Global Ban control
