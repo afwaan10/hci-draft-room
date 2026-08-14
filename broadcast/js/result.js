@@ -2,6 +2,7 @@
   "use strict";
 
   const RESULT_KEY = "hok_result_state_v1";
+  const TEMP_RESULT_KEY = "hok_result_temp_v1";
   const PLAYER_COUNT = 5;
   const ITEM_COUNT = 6;
   const ROLES = ["Clash Lane", "Jungle", "Mid Lane", "Farm Lane", "Roam"];
@@ -109,9 +110,13 @@
     };
   }
 
+  const params = new URLSearchParams(location.search);
+  const previewMode = params.get("preview") === "1";
+  const sourceKey = params.get("source") === "temp" ? TEMP_RESULT_KEY : RESULT_KEY;
+
   function loadState() {
     try {
-      const raw = localStorage.getItem(RESULT_KEY);
+      const raw = localStorage.getItem(sourceKey);
       return normalizeState(raw ? JSON.parse(raw) : {});
     } catch (error) {
       console.error("Gagal membaca result state.", error);
@@ -246,9 +251,6 @@
     elements.overlay.classList.toggle("hide-items", !layout.showItems);
   }
 
-  const params = new URLSearchParams(location.search);
-  const previewMode = params.get("preview") === "1";
-
   function render(rawState) {
     const state = normalizeState(rawState);
     elements.overlay.classList.toggle("is-hidden", !state.visible && !previewMode);
@@ -267,7 +269,7 @@
   }
 
   window.addEventListener("storage", (event) => {
-    if (event.key === RESULT_KEY && event.newValue) {
+    if (event.key === sourceKey && event.newValue) {
       try {
         render(JSON.parse(event.newValue));
       } catch (error) {

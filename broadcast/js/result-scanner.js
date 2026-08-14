@@ -2,6 +2,7 @@
   "use strict";
 
   const RESULT_KEY = "hok_result_state_v1";
+  const TEMP_RESULT_KEY = "hok_result_temp_v1";
   const BROADCAST_KEY = "hok_draft_state_v1";
   const PLAYER_COUNT = 5;
   const ITEM_COUNT = 6;
@@ -14,9 +15,9 @@
   ];
   const SIDE_ORDER = ["blue", "red"];
   const OCR_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@7/dist/tesseract.min.js";
-  const HERO_THRESHOLD = 57;
-  const ITEM_THRESHOLD = 54;
-  const SCANNER_PROFILE = "hok-result-rows-v1";
+  const HERO_THRESHOLD = 62;
+  const ITEM_THRESHOLD = 60;
+  const SCANNER_PROFILE = "hok-result-rows-v2";
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const safeInt = (value, fallback = 0) => {
@@ -44,6 +45,10 @@
   let scanBusy = false;
   let pickerContext = null;
   let tesseractWorker = null;
+  let scanDraftMode = false;
+  let hasDetection = false;
+  let areaOverride = false;
+  let cardsOverride = false;
 
   function emptyConfidence() {
     return {
@@ -106,7 +111,8 @@
         cropRect: { x: 0, y: 0, w: 1, h: 1 },
         calibratedCards: null,
         lastQuality: 0,
-        lastScanAt: 0
+        lastScanAt: 0,
+        confirmedAt: 0
       }
     };
   }
@@ -194,7 +200,8 @@
           ? normalizeCalibratedCards(scanner.calibratedCards)
           : null,
         lastQuality: clamp(safeInt(scanner.lastQuality), 0, 100),
-        lastScanAt: Math.max(0, safeInt(scanner.lastScanAt))
+        lastScanAt: Math.max(0, safeInt(scanner.lastScanAt)),
+        confirmedAt: Math.max(0, safeInt(scanner.confirmedAt))
       }
     };
   }
@@ -221,8 +228,18 @@
 
   function saveState(render = true) {
     state = normalizeState(state);
-    localStorage.setItem(RESULT_KEY, JSON.stringify(state));
+    localStorage.setItem(scanDraftMode ? TEMP_RESULT_KEY : RESULT_KEY, JSON.stringify(state));
     if (render) renderAll();
+  }
+
+  function loadMainState() {
+    try {
+      const raw = localStorage.getItem(RESULT_KEY);
+      return normalizeState(raw ? JSON.parse(raw) : {});
+    } catch (error) {
+      console.error("Gagal membaca confirmed result state.", error);
+      return defaultState();
+    }
   }
 
   function loadBroadcastState() {
@@ -270,12 +287,12 @@
           player.photoOffsetY = clamp(safeInt(broadcastPlayers[index]?.photoOffsetY), -20, 20);
         }
 
-        if (picks?.[index] && locks?.[index] && window.HOK_HERO_MAP[picks[index]]) {
+        if (preserveScan && picks?.[index] && locks?.[index] && window.HOK_HERO_MAP[picks[index]]) {
           player.heroId = picks[index];
           player.confidence.hero = 100;
         }
 
-        if (Array.isArray(items?.[index])) {
+        if (preserveScan && Array.isArray(items?.[index])) {
           items[index].forEach((itemId, itemIndex) => {
             if (window.HOK_ITEM_MAP[itemId] && !player.items[itemIndex]) {
               player.items[itemIndex] = itemId;
@@ -309,6 +326,7 @@
       resetCalibration: $("resultResetCalibrationButton"),
       sync: $("resultSyncBroadcastButton"),
       scan: $("resultScanButton"),
+      resetScan: $("resultResetScanButton"),
       progressBar: $("resultProgressBar"),
       progressText: $("resultProgressText"),
       progressPercent: $("resultProgressPercent"),
@@ -349,7 +367,15 @@
       pickerSearch: $("resultPickerSearch"),
       pickerFilters: $("resultPickerFilters"),
       pickerGrid: $("resultPickerGrid"),
-      pickerClose: $("resultPickerCloseButton")
+      pickerClose: $("resultPickerCloseButton"),
+      previewModal: $("resultScanPreviewModal"),
+      previewFrame: $("resultScanPreviewFrame"),
+      previewSummary: $("resultScanPreviewSummary"),
+      previewBadge: $("resultScanPreviewBadge"),
+      previewWarning: $("resultScanPreviewWarning"),
+      previewConfirm: $("resultScanConfirmButton"),
+      previewAgain: $("resultScanAgainButton"),
+      previewCancel: $("resultScanCancelButton")
     });
   }
 
@@ -598,16 +624,16 @@
 
   function cardSubregions() {
     /*
-      Subregion per row HoK.
-      Role digunakan sebagai identity slot, bukan hasil OCR.
-      Hero dan item memakai image matching; IGN/KDA/Gold memakai OCR optional.
+      Mapping diukur dari screenshot native HoK: hero berada di awal row,
+      enam item membentang dari area tengah sampai kanan. Semua nilai relatif
+      terhadap row, sehingga resolusi screenshot tidak memengaruhi posisi.
     */
     return {
-      hero: { x: 0.105, y: 0.04, w: 0.155, h: 0.90 },
-      ign: { x: 0.405, y: 0.03, w: 0.280, h: 0.36 },
-      items: { x: 0.405, y: 0.48, w: 0.305, h: 0.42 },
-      kda: { x: 0.690, y: 0.03, w: 0.155, h: 0.38 },
-      gold: { x: 0.835, y: 0.03, w: 0.160, h: 0.38 }
+      hero: { x: 0.018, y: 0.16, w: 0.165, h: 0.78 },
+      ign: { x: 0.385, y: 0.04, w: 0.285, h: 0.34 },
+      items: { x: 0.365, y: 0.43, w: 0.605, h: 0.52 },
+      kda: { x: 0.665, y: 0.035, w: 0.175, h: 0.35 },
+      gold: { x: 0.835, y: 0.035, w: 0.150, h: 0.35 }
     };
   }
 
@@ -660,15 +686,16 @@
     const dh = t.h * els.canvas.height;
     ctx.drawImage(screenshotImage, dx, dy, dw, dh);
 
-    drawNormalizedRect(ctx, cropRect, "#e7bf69", 3, "AREA RESULT");
-
-    const cards = currentCards();
-    for (const side of SIDE_ORDER) {
-      cards[side].forEach((card, index) => {
-        const absolute = rectFromCrop(card);
-        const color = side === "blue" ? "#18a8ff" : "#ff4966";
-        drawNormalizedRect(ctx, absolute, color, 1.5, `${side === "blue" ? "B" : "R"}${index + 1} ${ROLES[index].label}`);
-      });
+    if (hasDetection) {
+      drawNormalizedRect(ctx, cropRect, "#e7bf69", 3, "AREA RESULT");
+      const cards = currentCards();
+      for (const side of SIDE_ORDER) {
+        cards[side].forEach((card, index) => {
+          const absolute = rectFromCrop(card);
+          const color = side === "blue" ? "#18a8ff" : "#ff4966";
+          drawNormalizedRect(ctx, absolute, color, 1.5, `${side === "blue" ? "B" : "R"}${index + 1} ${ROLES[index].label}`);
+        });
+      }
     }
 
     if (pointerStart && pointerCurrent && interactionMode !== "none") {
@@ -722,23 +749,15 @@
       });
       screenshotImage = image;
       screenshotName = file.name;
+      hasDetection = false;
+      areaOverride = false;
+      cardsOverride = false;
+      cropRect = { x: 0, y: 0, w: 1, h: 1 };
       els.previewEmpty.classList.add("is-hidden");
       els.scan.disabled = false;
       setStatus("SIAP SCAN", "good");
       setProgress(0, `${image.naturalWidth}×${image.naturalHeight} · ${file.name}`);
-
-      // Auto-detect setiap screenshot baru. Resolusi/aspect file tidak menjadi preset scanner.
-      const detected = detectLikelyPanel();
-      cropRect = detected || { x: 0, y: 0, w: 1, h: 1 };
-      state.scanner.cropRect = { ...cropRect };
-      saveState(false);
-
-      setHint(
-        detected
-          ? "Area hasil HoK terdeteksi otomatis. Periksa box 10 role; jika meleset gunakan Scanner Lanjutan → Pilih Area Manual/Kalibrasi."
-          : "Area otomatis belum yakin. Scanner memakai seluruh gambar; gunakan Pilih Area Manual bila box role tidak pas.",
-        detected ? "good" : "warn"
-      );
+      setHint("Screenshot siap. Belum ada deteksi. Tekan AUTO SCAN RESULT untuk mendeteksi panel dan 10 row secara otomatis.", "good");
       drawPreview();
     } finally {
       URL.revokeObjectURL(url);
@@ -956,6 +975,8 @@
     calibrationStep += 1;
     if (calibrationStep >= PLAYER_COUNT * 2) {
       state.scanner.calibratedCards = calibrationCards;
+      cardsOverride = true;
+      hasDetection = true;
       interactionMode = "none";
       calibrationCards = null;
       saveState(false);
@@ -995,6 +1016,8 @@
 
       if (interactionMode === "crop") {
         setCrop(rect);
+        hasDetection = true;
+        areaOverride = true;
         interactionMode = "none";
         setHint("Area result manual tersimpan. Sekarang kalibrasi slot jika box role belum pas, lalu SCAN RESULT.", "good");
       } else if (interactionMode === "calibrate") {
@@ -1046,18 +1069,23 @@
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     const rgb = new Float32Array(canvas.width * canvas.height * 3);
     const gray = new Float32Array(canvas.width * canvas.height);
+    const hist = new Float32Array(64);
     let rMean = 0, gMean = 0, bMean = 0;
     let p = 0;
     for (let i = 0; i < data.length; i += 4) {
-      rMean += data[i]; gMean += data[i + 1]; bMean += data[i + 2];
-      rgb[p * 3] = data[i] / 255;
-      rgb[p * 3 + 1] = data[i + 1] / 255;
-      rgb[p * 3 + 2] = data[i + 2] / 255;
-      gray[p] = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114) / 255;
+      const r = data[i] / 255, g = data[i + 1] / 255, b = data[i + 2] / 255;
+      rMean += r; gMean += g; bMean += b;
+      rgb[p * 3] = r; rgb[p * 3 + 1] = g; rgb[p * 3 + 2] = b;
+      gray[p] = r * 0.299 + g * 0.587 + b * 0.114;
+      const rb = Math.min(3, Math.floor(r * 4));
+      const gb = Math.min(3, Math.floor(g * 4));
+      const bb = Math.min(3, Math.floor(b * 4));
+      hist[rb * 16 + gb * 4 + bb] += 1;
       p += 1;
     }
     const count = p || 1;
-    rMean /= count * 255; gMean /= count * 255; bMean /= count * 255;
+    rMean /= count; gMean /= count; bMean /= count;
+    for (let i = 0; i < hist.length; i += 1) hist[i] /= count;
     const hash = new Uint8Array(canvas.height * (canvas.width - 1));
     let hi = 0;
     for (let y = 0; y < canvas.height; y += 1) {
@@ -1066,7 +1094,7 @@
         hash[hi++] = gray[index] > gray[index + 1] ? 1 : 0;
       }
     }
-    return { rgb, hash, mean: [rMean, gMean, bMean] };
+    return { rgb, hash, hist, mean: [rMean, gMean, bMean] };
   }
 
   function cropSignature(image, imageRect) {
@@ -1095,8 +1123,11 @@
     let hash = 0;
     for (let i = 0; i < a.hash.length; i += 1) hash += a.hash[i] === b.hash[i] ? 0 : 1;
     hash /= a.hash.length;
+    let hist = 0;
+    for (let i = 0; i < a.hist.length; i += 1) hist += Math.abs(a.hist[i] - b.hist[i]);
+    hist *= 0.5;
     const mean = (Math.abs(a.mean[0] - b.mean[0]) + Math.abs(a.mean[1] - b.mean[1]) + Math.abs(a.mean[2] - b.mean[2])) / 3;
-    return rgb * 0.58 + hash * 0.27 + mean * 0.15;
+    return rgb * 0.31 + hash * 0.24 + hist * 0.35 + mean * 0.10;
   }
 
   async function loadReferenceSignatures(type) {
@@ -1126,7 +1157,7 @@
     const ranked = refs.map((entry) => {
       let distance = signatureDistance(query, entry.sig);
       if (type === "hero" && roleLabel) {
-        distance *= heroMatchesRole(entry.data, roleLabel) ? 0.93 : 1.035;
+        distance *= heroMatchesRole(entry.data, roleLabel) ? 0.985 : 1.012;
       }
       return { id: entry.id, name: entry.data.name, distance, data: entry.data };
     }).sort((a, b) => a.distance - b.distance);
@@ -1147,56 +1178,33 @@
   function rankRegionSignature(imageRect, refs, type, roleLabel = "") {
     const variants = [
       { dx: 0, dy: 0, scale: 1 },
-      { dx: -0.08, dy: 0, scale: 0.94 },
-      { dx: 0.08, dy: 0, scale: 0.94 },
-      { dx: 0, dy: -0.08, scale: 0.94 },
-      { dx: 0, dy: 0.08, scale: 0.94 }
+      { dx: -0.06, dy: 0, scale: 0.96 }, { dx: 0.06, dy: 0, scale: 0.96 },
+      { dx: 0, dy: -0.06, scale: 0.96 }, { dx: 0, dy: 0.06, scale: 0.96 },
+      { dx: -0.04, dy: -0.04, scale: 0.88 }, { dx: 0.04, dy: 0.04, scale: 0.88 },
+      { dx: 0.04, dy: -0.04, scale: 0.88 }, { dx: -0.04, dy: 0.04, scale: 0.88 }
     ];
-
     let best = null;
-
     for (const variant of variants) {
-      const w = imageRect.w * variant.scale;
-      const h = imageRect.h * variant.scale;
+      const w = imageRect.w * variant.scale, h = imageRect.h * variant.scale;
       const rect = {
-        x: clamp(
-          imageRect.x + (imageRect.w - w) / 2 + imageRect.w * variant.dx,
-          0,
-          1 - w
-        ),
-        y: clamp(
-          imageRect.y + (imageRect.h - h) / 2 + imageRect.h * variant.dy,
-          0,
-          1 - h
-        ),
-        w,
-        h
+        x: clamp(imageRect.x + (imageRect.w - w) / 2 + imageRect.w * variant.dx, 0, Math.max(0, 1 - w)),
+        y: clamp(imageRect.y + (imageRect.h - h) / 2 + imageRect.h * variant.dy, 0, Math.max(0, 1 - h)),
+        w, h
       };
-
-      const ranked = rankSignature(
-        cropSignature(screenshotImage, rect),
-        refs,
-        type,
-        roleLabel
-      );
-
-      if (!best || ranked.confidence > best.confidence) {
-        best = ranked;
-      }
+      const ranked = rankSignature(cropSignature(screenshotImage, rect), refs, type, roleLabel);
+      if (!best || ranked.confidence > best.confidence || (ranked.confidence === best.confidence && ranked.candidates?.[0]?.confidence > best.candidates?.[0]?.confidence)) best = ranked;
     }
-
     return best || { id: "", confidence: 0, candidates: [] };
   }
 
   function splitItemRects(cardRect, itemsSubregion) {
     const strip = composeRect(cardRect, itemsSubregion);
-    const gap = strip.w * 0.012;
-    const slotW = (strip.w - gap * (ITEM_COUNT - 1)) / ITEM_COUNT;
+    const slotW = strip.w / ITEM_COUNT;
     return Array.from({ length: ITEM_COUNT }, (_, index) => ({
-      x: strip.x + index * (slotW + gap),
-      y: strip.y,
-      w: slotW,
-      h: strip.h
+      x: strip.x + index * slotW + slotW * 0.08,
+      y: strip.y + strip.h * 0.02,
+      w: slotW * 0.84,
+      h: strip.h * 0.96
     }));
   }
 
@@ -1223,27 +1231,14 @@
 
     const heroRect = composeRect(card, sub.hero);
     const heroResult = rankRegionSignature(heroRect, heroSignatures, "hero", ROLES[index].label);
-
-    // Draft LOCK adalah prior terkuat bila tersedia. Scanner tetap menghitung visual sebagai verifikasi.
-    const broadcast = loadBroadcastState();
-    const priorHero = side === "blue" ? broadcast?.bluePicks?.[index] : broadcast?.redPicks?.[index];
-    const priorLocked = side === "blue" ? broadcast?.bluePickLocked?.[index] : broadcast?.redPickLocked?.[index];
-    if (priorHero && priorLocked && window.HOK_HERO_MAP[priorHero]) {
-      player.heroId = priorHero;
-      player.confidence.hero = Math.max(96, heroResult.id === priorHero ? heroResult.confidence : 96);
-    } else if (heroResult.confidence >= HERO_THRESHOLD) {
-      player.heroId = heroResult.id;
-      player.confidence.hero = heroResult.confidence;
-    } else {
-      player.heroId = heroResult.confidence >= 45 ? heroResult.id : "";
-      player.confidence.hero = heroResult.confidence;
-    }
+    player.heroId = heroResult.confidence >= HERO_THRESHOLD ? heroResult.id : "";
+    player.confidence.hero = heroResult.confidence;
     player.candidates.hero = heroResult.candidates;
 
     const itemRects = splitItemRects(card, sub.items);
     for (let itemIndex = 0; itemIndex < ITEM_COUNT; itemIndex += 1) {
       const itemResult = rankRegionSignature(itemRects[itemIndex], itemSignatures, "item");
-      player.items[itemIndex] = itemResult.confidence >= ITEM_THRESHOLD ? itemResult.id : (itemResult.confidence >= 44 ? itemResult.id : "");
+      player.items[itemIndex] = itemResult.confidence >= ITEM_THRESHOLD ? itemResult.id : "";
       player.confidence.items[itemIndex] = itemResult.confidence;
       player.candidates.items[itemIndex] = itemResult.candidates;
     }
@@ -1406,31 +1401,119 @@
     }
   }
 
+  function resetScanData({ keepRoster = true } = {}) {
+    const broadcast = loadBroadcastState();
+    for (const side of SIDE_ORDER) {
+      const rows = side === "blue" ? state.bluePlayers : state.redPlayers;
+      const roster = side === "blue" ? broadcast?.bluePlayers : broadcast?.redPlayers;
+      for (let index = 0; index < PLAYER_COUNT; index += 1) {
+        const old = rows[index] || emptyPlayer(index);
+        const fresh = emptyPlayer(index);
+        if (keepRoster) {
+          fresh.ign = roster?.[index]?.name || old.ign || fresh.ign;
+          fresh.photo = roster?.[index]?.photo || old.photo || "";
+          fresh.photoScale = clamp(safeFloat(roster?.[index]?.photoScale ?? old.photoScale, 1), 0.85, 1.30);
+          fresh.photoOffsetY = clamp(safeInt(roster?.[index]?.photoOffsetY ?? old.photoOffsetY), -20, 20);
+          fresh.confidence.ign = roster?.[index]?.name ? 96 : 0;
+        }
+        rows[index] = fresh;
+      }
+    }
+    state.scanner.lastQuality = 0;
+    state.scanner.lastScanAt = 0;
+    state.scanner.confirmedAt = 0;
+  }
+
+  function closeScanPreviewModal() {
+    if (!els.previewModal) return;
+    els.previewModal.classList.remove("is-open");
+    els.previewModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("picker-open");
+  }
+
+  function showScanPreviewModal(summary) {
+    if (!els.previewModal) return;
+    els.previewSummary.textContent = `Quality ${summary.quality}% · Hero ${summary.heroes}/10 · Item ${summary.items}/60 · Perlu cek ${summary.warnings} field.`;
+    els.previewBadge.textContent = summary.quality >= 82 && summary.items >= 54 ? "HASIL BAIK" : "PERLU REVIEW";
+    els.previewBadge.dataset.status = summary.quality >= 82 && summary.items >= 54 ? "good" : "warn";
+    els.previewWarning.textContent = summary.warnings
+      ? `${summary.warnings} field confidence rendah. Jika hasil visual tidak sesuai screenshot, pilih Scan Again atau Cancel.`
+      : "Hasil tidak langsung tayang. Confirm hanya menyimpan hasil; operator tetap menekan Tayangkan Result.";
+    els.previewFrame.src = `result.html?preview=1&source=temp&t=${Date.now()}`;
+    els.previewModal.classList.add("is-open");
+    els.previewModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("picker-open");
+  }
+
+  function confirmTemporaryScan() {
+    if (!scanDraftMode) return;
+    state.scanner.confirmedAt = Date.now();
+    state.visible = false;
+    state = normalizeState(state);
+    localStorage.setItem(RESULT_KEY, JSON.stringify(state));
+    localStorage.removeItem(TEMP_RESULT_KEY);
+    scanDraftMode = false;
+    closeScanPreviewModal();
+    renderAll();
+    setStatus("SIAP TAYANG", "good");
+    setHint("Hasil scan sudah dikonfirmasi. Periksa review bila perlu, lalu tekan TAYANGKAN RESULT saat siap live.", "good");
+  }
+
+  function cancelTemporaryScan() {
+    localStorage.removeItem(TEMP_RESULT_KEY);
+    scanDraftMode = false;
+    state = loadMainState();
+    closeScanPreviewModal();
+    renderAll();
+    setStatus(screenshotImage ? "SIAP SCAN" : "BELUM SCAN", screenshotImage ? "good" : "idle");
+    setHint("Hasil scan dibatalkan. Screenshot tetap tersedia dan dapat di-scan lagi.", "warn");
+  }
+
+  async function scanAgain() {
+    closeScanPreviewModal();
+    scanDraftMode = false;
+    await scanAll();
+  }
+
   async function scanAll() {
     if (!screenshotImage || scanBusy) return;
     scanBusy = true;
     els.scan.disabled = true;
     setStatus("SCANNING", "working");
-    setProgress(1, "Menyiapkan scanner...");
+    setProgress(1, "Membaca resolusi screenshot...");
 
     try {
-      syncFromBroadcast({ preserveScan: true });
+      scanDraftMode = true;
+      state = loadMainState();
+      state.visible = false;
+      resetScanData({ keepRoster: true });
+      syncFromBroadcast({ preserveScan: false });
+
+      setProgress(4, `Resolusi ${screenshotImage.naturalWidth}×${screenshotImage.naturalHeight} · mendeteksi panel result...`);
+      if (!areaOverride) {
+        cropRect = detectLikelyPanel() || { x: 0, y: 0, w: 1, h: 1 };
+      }
+      state.scanner.cropRect = { ...cropRect };
+      if (!cardsOverride) state.scanner.calibratedCards = null;
+      hasDetection = true;
+      saveState(false);
+      drawPreview();
+
+      setProgress(8, "Membentuk 10 player row: Clash · Jungle · Mid · Farm · Roam...");
+      await new Promise(requestAnimationFrame);
       await ensureReferenceSignatures();
+
       const includeOcr = els.scanMode.value === "full";
       const total = PLAYER_COUNT * 2;
       let done = 0;
       for (const side of SIDE_ORDER) {
         for (let index = 0; index < PLAYER_COUNT; index += 1) {
           const base = 18 + (done / total) * (includeOcr ? 66 : 78);
-          setProgress(base, `Scan ${side.toUpperCase()} ${ROLES[index].label}...`);
+          setProgress(base, `Scan ${side.toUpperCase()} P${index + 1} · ${ROLES[index].label}...`);
           await scanVisualSlot(side, index);
           if (includeOcr) {
-            try {
-              await scanOcrSlot(side, index);
-            } catch (error) {
-              console.warn(error);
-              setHint("OCR tidak tersedia / gagal. Hero + Item tetap selesai dan field teks dapat dikoreksi manual.", "warn");
-            }
+            try { await scanOcrSlot(side, index); }
+            catch (error) { console.warn(error); setHint("OCR gagal pada sebagian field. Hero + Item tetap diproses dan teks dapat dikoreksi manual.", "warn"); }
           }
           done += 1;
           saveState(false);
@@ -1442,43 +1525,25 @@
       const summary = calculateQualitySummary();
       state.scanner.lastQuality = summary.quality;
       state.scanner.lastScanAt = Date.now();
+      state.scanner.confirmedAt = 0;
       saveState();
       setProgress(100, `Selesai · Hero ${summary.heroes}/10 · Item ${summary.items}/60`);
-      if (summary.quality >= 82 && summary.items >= 54) {
-        setStatus("SIAP REVIEW", "good");
-        setHint("Hasil scan tinggi. Periksa field berwarna warning, lalu tekan TAYANGKAN RESULT.", "good");
-      } else if (summary.quality >= 65 || summary.items >= 45) {
-        setStatus("PERLU REVIEW", "warn");
-        setHint("Sebagian data confidence rendah. Koreksi slot warning atau gunakan Scan Ulang Slot sebelum tayang.", "warn");
-      } else {
-        setStatus("SCAN RENDAH", "error");
-        setHint("Hasil scan terlalu rendah. Pilih area result lebih presisi / kalibrasi 10 slot, lalu scan ulang.", "error");
-      }
+      setStatus(summary.quality >= 82 && summary.items >= 54 ? "PREVIEW" : "PERLU REVIEW", summary.quality >= 82 && summary.items >= 54 ? "good" : "warn");
+      setHint("Auto Scan selesai. Cocokkan popup preview dengan screenshot asli lalu Confirm, Scan Again, atau Cancel.", summary.quality >= 70 ? "good" : "warn");
+      showScanPreviewModal(summary);
     } catch (error) {
       console.error(error);
+      localStorage.removeItem(TEMP_RESULT_KEY);
+      scanDraftMode = false;
+      state = loadMainState();
       setStatus("SCAN GAGAL", "error");
       setHint(error.message || "Scanner gagal.", "error");
       setProgress(0, "Scan gagal.");
+      renderAll();
     } finally {
       scanBusy = false;
       els.scan.disabled = !screenshotImage;
     }
-  }
-
-  function openPicker(type, side, index, itemIndex = -1) {
-    pickerContext = { type, side, index, itemIndex };
-    els.pickerTitle.textContent = type === "hero" ? "Pilih Hero Result" : `Pilih Item ${itemIndex + 1}`;
-    els.pickerSearch.value = "";
-    els.picker.setAttribute("aria-hidden", "false");
-    document.body.classList.add("picker-open");
-    renderPicker();
-    setTimeout(() => els.pickerSearch.focus(), 0);
-  }
-
-  function closePicker() {
-    pickerContext = null;
-    els.picker.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("picker-open");
   }
 
   function renderPicker() {
@@ -1631,6 +1696,10 @@
     });
 
     els.show.addEventListener("click", () => {
+      if (scanDraftMode || (state.scanner.lastScanAt && state.scanner.confirmedAt < state.scanner.lastScanAt)) {
+        setHint("Hasil Auto Scan belum dikonfirmasi. Selesaikan popup Preview Result terlebih dahulu.", "warn");
+        return;
+      }
       state.visible = true;
       saveState();
       setHint("Result Overlay ditayangkan. OBS source result.html akan tampil pada browser/origin yang sama.", "good");
@@ -1680,7 +1749,7 @@
       if (!file) return;
       try {
         await loadScreenshot(file);
-        setHint("Screenshot ditempel dari clipboard. Pilih/deteksi area result lalu scan.", "good");
+        setHint("Screenshot ditempel dari clipboard. Tekan AUTO SCAN RESULT untuk mulai deteksi dan scan.", "good");
       } catch (error) {
         setHint("Gambar dari clipboard gagal dibuka.", "error");
       }
@@ -1705,12 +1774,16 @@
       if (!screenshotImage) return setHint("Upload screenshot terlebih dahulu.", "warn");
       const detected = detectLikelyPanel();
       setCrop(detected || { x: 0, y: 0, w: 1, h: 1 });
+      hasDetection = true;
+      areaOverride = true;
       setHint("Area hasil HoK terdeteksi. Periksa 10 box role; gunakan Pilih Area Manual hanya jika meleset.", "good");
     });
 
     els.fullArea.addEventListener("click", () => {
       if (!screenshotImage) return setHint("Upload screenshot terlebih dahulu.", "warn");
       setCrop({ x: 0, y: 0, w: 1, h: 1 });
+      hasDetection = true;
+      areaOverride = true;
       setHint("Seluruh screenshot dipakai sebagai area result.", "good");
     });
 
@@ -1723,12 +1796,29 @@
     els.calibrate.addEventListener("click", startCalibration);
     els.resetCalibration.addEventListener("click", () => {
       state.scanner.calibratedCards = null;
+      cardsOverride = false;
       saveState(false);
       drawPreview();
       setHint("Kalibrasi direset ke mapping row hasil HoK bawaan.", "good");
     });
+    els.resetScan?.addEventListener("click", () => {
+      localStorage.removeItem(TEMP_RESULT_KEY);
+      scanDraftMode = false;
+      state = loadMainState();
+      state.visible = false;
+      resetScanData({ keepRoster: true });
+      syncFromBroadcast({ preserveScan: false });
+      saveState();
+      setProgress(0, screenshotImage ? `${screenshotImage.naturalWidth}×${screenshotImage.naturalHeight} · siap scan ulang` : "Menunggu screenshot.");
+      setStatus(screenshotImage ? "SIAP SCAN" : "BELUM SCAN", screenshotImage ? "good" : "idle");
+      setHint("Hasil scan lama dibersihkan. Team, roster, Draft, dan In-Game tidak dihapus.", "good");
+    });
     els.sync.addEventListener("click", () => syncFromBroadcast({ preserveScan: true }));
     els.scan.addEventListener("click", scanAll);
+    els.previewConfirm?.addEventListener("click", confirmTemporaryScan);
+    els.previewAgain?.addEventListener("click", scanAgain);
+    els.previewCancel?.addEventListener("click", cancelTemporaryScan);
+    els.previewModal?.querySelector(".scan-preview-backdrop")?.addEventListener("click", cancelTemporaryScan);
   }
 
   function bindPicker() {
@@ -1736,6 +1826,7 @@
     els.picker.querySelectorAll("[data-result-picker-close]").forEach((node) => node.addEventListener("click", closePicker));
     els.pickerSearch.addEventListener("input", renderPicker);
     document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && els.previewModal?.classList.contains("is-open")) { cancelTemporaryScan(); return; }
       if (event.key === "Escape" && pickerContext) closePicker();
     });
   }
@@ -1743,6 +1834,8 @@
   function init() {
     cacheElements();
     if (!els.panel) return;
+    localStorage.removeItem(TEMP_RESULT_KEY);
+    scanDraftMode = false;
     state = loadState();
     cropRect = { ...state.scanner.cropRect };
     bindCanvas();
@@ -1751,11 +1844,13 @@
     bindReview();
     bindPicker();
     renderAll();
-    syncFromBroadcast({ preserveScan: true });
-    if (state.scanner.lastScanAt) {
+    if (!state.scanner.lastScanAt) {
+      syncFromBroadcast({ preserveScan: true });
+    } else {
       const summary = calculateQualitySummary();
-      setStatus(summary.quality >= 80 ? "SIAP REVIEW" : "PERLU REVIEW", summary.quality >= 80 ? "good" : "warn");
-      setProgress(100, `Data scan tersimpan · Quality ${summary.quality}%`);
+      const confirmed = state.scanner.confirmedAt >= state.scanner.lastScanAt;
+      setStatus(confirmed ? "SIAP TAYANG" : (summary.quality >= 80 ? "SIAP REVIEW" : "PERLU REVIEW"), confirmed ? "good" : (summary.quality >= 80 ? "good" : "warn"));
+      setProgress(100, `Data scan tersimpan · Quality ${summary.quality}%${confirmed ? " · CONFIRMED" : ""}`);
     }
   }
 

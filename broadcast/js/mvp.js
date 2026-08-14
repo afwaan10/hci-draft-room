@@ -1,0 +1,7 @@
+(() => {
+  "use strict";
+  const RK="hok_result_state_v1",TK="hok_broadcast_tools_v1",$=id=>document.getElementById(id),preview=new URLSearchParams(location.search).get("preview")==="1";
+  function load(k){try{return JSON.parse(localStorage.getItem(k)||"{}")}catch{return {}}}
+  function render(){const r=load(RK),t=load(TK),m=t.mvp||{},side=m.side==="red"?"red":"blue",idx=Math.max(0,Math.min(4,Number(m.index)||0)),p=(side==="red"?r.redPlayers:r.bluePlayers)?.[idx]||{},hero=window.HOK_HERO_MAP[p.heroId];$("mvpOverlay").classList.toggle("is-hidden",!preview&&!m.visible);$("mvpIgn").textContent=p.ign||`PLAYER ${idx+1}`;$("mvpHeroName").textContent=hero?.name||"HERO";$("mvpKda").textContent=p.kda||"0/0/0";$("mvpGold").textContent=p.gold||"0";const v=$("mvpVisual");v.replaceChildren();if(hero){const img=document.createElement("img");img.className="mvp-hero";img.src=hero.assets.portrait;img.alt="";v.append(img)}if(p.photo){const img=document.createElement("img");img.className="mvp-photo";img.src=p.photo;img.alt="";img.style.transform=`translateY(${Number(p.photoOffsetY)||0}%) scale(${Number(p.photoScale)||1})`;v.append(img)}const items=$("mvpItems");items.replaceChildren();Array.from({length:6},(_,i)=>{const d=document.createElement("div"),it=window.HOK_ITEM_MAP[p.items?.[i]];if(it){const im=document.createElement("img");im.src=it.asset;im.alt="";d.append(im)}items.append(d)})}
+  render();window.addEventListener("storage",e=>{if(e.key===RK||e.key===TK)render()});
+})();
